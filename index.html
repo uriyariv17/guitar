@@ -364,6 +364,50 @@ a.btn{ text-decoration:none; display:inline-flex; align-items:center; }
 .prev-sheet{ max-height:320px; overflow:auto; margin-top:8px; }
 .pdf-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 
+/* Media links */
+.media-link{ appearance:none; display:inline-flex; align-items:center; gap:5px; vertical-align:middle; border:0; border-radius:999px; padding:2px 10px 2px 8px; margin:0 4px; background:var(--velvet); color:var(--velvet-ink); font:700 .82em 'Assistant',Arial,sans-serif; cursor:pointer; line-height:1.6; white-space:nowrap; }
+.media-link svg{ width:11px; height:11px; fill:currentColor; }
+.media-link:hover{ filter:brightness(1.12); }
+.md-frame{ position:relative; width:100%; height:200px; border-radius:12px; overflow:hidden; background:var(--surface-2); }
+.md-frame.video{ height:auto; aspect-ratio:16 / 9; }
+.md-frame.tall{ height:min(70vh, 560px); }
+.md-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+.recs{ display:flex; flex-wrap:wrap; gap:8px; }
+.recs .media-link{ font-size:.95rem; padding:6px 14px 6px 12px; margin:0; }
+.recs .media-link.part{ background:var(--surface-2); color:var(--ink); }
+.part-row{ display:grid; grid-template-columns:150px minmax(0,1fr) auto; gap:8px; align-items:center; }
+@media (max-width: 560px){ .part-row{ grid-template-columns:1fr auto; } .part-row input:first-child{ grid-column:1 / -1; } }
+
+/* Marker notes */
+:root{ --mk-yellow:rgba(255,212,0,.45); --mk-green:rgba(60,210,110,.32); --mk-pink:rgba(255,92,170,.30); --mk-blue:rgba(70,150,255,.30); --mk-orange:rgba(255,140,30,.36); }
+.mk-sw{ width:30px; height:30px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; }
+.mk-sw[aria-pressed="true"]{ border-color:var(--ink); box-shadow:0 0 0 2px var(--surface) inset; }
+.bsheet{ position:relative; }
+.bsheet .ln.mk{ width:fit-content; max-width:100%; border-radius:4px; padding-inline:3px; margin-inline:-3px; }
+.bsheet .ln.mk-yellow{ background:var(--mk-yellow); } .bsheet .ln.mk-green{ background:var(--mk-green); } .bsheet .ln.mk-pink{ background:var(--mk-pink); } .bsheet .ln.mk-blue{ background:var(--mk-blue); } .bsheet .ln.mk-orange{ background:var(--mk-orange); }
+.bsheet .ln.inl.mk{ display:flex; }
+.bsheet .ln.focus{ outline:2px solid color-mix(in srgb, var(--velvet) 55%, transparent); outline-offset:1px; }
+.nbadge{ appearance:none; display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 6px; margin-inline-start:8px; border:0; border-radius:999px; background:var(--velvet); color:var(--velvet-ink); font:700 11px 'Assistant',Arial,sans-serif; vertical-align:middle; cursor:pointer; }
+.sheet-wrap{ display:grid; grid-template-columns:minmax(0,1fr) 250px; gap:14px; align-items:start; }
+.sheet-wrap.narrow{ grid-template-columns:minmax(0,1fr); }
+.note-rail{ position:relative; }
+.sheet-wrap.narrow .note-rail{ display:none; }
+.ncard{ background:var(--surface); border-radius:10px; box-shadow:0 0 0 1px var(--line), 0 2px 6px rgba(15,25,50,.06); padding:8px 11px 9px; font-size:14px; line-height:1.45; border-inline-start:4px solid var(--mk-c, var(--line)); }
+.note-rail .ncard{ position:absolute; inset-inline:0; }
+.ncard.c-yellow{ --mk-c:#E8B900; } .ncard.c-green{ --mk-c:#2FB36A; } .ncard.c-pink{ --mk-c:#E24E9A; } .ncard.c-blue{ --mk-c:#3C86E8; } .ncard.c-orange{ --mk-c:#E57D16; }
+.ncard-h{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-2); margin-bottom:2px; }
+.ncard-h b{ color:var(--ink); font-weight:700; }
+.ncard-h .lock{ font-size:11px; padding:0 6px; border-radius:999px; background:var(--surface-2); }
+.ncard-acts{ margin-inline-start:auto; display:flex; gap:2px; opacity:.0; transition:opacity .15s; }
+.ncard:hover .ncard-acts, .ncard:focus-within .ncard-acts{ opacity:1; }
+@media (hover: none){ .ncard-acts{ opacity:1; } }
+.ncard-acts button{ appearance:none; border:0; background:none; color:var(--blue); font:600 12px 'Assistant',Arial,sans-serif; cursor:pointer; padding:2px 4px; border-radius:4px; }
+.ncard-acts button.del{ color:var(--red); }
+.ncard-t{ white-space:pre-line; color:var(--ink); }
+.ncard-q{ font-size:12px; color:var(--ink-2); margin-bottom:2px; }
+.inline-notes{ display:grid; gap:6px; margin:4px 0 10px; white-space:normal; position:sticky; left:0; right:0; }
+.song-notes{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -787,6 +831,10 @@ E|-----------|</pre>
       <div class="spread"><span>מילים ואקורדים <small>(לא חובה)</small></span><div class="seg" id="fso-dir"><button type="button" data-v="rtl">עברית</button><button type="button" data-v="ltr">אנגלית</button></div></div>
       <div class="pdf-row"><button type="button" class="btn small" data-pdf="fso">ייבוא מ־PDF</button><input type="file" accept="application/pdf,.pdf" id="fso-pdf" hidden><label class="row" id="fso-rev-wrap" style="gap:6px;font-weight:600" hidden><input type="checkbox" id="fso-rev"> העברית יצאה הפוכה</label><span class="muted" id="fso-pdf-msg"></span></div>
       <textarea id="fso-sheet" maxlength="20000" placeholder="Am        G&#10;שורה ראשונה של השיר&#10;&#10;או בתוך השורה: [Am]שורה [G]ראשונה"></textarea>
+      <details class="field" style="margin-top:6px"><summary>הוספת קישור להקלטה בתוך השיר</summary>
+        <div class="row" style="margin-top:8px;align-items:end"><label class="field" style="width:160px">שם <small>(למשל: סולו)</small><input id="fso-lk-label" maxlength="40"></label><label class="field" style="flex:1;min-width:200px">קישור לדרייב או לקובץ<input id="fso-lk-url" dir="ltr" placeholder="https://drive.google.com/..."></label><button type="button" class="btn" id="fso-lk-add">הוספה</button></div>
+        <p class="hint" id="fso-lk-msg">שמים את הסמן בשורה שאליה הקישור שייך, ולוחצים הוספה. בשיר יופיע כפתור שפותח את ההקלטה בתוך האפליקציה.</p>
+      </details>
       <small>כותבים את האקורדים בשורה מעל המילים, או בתוך השורה בסוגריים מרובעים, למשל [Am]. בסוגריים הם יעמדו תמיד בדיוק מעל המילה הנכונה.</small>
     </div>
     <details class="field" id="fso-prev-wrap"><summary>תצוגה מקדימה, כך התלמידים יראו את השיר</summary><div class="sheet prev-sheet" id="fso-prev"></div></details>
@@ -812,6 +860,16 @@ E|-----------|</pre>
       <div class="spread"><span>מילים ואקורדים</span><div class="seg" id="bsg-dir"><button type="button" data-v="rtl">עברית</button><button type="button" data-v="ltr">אנגלית</button></div></div>
       <div class="pdf-row"><button type="button" class="btn small" data-pdf="bsg">ייבוא מ־PDF</button><input type="file" accept="application/pdf,.pdf" id="bsg-pdf" hidden><label class="row" id="bsg-rev-wrap" style="gap:6px;font-weight:600" hidden><input type="checkbox" id="bsg-rev"> העברית יצאה הפוכה</label><span class="muted" id="bsg-pdf-msg"></span></div>
       <textarea id="bsg-sheet" maxlength="20000" style="min-height:240px;font-family:'Assistant',Arial,sans-serif;font-size:16px;line-height:1.45;white-space:pre;overflow-x:auto" placeholder="Am        G&#10;שורה ראשונה של השיר&#10;&#10;או בתוך השורה: [Am]שורה [G]ראשונה"></textarea>
+      <details class="field" style="margin-top:6px"><summary>הוספת קישור להקלטה בתוך השיר</summary>
+        <div class="row" style="margin-top:8px;align-items:end"><label class="field" style="width:160px">שם <small>(למשל: סולו)</small><input id="bsg-lk-label" maxlength="40"></label><label class="field" style="flex:1;min-width:200px">קישור לדרייב או לקובץ<input id="bsg-lk-url" dir="ltr" placeholder="https://drive.google.com/..."></label><button type="button" class="btn" id="bsg-lk-add">הוספה</button></div>
+        <p class="hint" id="bsg-lk-msg">שמים את הסמן בשורה שאליה הקישור שייך, ולוחצים הוספה. בשיר יופיע כפתור שפותח את ההקלטה בתוך האפליקציה.</p>
+      </details>
+    </div>
+    <div class="field">
+      <span>הקלטות של הלהקה</span>
+      <label class="field" style="font-weight:400">הקלטה של כל הלהקה<input id="bsg-rec" dir="ltr" placeholder="https://drive.google.com/..."></label>
+      <div id="bsg-parts" class="stack" style="gap:8px"></div>
+      <div><button type="button" class="btn small" id="bsg-add-part">הוספת הקלטה של כלי</button></div>
     </div>
     <details class="field" id="bsg-prev-wrap"><summary>תצוגה מקדימה</summary><div class="sheet prev-sheet" id="bsg-prev"></div></details>
     <label class="row" id="bsg-set-wrap" style="gap:8px;font-weight:600"><input type="checkbox" id="bsg-set"> להוסיף לסוף הסטליסט</label>
@@ -820,14 +878,25 @@ E|-----------|</pre>
   </form>
 </dialog>
 
+<dialog id="dlg-media" class="wide">
+  <form method="dialog" style="gap:12px">
+    <div class="spread"><h3 id="md-title">הקלטה</h3><div class="row"><a class="btn small" id="md-open" target="_blank" rel="noopener">פתיחה בכרטיסייה חדשה</a><button class="btn small" value="close">סגירה</button></div></div>
+    <div id="md-body"></div>
+    <p class="hint" id="md-hint">אם מופיעה בקשה להתחבר או הודעה שאין הרשאה, צריך לשתף את הקובץ בדרייב כ"כל מי שיש לו את הקישור".</p>
+  </form>
+</dialog>
+
 <dialog id="dlg-note">
   <form id="fn">
     <h3 id="nt-title">הערה</h3>
     <p class="muted" id="nt-quote"></p>
     <label class="field">ההערה<textarea id="nt-text" maxlength="1000" placeholder="למשל: כאן הבס נכנס, להוריד עוצמה בפזמון"></textarea></label>
+    <div class="opt"><span class="opt-l">צבע מרקר</span><div class="row" id="nt-color" style="gap:8px">
+      <button type="button" class="mk-sw" data-v="yellow" style="background:#FFD84D" aria-label="צהוב"></button><button type="button" class="mk-sw" data-v="green" style="background:#7FE0A4" aria-label="ירוק"></button><button type="button" class="mk-sw" data-v="pink" style="background:#FF9CCB" aria-label="ורוד"></button><button type="button" class="mk-sw" data-v="blue" style="background:#8EC1FF" aria-label="כחול"></button><button type="button" class="mk-sw" data-v="orange" style="background:#FFB46B" aria-label="כתום"></button>
+    </div><span class="hint" id="nt-color-hint">בהערה לשורה, השורה נצבעת בצבע הזה. אפשר גם רק לצבוע, בלי לכתוב.</span></div>
     <div class="opt"><span class="opt-l">מי רואה אותה</span><div class="seg" id="nt-vis"><button type="button" data-v="mine">רק אני</button><button type="button" data-v="all">כל הלהקה</button></div></div>
     <p class="err" id="nt-err"></p>
-    <div class="row"><button class="btn primary" type="submit">שמור הערה</button><button class="btn ghost" type="button" data-close>ביטול</button></div>
+    <div class="row"><button class="btn primary" type="submit">שמור</button><button class="btn ghost" type="button" data-close>ביטול</button><button class="btn danger" type="button" id="nt-del" style="margin-inline-start:auto">מחיקה</button></div>
   </form>
 </dialog>
 
@@ -2641,7 +2710,7 @@ function spellFor(fc, n){
   if((minor ? [2,7,0,5,10] : [5,10,3,8,1]).includes(pc)) return SPELL_FLAT;
   return SPELL;
 }
-const CHORD_RE = /^(\(?)([A-G])([#b]?)((?:maj|min|m|M|dim|aug|sus|add|°|ø|\+)?\d{0,2}(?:(?:sus|add|maj|no|b|#)\d{1,2})*)(?:\/([A-G])([#b]?))?(\)?)$/;
+const CHORD_RE = /^(\(?)([A-G])([#b]?)((?:maj|min|m|M|dim|aug|sus|add|°|ø|Δ|\+|-)?(?:6\/9|\d{0,2})(?:(?:sus|add|maj|no|aug|dim)\d{0,2}|[#b+\-]\d{1,2}|\((?:[#b+\-]?\d{1,2}|add\d{1,2}|sus\d?)\))*)(?:\/([A-G])([#b]?))?(\)?)$/;
 const NOISE_RE = /^(\||\|\||-+|\/|%|x\d+|\(x\d+\)|\d+x|\.+)$/i;
 const hasHebrew = t => /[\u0590-\u05FF]/.test(t || '');
 function parseChord(tok){
@@ -2666,27 +2735,35 @@ function firstChord(text){
   }
   return null;
 }
+const LINK_RE = /\{\{([^|{}]{0,60})\|\s*(https?:\/\/[^\s{}]+)\s*\}\}|(https?:\/\/[^\s{}]+)/g;
+const PH_RE = /\u0000(\d+)\u0000/g;
 const chordSpan = name => `<b class="ch" data-c="${esc(name)}">${esc(name)}</b>`;
 function renderSheetHTML(text, n){
   const used = [], sp = spellFor(firstChord(text), n);
   const use = name => { const p = parseChord(name); const k = p ? p.root + p.suf + (p.bass ? '/' + p.bass : '') : name; if(!used.includes(k)) used.push(k); };
-  const html = String(text || '').replace(/\r/g, '').split('\n').map((line, li) => {
-    if(!line.trim()) return '<div class="ln">&nbsp;</div>';
+  const html = String(text || '').replace(/\r/g, '').split('\n').map((rawLine, li) => {
+    const links = [];
+    const line = rawLine.replace(LINK_RE, (m, label, url, bare) => { links.push({label:(label || '').trim(), url:url || bare}); return '\u0000' + (links.length - 1) + '\u0000'; });
+    const wl = h => h.replace(PH_RE, (m, i) => linkChip(links[Number(i)]));
+    const noLinks = line.replace(PH_RE, '');
+    if(!rawLine.trim()) return '<div class="ln">&nbsp;</div>';
+    if(links.length && !noLinks.trim()) return `<div class="ln links" data-l="${li}">${links.map(linkChip).join(' ')}</div>`;
+    const tail = links.length ? ' ' + links.map(linkChip).join(' ') : '';
     if(/\[[^\]\s]{1,14}\]/.test(line) && [...line.matchAll(/\[([^\]\s]{1,14})\]/g)].some(m => parseChord(m[1]))){
       const parts = line.split(/(\[[^\]\s]{1,14}\])/);
       let out = '', pending = null;
-      const flush = txt => { out += `<span class="il">${pending ? chordSpan(pending) : '<b class="ch empty">&nbsp;</b>'}<span>${esc(txt) || '&nbsp;'}</span></span>`; pending = null; };
+      const flush = txt => { out += `<span class="il">${pending ? chordSpan(pending) : '<b class="ch empty">&nbsp;</b>'}<span>${wl(esc(txt)) || '&nbsp;'}</span></span>`; pending = null; };
       parts.forEach(p => {
         const m = p.match(/^\[([^\]\s]{1,14})\]$/);
         if(m && parseChord(m[1])){ if(pending) flush(''); pending = trChord(m[1], n, sp); use(pending); }
-        else if(p){ if(pending) flush(p); else out += `<span class="il"><b class="ch empty">&nbsp;</b><span>${esc(p)}</span></span>`; }
+        else if(p){ if(pending) flush(p); else out += `<span class="il"><b class="ch empty">&nbsp;</b><span>${wl(esc(p))}</span></span>`; }
       });
       if(pending) flush('');
       return `<div class="ln inl" data-l="${li}">${out}</div>`;
     }
-    if(isChordLine(line)){
+    if(isChordLine(noLinks)){
       let out = '', len = 0;
-      for(const m of line.matchAll(/\S+/g)){
+      for(const m of noLinks.matchAll(/\S+/g)){
         const isC = !!parseChord(m[0]) && !NOISE_RE.test(m[0]);
         const txt = isC ? trChord(m[0], n, sp) : m[0];
         const start = len ? Math.max(m.index, len + 1) : m.index;
@@ -2694,10 +2771,10 @@ function renderSheetHTML(text, n){
         len = start + txt.length;
         if(isC) use(txt);
       }
-      return `<div class="ln chords" data-l="${li}">${out}</div>`;
+      return `<div class="ln chords" data-l="${li}">${out}${tail}</div>`;
     }
     const sec = /^\s*[^\s][^:]{0,28}:\s*$/.test(line) || /^\s*\[[^\]]{1,24}\]\s*$/.test(line);
-    return `<div class="ln${sec ? ' sec' : ''}" data-l="${li}">${esc(line)}</div>`;
+    return `<div class="ln${sec ? ' sec' : ''}" data-l="${li}">${wl(esc(line))}</div>`;
   }).join('');
   return {html, used};
 }
@@ -3058,13 +3135,48 @@ function renderBandSongList(){
 
 /* שיר */
 function noteHTML(n){
+  const mine = n.authorId === B.member.id, col = n.data.color || 'yellow';
+  return `<div class="ncard c-${col}" data-nid="${esc(n.id)}" data-line="${n._at ?? -1}">
+    <div class="ncard-h"><b>${esc(memberName(n.authorId))}</b>${n.data.visibility === 'all' ? '' : '<span class="lock">פרטית</span>'}${mine ? `<span class="ncard-acts"><button type="button" data-act="edit-note" data-id="${esc(n.id)}">עריכה</button><button type="button" class="del" data-act="del-note" data-id="${esc(n.id)}">מחיקה</button></span>` : ''}</div>
+    ${n.data.lineText && (n.data.orphan || n._at === undefined || n._at < 0) && n.data.line >= 0 ? `<div class="ncard-q">“${esc(n.data.lineText)}”</div>` : ''}
+    <div class="ncard-t">${esc(n.data.text)}</div></div>`;
+}
+function layoutNotes(){
+  const wrap = $('#vb-wrap'), el = $('#vb-sheet'), rail = $('#vb-rail');
+  if(!wrap || !B.byLine) return;
+  const narrow = wrap.clientWidth < 760;
+  wrap.classList.toggle('narrow', narrow);
+  $$('.inline-notes', el).forEach(x => x.remove());
+  rail.innerHTML = '';
+  if(narrow){
+    (B.openLines || new Set()).forEach(li => {
+      const ln = el.querySelector(`.ln[data-l="${li}"]`), list = (B.byLine[li] || []).filter(n => n.data.text);
+      if(ln && list.length) ln.insertAdjacentHTML('afterend', `<div class="inline-notes">${list.map(noteHTML).join('')}</div>`);
+    });
+    return;
+  }
+  let bottom = 0;
+  Object.keys(B.byLine).map(Number).sort((a, b) => a - b).forEach(li => {
+    const ln = el.querySelector(`.ln[data-l="${li}"]`); if(!ln) return;
+    B.byLine[li].filter(n => n.data.text).forEach(n => {
+      rail.insertAdjacentHTML('beforeend', noteHTML(n));
+      const card = rail.lastElementChild, top = Math.max(ln.offsetTop, bottom);
+      card.style.top = top + 'px';
+      bottom = top + card.offsetHeight + 6;
+    });
+  });
+  rail.style.minHeight = bottom + 'px';
+}
+let notesResizeT = null;
+window.addEventListener('resize', () => { clearTimeout(notesResizeT); notesResizeT = setTimeout(layoutNotes, 150); });
+function noteHTML_old(n){
   const mine = n.authorId === B.member.id;
   return `<div class="bnote ${n.data.visibility === 'all' ? 'pub' : 'priv'}" data-nid="${esc(n.id)}">
     <div class="bnote-h"><b>${esc(memberName(n.authorId))}</b><span class="chip">${n.data.visibility === 'all' ? 'לכולם' : 'רק לי'}</span>${mine ? `<button class="btn ghost small" data-act="edit-note" data-id="${esc(n.id)}">עריכה</button><button class="btn ghost small danger" data-act="del-note" data-id="${esc(n.id)}">מחיקה</button>` : ''}</div>
     ${n.data.lineText && n.data.orphan ? `<div class="muted bnote-q">“${esc(n.data.lineText)}”</div>` : ''}
     <div class="bnote-t">${esc(n.data.text)}</div></div>`;
 }
-const plainLine = t => String(t || '').replace(/\[([^\]\s]{1,14})\]/g, '').trim();
+const plainLine = t => String(t || '').replace(/\{\{[^{}]*\}\}/g, '').replace(/https?:\/\/\S+/g, '').replace(/\[([^\]\s]{1,14})\]/g, '').trim();
 function renderBandSong(){
   const s = bGet(B.songId), d = s.data, pos = setlistOrder().indexOf(s.id), saved = Number(d.shift) || 0;
   const k = bandKey(s, B.viewShift), orig = bandKey(s, 0);
@@ -3072,6 +3184,10 @@ function renderBandSong(){
     <div class="spread" style="margin:8px 0"><div><h2>${esc(d.name)}</h2>${d.artist ? `<p class="muted">${esc(d.artist)}</p>` : ''}</div>
       <div class="row">${d.url ? '<button class="btn small" data-act="player">פתיחה בנגן</button>' : ''}<button class="btn small" data-act="toggle-set">${pos >= 0 ? 'הוצאה מהסטליסט' : 'הוספה לסטליסט'}</button><button class="btn small" data-act="edit-song">עריכה</button><button class="btn small danger" data-act="del-song">מחיקה</button></div></div>
     <div class="chips">${pos >= 0 ? `<span class="chip ok">בסטליסט, מקום ${pos + 1}</span>` : '<span class="chip">לא מבוצע כרגע</span>'}${d.bpm ? `<span class="chip">${d.bpm} BPM</span>` : ''}${d.duration ? `<span class="chip">${fmtDur(d.duration)}</span>` : ''}</div>`;
+  const rec = d.recordings || {}, parts = rec.parts || [];
+  if(rec.band || parts.length){
+    h += `<div class="sub-panel" style="margin-top:16px"><h3>הקלטות</h3><div class="recs">${rec.band ? linkChip({label:'הלהקה כולה', url:rec.band}) : ''}${parts.map(pt => linkChip({label:pt.label, url:pt.url}).replace('class="media-link"', 'class="media-link part"')).join('')}</div></div>`;
+  }
   if(d.sheet && d.sheet.trim()){
     const dirty = B.viewShift !== saved;
     h += `<div class="sub-panel" style="margin-top:16px">
@@ -3085,10 +3201,10 @@ function renderBandSong(){
       <p class="muted">${saved ? `הלהקה מנגנת ב־${esc(bandKey(s, saved))}. המקור ב־${esc(orig)}.` : `הלהקה מנגנת בסולם המקורי${orig ? `, ${esc(orig)}` : ''}.`}${dirty ? ' השינוי שעשית עכשיו מוצג רק לך, עד שתשמור אותו.' : ''}</p>
       <div class="spread"><div class="seg" id="vb-nf">${[['all', 'כל ההערות'], ['mine', 'רק שלי'], ['pub', 'רק כלליות']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${B.filter === v}">${l}</button>`).join('')}</div><span class="hint">לחיצה על שורה בשיר מוסיפה לה הערה.</span></div>
       <div class="att-chords" id="vb-chords"></div>
-      <div class="sheet bsheet" id="vb-sheet"></div>
+      <div class="sheet-wrap" id="vb-wrap"><div class="sheet bsheet" id="vb-sheet"></div><aside class="note-rail" id="vb-rail" aria-label="הערות"></aside></div>
     </div>`;
   } else h += `<p class="empty" style="margin-top:16px">אין עדיין מילים ואקורדים. לחצו על "עריכה" כדי להוסיף אותם, או לייבא מ־PDF.</p>`;
-  h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>הערות לשיר</h3><button class="btn small" data-act="new-note">הערה חדשה</button></div><div id="vb-song-notes" class="stack" style="gap:8px"></div></div>`;
+  h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>הערות לשיר</h3><button class="btn small" data-act="new-note">הערה חדשה</button></div><div id="vb-song-notes" class="song-notes"></div></div>`;
   $('#vb-main').innerHTML = h;
   const notes = visibleNotes(s.id), lines = String(d.sheet || '').split('\n');
   notes.forEach(n => {
@@ -3101,10 +3217,17 @@ function renderBandSong(){
     const {html, used} = renderSheetHTML(d.sheet, B.viewShift);
     const el = $('#vb-sheet');
     el.innerHTML = html; el.dir = d.dir || (hasHebrew(d.sheet) ? 'rtl' : 'ltr'); el.style.fontSize = SH.size + 'px';
-    const byLine = {};
-    notes.filter(n => n._at >= 0).forEach(n => { (byLine[n._at] = byLine[n._at] || []).push(n); });
-    Object.keys(byLine).forEach(li => { const ln = el.querySelector(`.ln[data-l="${li}"]`); if(ln){ ln.classList.add('has-note'); ln.insertAdjacentHTML('afterend', `<div class="bnotes">${byLine[li].map(noteHTML).join('')}</div>`); } });
+    B.byLine = {};
+    notes.filter(n => n._at >= 0).forEach(n => { (B.byLine[n._at] = B.byLine[n._at] || []).push(n); });
+    Object.keys(B.byLine).forEach(li => {
+      const ln = el.querySelector(`.ln[data-l="${li}"]`); if(!ln) return;
+      const list = B.byLine[li], col = (list.find(n => n.data.color) || {data:{}}).data.color || 'yellow';
+      ln.classList.add('mk', 'mk-' + col);
+      const withText = list.filter(n => n.data.text);
+      if(withText.length) ln.insertAdjacentHTML('beforeend', `<button type="button" class="nbadge" data-act="toggle-notes" data-line="${li}" aria-label="${withText.length} הערות">${withText.length}</button>`);
+    });
     $('#vb-chords').innerHTML = chordStripHTML(used);
+    layoutNotes();
   }
   const general = notes.filter(n => n._at < 0);
   $('#vb-song-notes').innerHTML = general.length ? general.map(noteHTML).join('') : '<p class="muted">אין הערות כלליות לשיר.</p>';
@@ -3120,7 +3243,13 @@ async function onBandMain(e){
   if(c){ playChordName(c.dataset.c); c.classList.add('on'); setTimeout(() => c.classList.remove('on'), 500); return; }
   const btn = e.target.closest('[data-act]');
   const ln = !btn && e.target.closest('#vb-sheet .ln[data-l]');
-  if(ln){ const li = Number(ln.dataset.l), raw = String(bGet(B.songId).data.sheet || '').split('\n')[li]; if(plainLine(raw)) openNoteDlg(null, li, plainLine(raw)); return; }
+  if(ln){
+    const li = Number(ln.dataset.l), raw = String(bGet(B.songId).data.sheet || '').split('\n')[li];
+    const mineHl = ((B.byLine || {})[li] || []).find(n => n.authorId === B.member.id && !n.data.text);
+    if(mineHl) return openNoteDlg(mineHl, mineHl.data.line, mineHl.data.lineText || '');
+    if(plainLine(raw)) openNoteDlg(null, li, plainLine(raw));
+    return;
+  }
   const nf = e.target.closest('#vb-nf button, #bs-f button');
   if(nf){ if(nf.closest('#vb-nf')){ B.filter = nf.dataset.v; renderBand(); } else { B.songF = nf.dataset.v; renderBandSongs(); } return; }
   const cf = e.target.closest('#cd-f button');
@@ -3149,6 +3278,12 @@ async function onBandMain(e){
   if(act === 'save-key'){ const s = bGet(B.songId); return bSave([{id:s.id, kind:'bsong', data:Object.assign({}, s.data, {shift:B.viewShift})}]); }
   if(act === 'fs-up' || act === 'fs-down'){ SH.size = clamp(SH.size + (act === 'fs-up' ? 2 : -2), 13, 32); store.set('pritah.sheetSize', SH.size); return renderBand(); }
   if(act === 'new-note') return openNoteDlg(null, -1, '');
+  if(act === 'toggle-notes'){
+    const li = Number(btn.dataset.line); B.openLines = B.openLines || new Set();
+    if($('#vb-wrap').classList.contains('narrow')){ B.openLines.has(li) ? B.openLines.delete(li) : B.openLines.add(li); layoutNotes(); }
+    else { const c = $(`#vb-rail .ncard[data-line="${li}"]`); if(c){ c.scrollIntoView({block:'nearest', behavior:'smooth'}); c.animate([{transform:'scale(1.03)'}, {transform:'scale(1)'}], {duration:250}); } }
+    return;
+  }
   if(act === 'edit-note'){ const n = bGet(btn.dataset.id); return openNoteDlg(n, n.data.line, n.data.lineText || ''); }
   if(act === 'del-note'){ if(!confirm('למחוק את ההערה?')) return; await bCall('bandDelete', {id:btn.dataset.id}); B.items = B.items.filter(x => x.id !== btn.dataset.id); return renderBand(); }
   if(act === 'new-cand') return openCandDlg(null);
@@ -3162,6 +3297,10 @@ function openNoteDlg(n, line, lineText){
   $('#nt-title').textContent = n ? 'עריכת הערה' : (line >= 0 ? 'הערה לשורה' : 'הערה לשיר');
   $('#nt-quote').hidden = !lineText; $('#nt-quote').textContent = lineText ? `“${lineText}”` : '';
   $('#nt-text').value = n ? n.data.text : '';
+  const col = n ? (n.data.color || 'yellow') : (B.lastColor || 'yellow');
+  $$('#nt-color .mk-sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === col));
+  $('#nt-color-hint').hidden = !(line >= 0);
+  $('#nt-del').hidden = !n;
   const vis = n ? n.data.visibility : 'mine';
   $$('#nt-vis button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === vis));
   $('#nt-err').textContent = '';
@@ -3169,9 +3308,12 @@ function openNoteDlg(n, line, lineText){
 }
 async function saveNote(e){
   e.preventDefault();
-  const text = $('#nt-text').value.trim(); if(!text){ $('#nt-err').textContent = 'כתבו משהו בהערה.'; return; }
-  const ed = B.editNote, vis = ($('#nt-vis button[aria-pressed="true"]') || {}).dataset.v || 'mine';
-  const data = Object.assign({}, ed.item ? ed.item.data : {createdAt:new Date().toISOString()}, {songId:B.songId, line:ed.line, lineText:ed.lineText, text, visibility:vis});
+  const text = $('#nt-text').value.trim(), ed = B.editNote;
+  if(!text && !(ed.line >= 0)){ $('#nt-err').textContent = 'כתבו משהו בהערה.'; return; }
+  const color = ($('#nt-color .mk-sw[aria-pressed="true"]') || {dataset:{}}).dataset.v || 'yellow';
+  B.lastColor = color;
+  const vis = ($('#nt-vis button[aria-pressed="true"]') || {}).dataset.v || 'mine';
+  const data = Object.assign({}, ed.item ? ed.item.data : {createdAt:new Date().toISOString()}, {songId:B.songId, line:ed.line, lineText:ed.lineText, text, color, visibility:vis});
   delete data.orphan;
   try{ await bSave([{id:ed.item ? ed.item.id : '', kind:'note', data}], $('#nt-err')); $('#dlg-note').close(); }catch(err){}
 }
@@ -3185,8 +3327,18 @@ function openBandSongDlg(s){
   $('#bsg-name').value = d.name || ''; $('#bsg-artist').value = d.artist || ''; $('#bsg-bpm').value = d.bpm || '';
   $('#bsg-dur').value = d.duration ? fmtDur(d.duration) : ''; $('#bsg-url').value = d.url || ''; $('#bsg-sheet').value = d.sheet || '';
   $('#bsg-set-wrap').hidden = !!s; $('#bsg-set').checked = false; $('#bsg-err').textContent = '';
+  const rec = d.recordings || {};
+  $('#bsg-rec').value = rec.band || '';
+  $('#bsg-parts').innerHTML = '';
+  (rec.parts || []).forEach(pt => addPartRow(pt.label, pt.url));
   resetBandPdf(); syncBandSheetDir();
   $('#dlg-bsong').showModal(); $('#bsg-name').focus();
+}
+function addPartRow(label, url){
+  const row = document.createElement('div'); row.className = 'part-row';
+  row.innerHTML = `<input class="pt-label" list="role-list" maxlength="30" placeholder="כלי, למשל בס" value="${esc(label || '')}" aria-label="כלי"><input class="pt-url" dir="ltr" placeholder="https://drive.google.com/..." value="${esc(url || '')}" aria-label="קישור להקלטה"><button type="button" class="btn ghost small danger" aria-label="הסרה">✕</button>`;
+  $('button', row).addEventListener('click', () => row.remove());
+  $('#bsg-parts').appendChild(row);
 }
 function syncBandSheetDir(){
   const v = $('#bsg-sheet').value, d = B.editSong.dir || (hasHebrew(v) || !v ? 'rtl' : 'ltr');
@@ -3200,7 +3352,11 @@ async function saveBandSong(e){
   const durRaw = $('#bsg-dur').value.trim(), duration = parseDur(durRaw);
   if(durRaw && !duration){ $('#bsg-err').textContent = 'אורך השיר צריך להיות בצורה 3:45.'; return; }
   const it = B.editSong.item;
-  const data = Object.assign({}, it ? it.data : {shift:0}, {name, artist:$('#bsg-artist').value.trim(), bpm:Math.max(0, Math.round(Number($('#bsg-bpm').value) || 0)), duration, url, sheet:$('#bsg-sheet').value.replace(/\s+$/, ''), dir:B.editSong.dir || ''});
+  const parts = $$('#bsg-parts .part-row').map(r => ({label:$('.pt-label', r).value.trim(), url:$('.pt-url', r).value.trim()})).filter(x => x.url);
+  const badRec = [$('#bsg-rec').value.trim()].concat(parts.map(x => x.url)).find(u => u && !/^https?:\/\//i.test(u));
+  if(badRec){ $('#bsg-err').textContent = 'קישור להקלטה צריך להתחיל ב־https://'; return; }
+  const recordings = {band:$('#bsg-rec').value.trim(), parts:parts.map(x => ({label:x.label || 'כלי', url:x.url}))};
+  const data = Object.assign({}, it ? it.data : {shift:0}, {recordings, name, artist:$('#bsg-artist').value.trim(), bpm:Math.max(0, Math.round(Number($('#bsg-bpm').value) || 0)), duration, url, sheet:$('#bsg-sheet').value.replace(/\s+$/, ''), dir:B.editSong.dir || ''});
   try{
     const saved = await bSave([{id:it ? it.id : '', kind:'bsong', data}], $('#bsg-err'));
     if(!it && $('#bsg-set').checked) await saveSetlist(setlistOrder().concat([saved[0].id]));
@@ -3301,6 +3457,58 @@ async function onTeacherBand(e){
     await tCall('teacherDeleteMember', {id:m.id});
     T.data.members = T.data.members.filter(x => x.id !== m.id); renderTeacher();
   }
+}
+
+/* ================== קישורים והקלטות בתוך האפליקציה ================== */
+function mediaEmbed(url){
+  const u = String(url || '');
+  let m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || u.match(/drive\.google\.com\/(?:open|uc)\?(?:[^#]*&)?id=([\w-]+)/);
+  if(m) return {kind:'iframe', src:`https://drive.google.com/file/d/${m[1]}/preview`, drive:true};
+  m = u.match(/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\/([\w-]+)/);
+  if(m) return {kind:'iframe', src:`https://drive.google.com/embeddedfolderview?id=${m[1]}#list`, tall:true, drive:true};
+  m = u.match(/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/([\w-]+)/);
+  if(m) return {kind:'iframe', src:`https://docs.google.com/${m[1]}/d/${m[2]}/preview`, tall:true, drive:true};
+  if(/youtu\.?be/.test(u)){ const y = parseYouTube(u); if(y) return {kind:'iframe', src:`https://www.youtube-nocookie.com/embed/${y}?autoplay=1&rel=0`, video:true}; }
+  if(/\.(mp3|m4a|wav|ogg|oga|aac|flac|opus)(\?|#|$)/i.test(u)) return {kind:'audio', src:u};
+  if(/\.(mp4|webm|mov)(\?|#|$)/i.test(u)) return {kind:'video', src:u};
+  return null;
+}
+function linkLabel(url){ const e = mediaEmbed(url); return !e ? 'קישור' : e.video || e.kind === 'video' ? 'סרטון' : e.tall ? 'קובץ' : 'הקלטה'; }
+const PLAY_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7.5-4.5z"/></svg>';
+function linkChip(l){
+  const label = l.label || linkLabel(l.url);
+  return `<button type="button" class="media-link" data-url="${esc(l.url)}" data-label="${esc(label)}">${PLAY_ICON}<span>${esc(label)}</span></button>`;
+}
+function openMedia(url, label){
+  const e = mediaEmbed(url), box = $('#md-body');
+  $('#md-title').textContent = label || 'הקלטה';
+  $('#md-open').href = url;
+  $('#md-hint').hidden = !(e && e.drive);
+  if(!e) box.innerHTML = '<p class="muted">את הקישור הזה אי אפשר לפתוח בתוך האפליקציה. אפשר לפתוח אותו בכרטיסייה חדשה.</p>';
+  else if(e.kind === 'audio') box.innerHTML = `<audio controls autoplay src="${esc(e.src)}" style="width:100%"></audio>`;
+  else if(e.kind === 'video') box.innerHTML = `<video controls autoplay playsinline src="${esc(e.src)}" style="width:100%;border-radius:12px"></video>`;
+  else box.innerHTML = `<div class="md-frame${e.video ? ' video' : ''}${e.tall ? ' tall' : ''}"><iframe src="${esc(e.src)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>`;
+  if(SG.ready && SG.player.getPlayerState && SG.player.getPlayerState() === 1) SG.player.pauseVideo();
+  $('#dlg-media').showModal();
+}
+function insertLinkAtCursor(ta, label, url){
+  const v = ta.value, pos = ta.selectionStart ?? v.length;
+  let end = v.indexOf('\n', pos); if(end < 0) end = v.length;
+  const tok = `{{${label.replace(/[|{}]/g, '')}|${url}}}`;
+  const before = v.slice(0, end), pad = before && !/\s$/.test(before) ? ' ' : '';
+  ta.value = before + pad + tok + v.slice(end);
+  ta.focus(); const c = end + pad.length + tok.length; ta.setSelectionRange(c, c);
+  ta.dispatchEvent(new Event('input'));
+}
+function setupLinkInsert(prefix){
+  $(`#${prefix}-lk-add`).addEventListener('click', () => {
+    const url = $(`#${prefix}-lk-url`).value.trim(), label = $(`#${prefix}-lk-label`).value.trim();
+    const msg = $(`#${prefix}-lk-msg`);
+    if(!/^https?:\/\//i.test(url)){ msg.textContent = 'הדביקו קישור מלא שמתחיל ב־https://'; return; }
+    insertLinkAtCursor($(`#${prefix}-sheet`), label || linkLabel(url), url);
+    $(`#${prefix}-lk-url`).value = ''; $(`#${prefix}-lk-label`).value = '';
+    msg.textContent = 'הקישור נוסף בסוף השורה שבה עמד הסמן.';
+  });
 }
 
 /* ================== ניווט ================== */
@@ -3525,6 +3733,12 @@ function init(){
   resetBandPdf = setupPdfImport('bsg', $('#bsg-sheet'), $('#bsg-name'));
   resetSongPdf = setupPdfImport('fso', $('#fso-sheet'), $('#fso-name'));
   setupPreview('fso'); setupPreview('bsg');
+  setupLinkInsert('fso'); setupLinkInsert('bsg');
+  $('#bsg-add-part').addEventListener('click', () => addPartRow('', ''));
+  document.addEventListener('click', e => { const m = e.target.closest('.media-link'); if(m){ e.preventDefault(); e.stopPropagation(); openMedia(m.dataset.url, m.dataset.label); } }, true);
+  $('#dlg-media').addEventListener('close', () => { $('#md-body').innerHTML = ''; });
+  $('#nt-color').addEventListener('click', e => { const b = e.target.closest('.mk-sw'); if(b) $$('#nt-color .mk-sw').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+  $('#nt-del').addEventListener('click', async () => { const n = B.editNote && B.editNote.item; if(!n || !confirm('למחוק את ההערה?')) return; try{ await bCall('bandDelete', {id:n.id}, $('#nt-err')); B.items = B.items.filter(x => x.id !== n.id); $('#dlg-note').close(); renderBand(); }catch(err){} });
   $('#fcd').addEventListener('submit', saveCand);
   $('#cdf-del').addEventListener('click', deleteCand);
   $('#role-list').innerHTML = ROLE_SUGGEST.map(r => `<option value="${r}">`).join('');
