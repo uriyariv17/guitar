@@ -372,6 +372,11 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
 </header>
 
 <main>
+  <div class="banner" id="inapp-banner" hidden>
+    <b>האתר נפתח בתוך אפליקציה, ולכן המטרונום, הטיונר והצלילים עלולים לא לעבוד.</b>
+    <div style="margin-top:6px">פתחו את התפריט בפינת המסך ובחרו "פתח בדפדפן", או העתיקו את הקישור והדביקו אותו בכרום או בספארי.</div>
+    <div class="row" style="margin-top:10px"><button class="btn small" id="inapp-copy">העתקת הקישור</button><span class="muted" id="inapp-msg"></span></div>
+  </div>
   <!-- Metronome -->
   <section class="view" id="v-metronome">
     <div class="view-head">
@@ -799,7 +804,7 @@ E|-----------|</pre>
 const CONFIG = {
   APP_NAME: 'פריטה',
   // כתובת ה־Web App של Google Apps Script. כל עוד ריק, האפליקציה עובדת במצב הדגמה (נתונים בדפדפן בלבד).
-  API_URL: 'https://script.google.com/macros/s/AKfycbz5wYPglk61SZmSambxLhzj6KUmN8jev6GCsJ-b_lcXK0mkcZDRcux9Gzy2ldcVb451PQ/exec',
+  API_URL: '',
   // סיסמת מורה למצב הדגמה בלבד. במצב אמיתי הסיסמה מוגדרת בקובץ Code.gs.
   LOCAL_TEACHER_PASSWORD: '1234'
 };
@@ -826,9 +831,38 @@ const midiFreq = m => 440 * Math.pow(2, (m - 69) / 12);
 
 /* ================== אודיו ================== */
 let AC = null;
+/* באייפון, כשמתג השקט פועל, הדפדפן משתיק צלילים מסוג Web Audio.
+   כדי שהמטרונום יישמע גם אז, מסמנים לדפדפן שזה ניגון מדיה. */
+let audioUnlocked = false;
+function silentWavURL(){
+  const n = 8000, buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+  const w = (o, str) => { for(let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+  w(36, 'data'); v.setUint32(40, n, true);
+  for(let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+  return URL.createObjectURL(new Blob([buf], {type:'audio/wav'}));
+}
+function unlockAudio(){
+  if(audioUnlocked) return;
+  audioUnlocked = true;
+  try{
+    if(navigator.audioSession){ navigator.audioSession.type = 'playback'; return; }
+  }catch(e){}
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if(!isIOS) return;
+  try{
+    const a = new Audio(silentWavURL());
+    a.setAttribute('playsinline', ''); a.loop = true;
+    const p = a.play(); if(p && p.catch) p.catch(() => { audioUnlocked = false; });
+    window.__silentKeepAlive = a;
+  }catch(e){ audioUnlocked = false; }
+}
 function ac(){
+  unlockAudio();
   if(!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
-  if(AC.state === 'suspended') AC.resume();
+  if(AC.state !== 'running') AC.resume();
   return AC;
 }
 const pluckCache = new Map();
@@ -1109,8 +1143,10 @@ const Tuner = {
   running: false, stream: null, src: null, an: null, buf: null, hist: [], frame: 0,
   async start(){
     $('#t-err').textContent = '';
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ $('#t-err').textContent = micErrorText({name:'NoSupport'}); return; }
     try{
       const ctx = ac();
+      try{ if(navigator.audioSession) navigator.audioSession.type = 'play-and-record'; }catch(e){}
       this.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
       this.src = ctx.createMediaStreamSource(this.stream);
       this.an = ctx.createAnalyser(); this.an.fftSize = 2048;
@@ -1120,12 +1156,15 @@ const Tuner = {
       $('#t-start').textContent = 'עצור טיונר';
       this.loop();
     }catch(e){
-      $('#t-err').textContent = 'אין גישה למיקרופון. אשרו גישה בהגדרות הדפדפן ונסו שוב.';
+      try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e2){}
+      $('#t-err').textContent = micErrorText(e);
     }
   },
   stop(){
     this.running = false;
     if(this.stream) this.stream.getTracks().forEach(t => t.stop());
+    this.stream = null;
+    try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e){}
     if(this.src) this.src.disconnect();
     $('#t-start').textContent = 'הפעל טיונר';
     $('#t-note').innerHTML = '–'; $('#t-sol').textContent = 'מחכה לצליל'; $('#t-status').textContent = '';
@@ -1156,6 +1195,24 @@ const Tuner = {
     $('#t-status').textContent = ok ? 'מכוון' : cents < 0 ? 'נמוך, הדקו מעט' : 'גבוה, שחררו מעט';
   }
 };
+function micErrorText(e){
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const n = e && e.name;
+  if(isInAppBrowser() || n === 'NoSupport') return 'הדפדפן הזה לא מאפשר גישה למיקרופון. אם פתחתם את הקישור מתוך וואטסאפ או אינסטגרם, פתחו אותו בכרום או בספארי.';
+  if(n === 'NotAllowedError' || n === 'SecurityError') return ios
+    ? 'הגישה למיקרופון חסומה. בספארי: לוחצים על "aA" ליד הכתובת, הגדרות אתר, מיקרופון, אפשר. אחר כך מרעננים את הדף.'
+    : 'הגישה למיקרופון חסומה. לוחצים על הסמל שמשמאל לכתובת האתר, בוחרים הרשאות או הגדרות אתר, מעבירים את המיקרופון ל"אפשר" ומרעננים את הדף.';
+  if(n === 'NotFoundError' || n === 'OverconstrainedError') return 'לא נמצא מיקרופון במכשיר הזה.';
+  if(n === 'NotReadableError') return 'המיקרופון תפוס על ידי אפליקציה אחרת, למשל שיחה או הקלטה. סגרו אותה ונסו שוב.';
+  return 'לא הצלחתי להפעיל את המיקרופון. רעננו את הדף ונסו שוב.';
+}
+function isInAppBrowser(){
+  const ua = navigator.userAgent || '';
+  if(/FBAN|FBAV|Instagram|Line\/|WhatsApp|TikTok|musical_ly|Snapchat|Telegram/i.test(ua)) return true;
+  if(/Android/.test(ua) && /; wv\)/.test(ua)) return true;
+  if(/iPhone|iPad|iPod/.test(ua) && !/Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua)) return true;
+  return false;
+}
 function autoCorrelate(buf, sr){
   let size = buf.length, rms = 0;
   for(let i = 0; i < size; i++) rms += buf[i] * buf[i];
@@ -2578,6 +2635,14 @@ function init(){
   $('#app-name').textContent = CONFIG.APP_NAME;
   if(!CONFIG.API_URL){
     $$('.demo-banner').forEach(b => { b.hidden = false; b.textContent = 'מצב הדגמה: הנתונים נשמרים רק בדפדפן הזה. לניסיון: קוד תלמיד 1111, סיסמת מורה 1234. כדי שתלמידים ייכנסו מכל מכשיר, צריך לחבר את Google Sheets.'; });
+  }
+  if(isInAppBrowser()){
+    $('#inapp-banner').hidden = false;
+    $('#inapp-copy').addEventListener('click', async () => {
+      const url = location.href.split('#')[0];
+      try{ await navigator.clipboard.writeText(url); $('#inapp-msg').textContent = 'הקישור הועתק.'; }
+      catch(e){ $('#inapp-msg').textContent = url; }
+    });
   }
   $('#metro-slot').appendChild(MetroUI.build());
   $$('.tab').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
