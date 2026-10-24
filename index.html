@@ -300,7 +300,8 @@ dialog.wide{ width:min(1080px, calc(100vw - 24px)); }
 .round[disabled]{ opacity:.4; cursor:default; }
 .sheet{ background:var(--surface-2); border-radius:12px; padding:16px 18px; overflow-x:auto; font-family:'Assistant',Arial,sans-serif; line-height:1.45; }
 .sheet .ln{ white-space:pre; min-height:1.2em; }
-.sheet .ln.chords{ color:var(--blue); font-weight:700; }
+.sheet .ln.chords{ color:var(--blue); font-weight:400; }
+.sheet .ln.chords .ch{ unicode-bidi:normal; direction:inherit; font-weight:inherit; }
 .sheet .ln.sec{ font-weight:700; color:var(--ink-2); margin-top:.4em; }
 .sheet .ch{ color:var(--blue); font-weight:700; cursor:pointer; border-radius:4px; unicode-bidi:isolate; direction:ltr; }
 .sheet .ch:hover, .sheet .ch.on{ background:color-mix(in srgb, var(--amber) 40%, transparent); }
@@ -407,6 +408,16 @@ a.btn{ text-decoration:none; display:inline-flex; align-items:center; }
 .ncard-q{ font-size:12px; color:var(--ink-2); margin-bottom:2px; }
 .inline-notes{ display:grid; gap:6px; margin:4px 0 10px; white-space:normal; position:sticky; left:0; right:0; }
 .song-notes{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; }
+
+/* Form builder */
+.fq{ border:1px solid var(--line); border-radius:12px; padding:12px; display:grid; gap:10px; background:var(--surface); }
+.fq-top{ display:flex; gap:8px; align-items:center; }
+.fq-num{ font-family:'Secular One',Arial,sans-serif; color:var(--velvet); min-width:22px; text-align:center; }
+.fq-top input{ flex:1; font-weight:600; }
+details.ans summary{ cursor:pointer; font-weight:700; font-size:.92rem; color:var(--blue); }
+details.ans dl{ margin:8px 0 0; display:grid; gap:6px; font-size:.94rem; }
+details.ans dt{ color:var(--ink-2); font-size:.85rem; font-weight:700; }
+details.ans dd{ margin:0; white-space:pre-line; overflow-wrap:anywhere; }
 
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
@@ -699,7 +710,7 @@ E|-----------|</pre>
     </div>
     <div id="vb-dash" hidden>
       <div class="spread" style="margin-bottom:14px">
-        <div class="seg" id="vb-tabs"><button data-v="setlist">סטליסט</button><button data-v="songs">כל השירים</button><button data-v="cands">מועמדים</button></div>
+        <div class="seg" id="vb-tabs"><button data-v="setlist">סטליסט</button><button data-v="songs">כל השירים</button><button data-v="cands">מועמדים</button><button data-v="form">טופס מועמדות</button></div>
         <div class="row"><button class="btn small" id="vb-refresh">רענון</button><button class="btn small" id="vb-logout">יציאה</button></div>
       </div>
       <section class="panel" id="vb-main"></section>
@@ -1687,6 +1698,40 @@ function serverHandle(req, store, teacherPassword){
   const nMember = m => ({id:String(m.id), name:String(m.name || ''), role:String(m.role || ''), pin:String(m.pin || ''), createdAt:String(m.createdAt || '')});
   const nBand = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
   if(a === 'publicContent') return {items:store.all('Content').map(nContent)};
+  if(a === 'publicApplyForm' || a === 'publicApplySubmit'){
+    const f = store.all('Band').map(nBand).find(x => x.kind === 'form');
+    const d = f ? f.data : null;
+    if(a === 'publicApplyForm'){
+      if(!d || !d.open) return {form:null, title:d ? String(d.title || '') : ''};
+      return {form:{title:String(d.title || ''), intro:String(d.intro || ''), questions:(d.questions || []).map(q => ({id:String(q.id), label:String(q.label || ''), type:String(q.type || 'text'), required:!!q.required, options:(q.options || []).map(String), help:String(q.help || '')}))}};
+    }
+    if(String(req.website || '')) return {done:true, message:String((d && d.success) || 'תודה!')};
+    if(!d || !d.open) throw new Error('ההרשמה סגורה כרגע.');
+    const ans = req.answers || {}, MAPS = ['name','role','area','phone','social','media'];
+    const cand = {name:'', role:'', area:'', phone:'', social:'', media:'', notes:'', status:'potential', source:'form', answers:[], createdAt:now()};
+    (d.questions || []).forEach(q => {
+      const opts = (q.options || []).map(String);
+      let v = ans[q.id];
+      if(q.type === 'multi') v = Array.isArray(v) ? v.map(String).filter(x => opts.indexOf(x) >= 0) : [];
+      else {
+        v = String(v === undefined || v === null ? '' : v).trim().slice(0, q.type === 'long' ? 3000 : 300);
+        if(q.type === 'single' && v && opts.indexOf(v) < 0) v = '';
+      }
+      const empty = Array.isArray(v) ? !v.length : !v;
+      if(q.required && empty) throw new Error('חסרה תשובה לשאלה: ' + q.label);
+      if(!empty && q.type === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) throw new Error('כתובת המייל לא נראית תקינה.');
+      if(!empty && q.type === 'url' && !/^https?:\/\//i.test(v)) v = 'https://' + v;
+      const val = Array.isArray(v) ? v.join(', ') : v;
+      cand.answers.push({label:String(q.label || ''), value:val});
+      if(q.map && MAPS.indexOf(q.map) >= 0 && val && !cand[q.map]) cand[q.map] = val;
+    });
+    if(!cand.name) cand.name = 'מועמד/ת מהטופס';
+    store.insert('Band', {id:newId(), kind:'candidate', data:JSON.stringify(cand), authorId:'form', updatedAt:now()});
+    if(d.notifyEmail && typeof MailApp !== 'undefined'){
+      try{ MailApp.sendEmail(String(d.notifyEmail), 'מועמדות חדשה ל־VELVET: ' + cand.name, cand.answers.map(x => x.label + ': ' + x.value).join('\n')); }catch(e){}
+    }
+    return {done:true, message:String(d.success || 'תודה! קיבלנו את הפרטים.')};
+  }
   if(a.indexOf('band') === 0){
     const pin = String(req.pin || '').trim();
     const me = pin ? store.all('Members').map(nMember).find(m => m.pin === pin) : null;
@@ -1696,7 +1741,7 @@ function serverHandle(req, store, teacherPassword){
       return {member:{id:me.id, name:me.name, role:me.role}, members:store.all('Members').map(nMember).map(m => ({id:m.id, name:m.name, role:m.role})), items:store.all('Band').map(nBand).filter(visible)};
     }
     if(a === 'bandSave'){
-      const KINDS = ['candidate','bsong','setlist','note'], list = req.items || [];
+      const KINDS = ['candidate','bsong','setlist','note','form'], list = req.items || [];
       if(!list.length) throw new Error('אין מה לשמור.');
       const all = store.all('Band'), out = [];
       list.forEach(it => {
@@ -2987,7 +3032,7 @@ function buildSheetFromLines(lines, opts = {}){
       const chords = lineChordTokens(l, rev);
       const next = lines[i + 1];
       if(next && !isChordLine(lineAscText(next, rev))){ out.push(placeChords(lineLyric(next, rev), chords)); i++; continue; }
-      out.push((docRTL ? chords.slice().reverse() : chords).map(c => c.name).join('  '));
+      out.push(chords.map(c => c.name).join('  '));
       continue;
     }
     out.push(lineLyric(l, rev).text);
@@ -3092,6 +3137,7 @@ function renderBand(){
   if(B.songId) return renderBandSong();
   if(B.tab === 'setlist') renderSetlist();
   else if(B.tab === 'songs') renderBandSongs();
+  else if(B.tab === 'form') renderFormBuilder();
   else renderCandidates();
 }
 
@@ -3256,6 +3302,7 @@ async function onBandMain(e){
   if(cf){ B.candF = cf.dataset.v; $$('#cd-f button').forEach(b => b.setAttribute('aria-pressed', b === cf)); renderCandList(); return; }
   if(!btn) return;
   const act = btn.dataset.act, row = btn.closest('[data-id]'), id = (row && row.dataset.id) || B.songId;
+  if(/^(fm-|fq-)/.test(act)) return onFormAct(act, btn);
   const order = setlistOrder();
   if(act === 'open') return openBandSong(id);
   if(act === 'back'){ B.songId = null; return renderBand(); }
@@ -3373,7 +3420,7 @@ function renderCandidates(){
     <div class="row" style="margin-bottom:12px">
       <input type="search" id="cd-q" placeholder="חיפוש לפי שם, תפקיד או אזור" style="max-width:260px" value="${esc(B.candQ)}" aria-label="חיפוש מועמד">
       <select id="cd-role" style="max-width:180px" aria-label="סינון לפי תפקיד"><option value="">כל התפקידים</option>${roles.map(r => `<option ${r === B.candRole ? 'selected' : ''}>${esc(r)}</option>`).join('')}</select>
-      <div class="seg" id="cd-f">${[['active', 'פעילים'], ['potential', 'פוטנציאליים'], ['checking', 'בבירור'], ['trash', 'פח אשפה'], ['all', 'הכול']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${B.candF === v}">${l}</button>`).join('')}</div>
+      <div class="seg" id="cd-f">${[['active', 'פעילים'], ['potential', 'פוטנציאליים'], ['checking', 'בבירור'], ['trash', 'פח אשפה'], ['form', 'מהטופס'], ['all', 'הכול']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${B.candF === v}">${l}</button>`).join('')}</div>
     </div>
     <div id="cd-list" class="cand-grid"></div>`;
   renderCandList();
@@ -3382,10 +3429,11 @@ function renderCandList(){
   const q = B.candQ.trim().toLowerCase(), rank = {potential:0, checking:1, trash:2};
   const list = bOf('candidate').filter(c => {
     const st = c.data.status || 'potential';
-    if(B.candF === 'active' ? st === 'trash' : (B.candF !== 'all' && st !== B.candF)) return false;
+    if(B.candF === 'form'){ if(c.data.source !== 'form') return false; }
+    else if(B.candF === 'active' ? st === 'trash' : (B.candF !== 'all' && st !== B.candF)) return false;
     if(B.candRole && c.data.role !== B.candRole) return false;
     return !q || [c.data.name, c.data.role, c.data.area, c.data.notes].join(' ').toLowerCase().includes(q);
-  }).sort((a, b) => (rank[a.data.status] ?? 0) - (rank[b.data.status] ?? 0) || String(a.data.name).localeCompare(String(b.data.name), 'he'));
+  }).sort((a, b) => B.candF === 'form' ? String(b.data.createdAt || '').localeCompare(String(a.data.createdAt || '')) : ((rank[a.data.status] ?? 0) - (rank[b.data.status] ?? 0) || String(a.data.name).localeCompare(String(b.data.name), 'he')));
   $('#cd-list').innerHTML = list.length ? list.map(c => {
     const d = c.data, st = CAND_STATUS.find(x => x.id === (d.status || 'potential'));
     return `<article class="cand ${st.cls}" data-cid="${esc(c.id)}">
@@ -3397,6 +3445,8 @@ function renderCandList(){
         ${d.media ? `<a class="btn small" href="${esc(safeUrl(d.media))}" target="_blank" rel="noopener">סרטון או הקלטה</a>` : ''}
       </div>
       ${d.notes ? `<p class="muted" style="white-space:pre-line">${esc(d.notes)}</p>` : ''}
+      ${d.source === 'form' ? `<div class="chips"><span class="chip warn">הגיע מהטופס${d.createdAt ? ', ' + fmtDate(d.createdAt) : ''}</span></div>` : ''}
+      ${d.answers && d.answers.length ? `<details class="ans"><summary>התשובות מהטופס</summary><dl>${d.answers.map(x => `<dt>${esc(x.label)}</dt><dd>${x.value ? linkifyAnswer(x.value) : '<span class="muted">לא ענו</span>'}</dd>`).join('')}</dl></details>` : ''}
       <div class="spread"><div class="seg">${CAND_STATUS.map(x => `<button data-act="status" data-v="${x.id}" aria-pressed="${x.id === st.id}">${x.label}</button>`).join('')}</div><button class="btn ghost small" data-act="edit-cand">עריכה</button></div>
     </article>`;
   }).join('') : `<p class="empty">${bOf('candidate').length ? 'אין מועמדים שמתאימים לחיפוש.' : 'עוד אין מועמדים. לחצו על "מועמד חדש".'}</p>`;
@@ -3509,6 +3559,100 @@ function setupLinkInsert(prefix){
     $(`#${prefix}-lk-url`).value = ''; $(`#${prefix}-lk-label`).value = '';
     msg.textContent = 'הקישור נוסף בסוף השורה שבה עמד הסמן.';
   });
+}
+
+/* ================== טופס מועמדות: עורך ================== */
+const Q_TYPES = [['text','תשובה קצרה'],['long','תשובה ארוכה'],['tel','טלפון'],['email','מייל'],['url','קישור'],['number','מספר'],['single','בחירה אחת'],['multi','כמה בחירות']];
+const Q_MAPS = [['','לא משויך'],['name','שם'],['role','תפקיד'],['area','אזור מגורים'],['phone','טלפון'],['social','רשת חברתית'],['media','סרטון או הקלטה']];
+const qid = () => 'q' + Math.random().toString(36).slice(2, 9);
+function defaultForm(){
+  return {open:true, title:'מצטרפים ל־VELVET', intro:'אנחנו להקת VELVET ומחפשים זמרת שתצטרף אלינו. ספרו לנו קצת על עצמכם ושלחו קישור להקלטה, ונחזור אליכם.', success:'תודה! קיבלנו את הפרטים ונחזור אליך בהקדם.', notifyEmail:'',
+    questions:[
+      {id:qid(), label:'שם מלא', type:'text', required:true, map:'name', options:[], help:''},
+      {id:qid(), label:'במה את/ה מתעניינ/ת להשתלב?', type:'single', required:true, map:'role', options:['זמרת','זמר','גיטרה','בס','תופים','קלידים','אחר'], help:''},
+      {id:qid(), label:'אזור מגורים', type:'text', required:false, map:'area', options:[], help:''},
+      {id:qid(), label:'טלפון', type:'tel', required:true, map:'phone', options:[], help:''},
+      {id:qid(), label:'קישור לאינסטגרם, פייסבוק או טיקטוק', type:'url', required:false, map:'social', options:[], help:''},
+      {id:qid(), label:'קישור לסרטון או הקלטה שלך', type:'url', required:true, map:'media', options:[], help:'יוטיוב, דרייב או כל קישור אחר. בדרייב צריך לשתף כ"כל מי שיש לו את הקישור".'},
+      {id:qid(), label:'ספר/י קצת על עצמך ועל הניסיון שלך', type:'long', required:false, map:'', options:[], help:''},
+      {id:qid(), label:'מתי נוח לך לחזרות?', type:'multi', required:false, map:'', options:['בוקר','צהריים','ערב','סופי שבוע'], help:''}
+    ]};
+}
+function applyUrl(){ return location.origin + location.pathname.replace(/[^/]*$/, '') + 'apply.html'; }
+function formDraft(){
+  if(!B.formDraft){ const f = bGet('appform'); B.formDraft = JSON.parse(JSON.stringify(f ? f.data : defaultForm())); B.formDirty = !f; }
+  return B.formDraft;
+}
+function renderFormBuilder(){
+  const d = formDraft(), saved = !!bGet('appform');
+  $('#vb-main').innerHTML = `
+    <div class="spread" style="margin-bottom:10px"><div><h2>טופס מועמדות</h2><p class="muted" style="max-width:62ch">מי שממלא את הטופס רואה רק אותו, ולא את שאר האתר. כל מועמדות נכנסת לרשימת המועמדים בסטטוס "מועמד פוטנציאלי", יחד עם כל התשובות.</p></div>
+      <div class="row"><span class="muted" id="fm-dirty">${B.formDirty ? (saved ? 'יש שינויים שלא נשמרו' : 'הטופס עוד לא נשמר') : 'הכול שמור'}</span><button class="btn primary" data-act="fm-save">שמירת הטופס</button></div></div>
+    <div class="sub-panel">
+      <label class="row" style="gap:8px;font-weight:700"><input type="checkbox" data-s="open" ${d.open ? 'checked' : ''}> הטופס פתוח להגשות</label>
+      <div class="row"><input readonly value="${esc(applyUrl())}" dir="ltr" style="max-width:420px" aria-label="קישור לטופס" id="fm-link"><button class="btn small" data-act="fm-copy">העתקת הקישור</button><a class="btn small" href="${esc(applyUrl())}" target="_blank" rel="noopener">פתיחת הטופס</a></div>
+      <p class="hint" id="fm-copy-msg">${saved ? 'זה הקישור לפרסום ברשתות. שינויים בטופס מופיעים בו אחרי שמירה.' : 'כדי שהקישור יעבוד, צריך קודם לשמור את הטופס.'}</p>
+    </div>
+    <div class="sub-panel">
+      <label class="field">כותרת<input data-s="title" maxlength="80" value="${esc(d.title)}"></label>
+      <label class="field">פתיח <small>(מופיע מעל השאלות)</small><textarea data-s="intro" maxlength="1500">${esc(d.intro)}</textarea></label>
+      <label class="field">הודעה אחרי שליחה<input data-s="success" maxlength="300" value="${esc(d.success)}"></label>
+      <label class="field">מייל לקבלת התראה על כל מועמדות חדשה <small>(לא חובה)</small><input data-s="notifyEmail" type="email" dir="ltr" maxlength="120" value="${esc(d.notifyEmail || '')}"></label>
+    </div>
+    <div class="sub-panel">
+      <div class="spread"><h3>שאלות</h3><button class="btn small" data-act="fm-add">הוספת שאלה</button></div>
+      <p class="hint">"שיוך" קובע לאיזה שדה בכרטיס המועמד התשובה תיכנס, כמו שם, טלפון או תפקיד. כך אפשר למיין ולחפש לפיו ברשימת המועמדים.</p>
+      <div class="stack" id="fm-qs">${d.questions.map(fqHTML).join('')}</div>
+    </div>`;
+}
+function fqHTML(q, i){
+  const n = B.formDraft.questions.length, choice = q.type === 'single' || q.type === 'multi';
+  return `<div class="fq" data-qi="${i}">
+    <div class="fq-top"><span class="fq-num">${i + 1}</span><input data-f="label" maxlength="200" value="${esc(q.label)}" placeholder="השאלה" aria-label="נוסח השאלה">
+      <span class="sl-acts"><button class="btn ghost small" data-act="fq-up" ${i === 0 ? 'disabled' : ''} aria-label="הזזה למעלה">▲</button><button class="btn ghost small" data-act="fq-down" ${i === n - 1 ? 'disabled' : ''} aria-label="הזזה למטה">▼</button><button class="btn ghost small danger" data-act="fq-del" aria-label="מחיקת השאלה">✕</button></span></div>
+    <div class="row">
+      <label class="field" style="width:160px">סוג<select data-f="type">${Q_TYPES.map(([v, l]) => `<option value="${v}" ${v === q.type ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="field" style="width:170px">שיוך<select data-f="map">${Q_MAPS.map(([v, l]) => `<option value="${v}" ${v === (q.map || '') ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="row" style="gap:6px;font-weight:600;align-self:end;min-height:42px"><input type="checkbox" data-f="required" ${q.required ? 'checked' : ''}> חובה</label>
+    </div>
+    ${choice ? `<label class="field">אפשרויות <small>(שורה לכל אפשרות)</small><textarea data-f="options" style="min-height:90px">${esc((q.options || []).join('\n'))}</textarea></label>` : ''}
+    <label class="field">הסבר קטן מתחת לשאלה <small>(לא חובה)</small><input data-f="help" maxlength="300" value="${esc(q.help || '')}"></label>
+  </div>`;
+}
+function fmDirty(){ B.formDirty = true; const el = $('#fm-dirty'); if(el) el.textContent = 'יש שינויים שלא נשמרו'; }
+function onFormInput(e){
+  const t = e.target, d = B.formDraft; if(!d) return false;
+  if(t.dataset.s){ d[t.dataset.s] = t.type === 'checkbox' ? t.checked : t.value; fmDirty(); return true; }
+  const box = t.closest('.fq'); if(!box || !t.dataset.f) return false;
+  const q = d.questions[Number(box.dataset.qi)], f = t.dataset.f;
+  if(f === 'required') q.required = t.checked;
+  else if(f === 'options') q.options = t.value.split('\n').map(x => x.trim()).filter(Boolean);
+  else q[f] = t.value;
+  fmDirty();
+  if(f === 'type' && e.type === 'change') renderFormBuilder();
+  return true;
+}
+async function onFormAct(act, btn){
+  const d = formDraft(), box = btn.closest('.fq'), i = box ? Number(box.dataset.qi) : -1;
+  if(act === 'fm-add'){ d.questions.push({id:qid(), label:'', type:'text', required:false, map:'', options:[], help:''}); fmDirty(); renderFormBuilder(); $$('#fm-qs .fq').pop().querySelector('input').focus(); return; }
+  if(act === 'fq-del'){ if(!confirm('למחוק את השאלה?')) return; d.questions.splice(i, 1); fmDirty(); return renderFormBuilder(); }
+  if(act === 'fq-up' || act === 'fq-down'){ const j = act === 'fq-up' ? i - 1 : i + 1; [d.questions[i], d.questions[j]] = [d.questions[j], d.questions[i]]; fmDirty(); return renderFormBuilder(); }
+  if(act === 'fm-copy'){ try{ await navigator.clipboard.writeText(applyUrl()); $('#fm-copy-msg').textContent = 'הקישור הועתק.'; }catch(e){ $('#fm-link').select(); } return; }
+  if(act === 'fm-save'){
+    const bad = d.questions.find(q => !q.label.trim());
+    const fewOpts = d.questions.find(q => (q.type === 'single' || q.type === 'multi') && (q.options || []).length < 2);
+    const msg = $('#fm-dirty');
+    if(!d.questions.length){ msg.textContent = 'צריך לפחות שאלה אחת.'; return; }
+    if(bad){ msg.textContent = 'יש שאלה בלי נוסח.'; return; }
+    if(fewOpts){ msg.textContent = `בשאלה "${fewOpts.label}" צריך לפחות שתי אפשרויות.`; return; }
+    if(!d.questions.some(q => q.map === 'name') && !confirm('אין שאלה שמשויכת ל"שם". המועמדים יופיעו בלי שם ברשימה. לשמור בכל זאת?')) return;
+    try{ await bCall('bandSave', {items:[{id:'appform', kind:'form', data:d}]}).then(r => bMerge(r.items)); B.formDirty = false; B.formDraft = null; renderFormBuilder(); }
+    catch(e){ msg.textContent = e.message; }
+  }
+}
+function linkifyAnswer(v){
+  const parts = String(v || '').split(/(https?:\/\/[^\s,]+)/g);
+  return parts.map((p, i) => i % 2 ? (mediaEmbed(p) ? linkChip({url:p}) : `<a href="${esc(p)}" target="_blank" rel="noopener" dir="ltr">${esc(p)}</a>`) : esc(p)).join('');
 }
 
 /* ================== ניווט ================== */
@@ -3715,8 +3859,10 @@ function init(){
   $('#vb-pin').addEventListener('keydown', e => { if(e.key === 'Enter') $('#vb-go').click(); });
   $('#vb-logout').addEventListener('click', bandLogout);
   $('#vb-refresh').addEventListener('click', () => bandLogin(B.pin));
-  $('#vb-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ B.tab = b.dataset.v; B.songId = null; renderBand(); } });
+  $('#vb-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; if(B.tab === 'form' && B.formDirty && b.dataset.v !== 'form' && bGet('appform') && !confirm('יש בטופס שינויים שלא נשמרו. לצאת בלי לשמור?')) return; if(b.dataset.v !== 'form'){ B.formDraft = null; B.formDirty = false; } B.tab = b.dataset.v; B.songId = null; renderBand(); });
   $('#vb-main').addEventListener('click', onBandMain);
+  $('#vb-main').addEventListener('input', e => { if(B.tab === 'form' && onFormInput(e)) return; });
+  $('#vb-main').addEventListener('change', e => { if(B.tab === 'form') onFormInput(e); });
   $('#vb-main').addEventListener('input', e => {
     if(e.target.id === 'bs-q'){ B.songQ = e.target.value; renderBandSongList(); }
     if(e.target.id === 'cd-q'){ B.candQ = e.target.value; renderCandList(); }
