@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מצטרפים ל־VELVET</title>
+<meta name="description" content="טופס הגשת מועמדות ללהקת VELVET">
+<meta property="og:title" content="מצטרפים ל־VELVET">
+<meta property="og:description" content="מחפשים זמרת ונגנים ללהקה. ממלאים טופס קצר ושולחים הקלטה.">
+<meta property="og:type" content="website">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F4EFF1; --surface:#FFFFFF; --surface-2:#EFE6EA; --ink:#1E1418; --ink-2:#6A5A61; --line:#E2D6DB;
+  --velvet:#7A1F3D; --velvet-2:#5E1630; --velvet-ink:#FFFFFF; --focus:#F2B200; --red:#C33238; --green:#178A5E;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#140D10; --surface:#1F161A; --surface-2:#2A1E23; --ink:#F3ECEF; --ink-2:#B5A4AB; --line:#3A2B31;
+    --velvet:#C2456E; --velvet-2:#A33658; --velvet-ink:#FFFFFF; --red:#FF7479; --green:#41C98F;
+  }
+}
+:root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+*,*::before,*::after{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); color:var(--ink); font:17px/1.6 'Assistant', Arial, sans-serif; }
+.hero{ background:var(--velvet); color:var(--velvet-ink); padding:44px 20px 72px; text-align:center; }
+.brand{ font-family:'Secular One',Arial,sans-serif; font-size:clamp(2.4rem, 9vw, 3.6rem); letter-spacing:.28em; direction:ltr; line-height:1; margin:0; padding-left:.28em; }
+.hero h1{ font-family:'Secular One',Arial,sans-serif; font-weight:400; font-size:1.45rem; margin:14px 0 0; opacity:.95; }
+main{ max-width:640px; margin:-44px auto 48px; padding:0 16px; }
+.card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:24px 22px; box-shadow:0 8px 30px rgba(60,10,30,.08); }
+.intro{ white-space:pre-line; color:var(--ink); margin:0 0 6px; }
+.q{ margin-top:22px; }
+.q-label{ display:block; font-weight:700; margin-bottom:6px; }
+.q-label .req{ color:var(--velvet); margin-inline-start:3px; }
+.q-help{ color:var(--ink-2); font-size:.92rem; margin:-2px 0 8px; }
+input[type="text"], input[type="tel"], input[type="email"], input[type="url"], input[type="number"], textarea{
+  font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; width:100%; min-height:46px;
+}
+textarea{ min-height:120px; resize:vertical; }
+input:focus-visible, textarea:focus-visible, button:focus-visible, .opt input:focus-visible + span{ outline:3px solid var(--focus); outline-offset:2px; }
+.opts{ display:flex; flex-wrap:wrap; gap:8px; }
+.opt{ position:relative; }
+.opt input{ position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+.opt span{ display:inline-block; padding:8px 16px; border:1px solid var(--line); border-radius:999px; background:var(--surface); cursor:pointer; font-weight:600; user-select:none; }
+.opt input:checked + span{ background:var(--velvet); border-color:var(--velvet); color:var(--velvet-ink); }
+.q.bad input, .q.bad textarea, .q.bad .opt span{ border-color:var(--red); }
+.q-err{ color:var(--red); font-weight:600; font-size:.92rem; margin-top:6px; }
+.send{ appearance:none; width:100%; margin-top:28px; border:0; border-radius:14px; min-height:54px; background:var(--velvet); color:var(--velvet-ink); font:700 1.15rem 'Assistant',Arial,sans-serif; cursor:pointer; }
+.send:hover{ background:var(--velvet-2); }
+.send[disabled]{ opacity:.6; cursor:default; }
+.err{ color:var(--red); font-weight:600; margin-top:12px; min-height:1.4em; text-align:center; }
+.hp{ position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; opacity:0; pointer-events:none; }
+.center{ text-align:center; padding:12px 0; }
+.center h2{ font-family:'Secular One',Arial,sans-serif; font-weight:400; font-size:1.6rem; margin:0 0 8px; }
+.muted{ color:var(--ink-2); }
+.foot{ text-align:center; color:var(--ink-2); font-size:.85rem; margin-top:18px; }
+@media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+<header class="hero">
+  <p class="brand">VELVET</p>
+  <h1 id="title">טופס מועמדות</h1>
+</header>
+<main>
+  <div class="card" id="card"><p class="center muted">טוען את הטופס…</p></div>
+  <p class="foot">הפרטים נשמרים רק אצל חברי הלהקה.</p>
+</main>
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbz5wYPglk61SZmSambxLhzj6KUmN8jev6GCsJ-b_lcXK0mkcZDRcux9Gzy2ldcVb451PQ/exec';
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let FORM = null, loadedAt = Date.now();
+
+async function call(action, payload = {}){
+  let res;
+  try{ res = await fetch(API_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({action}, payload))}); }
+  catch(e){ throw new Error('אין חיבור. בדקו את החיבור לאינטרנט ונסו שוב.'); }
+  let d; try{ d = await res.json(); }catch(e){ throw new Error('משהו השתבש. נסו שוב בעוד רגע.'); }
+  if(!d.ok) throw new Error(d.error || 'משהו השתבש.');
+  return d;
+}
+const INPUT_TYPE = {text:'text', tel:'tel', email:'email', url:'url', number:'number'};
+function qHTML(q, i){
+  const id = 'q_' + i, req = q.required ? '<span class="req" aria-hidden="true">*</span>' : '';
+  const help = q.help ? `<p class="q-help" id="${id}_h">${esc(q.help)}</p>` : '';
+  const desc = q.help ? ` aria-describedby="${id}_h"` : '';
+  let field;
+  if(q.type === 'long') field = `<textarea id="${id}" name="${esc(q.id)}" maxlength="3000"${desc} ${q.required ? 'required' : ''}></textarea>`;
+  else if(q.type === 'single' || q.type === 'multi'){
+    const t = q.type === 'single' ? 'radio' : 'checkbox';
+    field = `<div class="opts" role="${t === 'radio' ? 'radiogroup' : 'group'}" aria-labelledby="${id}_l"${desc}>${q.options.map(o => `<label class="opt"><input type="${t}" name="${esc(q.id)}" value="${esc(o)}"><span>${esc(o)}</span></label>`).join('')}</div>`;
+    return `<div class="q" data-qid="${esc(q.id)}" data-type="${q.type}" data-req="${q.required ? 1 : 0}"><span class="q-label" id="${id}_l">${esc(q.label)}${req}</span>${help}${field}<div class="q-err" aria-live="polite"></div></div>`;
+  }
+  else {
+    const t = INPUT_TYPE[q.type] || 'text';
+    const extra = t === 'tel' ? ' inputmode="tel" autocomplete="tel" dir="ltr"' : t === 'email' ? ' autocomplete="email" dir="ltr"' : t === 'url' ? ' inputmode="url" dir="ltr" placeholder="https://"' : '';
+    field = `<input type="${t === 'url' ? 'text' : t}" id="${id}" name="${esc(q.id)}" maxlength="300"${extra}${desc} ${q.required ? 'required' : ''}>`;
+  }
+  return `<div class="q" data-qid="${esc(q.id)}" data-type="${q.type}" data-req="${q.required ? 1 : 0}"><label class="q-label" id="${id}_l" for="${id}">${esc(q.label)}${req}</label>${help}${field}<div class="q-err" aria-live="polite"></div></div>`;
+}
+function render(){
+  document.title = FORM.title || 'מצטרפים ל־VELVET';
+  $('#title').textContent = FORM.title || 'טופס מועמדות';
+  $('#card').innerHTML = `<form id="f" novalidate>
+    ${FORM.intro ? `<p class="intro">${esc(FORM.intro)}</p>` : ''}
+    ${FORM.questions.map(qHTML).join('')}
+    <div class="hp" aria-hidden="true"><label>אתר<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+    <button class="send" type="submit" id="send">שליחה</button>
+    <p class="err" id="err" aria-live="polite"></p>
+  </form>`;
+  $('#f').addEventListener('submit', submit);
+  $('#f').addEventListener('input', e => { const q = e.target.closest('.q'); if(q){ q.classList.remove('bad'); $('.q-err', q).textContent = ''; } });
+}
+function collect(){
+  const answers = {}; let firstBad = null;
+  $$('.q').forEach(box => {
+    const id = box.dataset.qid, type = box.dataset.type, req = box.dataset.req === '1';
+    let v, msg = '';
+    if(type === 'multi') v = $$('input:checked', box).map(x => x.value);
+    else if(type === 'single'){ const c = $('input:checked', box); v = c ? c.value : ''; }
+    else v = $('input, textarea', box).value.trim();
+    const empty = Array.isArray(v) ? !v.length : !v;
+    if(req && empty) msg = 'זו שאלת חובה.';
+    else if(!empty && type === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) msg = 'כתובת המייל לא נראית תקינה.';
+    else if(!empty && type === 'tel' && v.replace(/\D/g, '').length < 9) msg = 'מספר הטלפון קצר מדי.';
+    box.classList.toggle('bad', !!msg); $('.q-err', box).textContent = msg;
+    if(msg && !firstBad) firstBad = box;
+    answers[id] = v;
+  });
+  return {answers, firstBad};
+}
+async function submit(e){
+  e.preventDefault();
+  $('#err').textContent = '';
+  const {answers, firstBad} = collect();
+  if(firstBad){ firstBad.scrollIntoView({block:'center', behavior:'smooth'}); const f = $('input, textarea', firstBad); if(f) f.focus({preventScroll:true}); return; }
+  if(Date.now() - loadedAt < 3000){ $('#err').textContent = 'רגע, עוד שנייה ונוכל לשלוח.'; return; }
+  const btn = $('#send'); btn.disabled = true; btn.textContent = 'שולח…';
+  try{
+    const r = await call('publicApplySubmit', {answers, website:$('[name="website"]').value});
+    $('#card').innerHTML = `<div class="center"><h2>נשלח!</h2><p>${esc(r.message || 'תודה! קיבלנו את הפרטים.')}</p></div>`;
+    window.scrollTo(0, 0);
+  }catch(err){
+    $('#err').textContent = err.message; btn.disabled = false; btn.textContent = 'שליחה';
+  }
+}
+(async () => {
+  try{
+    const r = await call('publicApplyForm');
+    if(!r.form){
+      if(r.title) $('#title').textContent = r.title;
+      $('#card').innerHTML = '<div class="center"><h2>ההרשמה סגורה כרגע</h2><p class="muted">תודה על ההתעניינות. כרגע אנחנו לא מקבלים מועמדויות חדשות.</p></div>';
+      return;
+    }
+    FORM = r.form; loadedAt = Date.now(); render();
+  }catch(e){
+    $('#card').innerHTML = `<div class="center"><h2>לא הצלחנו לטעון את הטופס</h2><p class="muted">${esc(e.message)}</p></div>`;
+  }
+})();
+</script>
+</body>
+</html>
