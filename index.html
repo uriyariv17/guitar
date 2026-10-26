@@ -817,6 +817,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
     <div class="login panel" id="t-login">
       <h2>כניסת מורה</h2>
       <input type="password" id="t-pw" autocomplete="current-password" aria-label="סיסמת מורה" placeholder="סיסמה">
+      <label class="row" style="gap:8px;font-weight:600;justify-content:center"><input type="checkbox" id="t-remember" checked> להישאר מחובר במכשיר הזה</label>
       <button class="btn primary big" id="t-go">כניסה</button>
       <p class="err" id="t-err2"></p>
     </div>
@@ -2204,12 +2205,14 @@ async function teacherLogin(pw, silent){
     T.data = await api('teacherLoad', {password:pw});
     T.pw = pw;
     try{ sessionStorage.setItem('pritah.tpw', pw); }catch(e){}
+    if(!silent || store.get('pritah.tpw')){ if($('#t-remember').checked) store.set('pritah.tpw', pw); else store.del('pritah.tpw'); }
     renderTeacher();
   }catch(e){
     if(!silent) $('#t-err2').textContent = e.message;
+    else if(/סיסמה/.test(e.message)) store.del('pritah.tpw');
   }finally{ $('#t-go').disabled = false; }
 }
-function teacherLogout(){ T.pw = null; T.data = null; T.sel = null; try{ sessionStorage.removeItem('pritah.tpw'); }catch(e){} $('#t-pw').value = ''; renderTeacher(); }
+function teacherLogout(){ T.pw = null; T.data = null; T.sel = null; store.del('pritah.tpw'); try{ sessionStorage.removeItem('pritah.tpw'); }catch(e){} $('#t-pw').value = ''; renderTeacher(); }
 function sStats(sid){
   const tasks = T.data.tasks.filter(t => t.studentId === sid), logs = T.data.logs.filter(l => l.studentId === sid);
   const last = logs.reduce((m, l) => l.date > m ? l.date : m, '');
@@ -3154,16 +3157,17 @@ async function pdfLines(file){
   const lines = [];
   for(let p = 1; p <= pdf.numPages; p++){
     const tc = await (await pdf.getPage(p)).getTextContent();
-    const items = tc.items.filter(it => it.str && it.str.trim()).map(it => ({
+    const items = tc.items.filter(it => it.str).map(it => ({
       str:it.str, x:it.transform[4], y:it.transform[5], w:it.width || 0,
-      h:Math.abs(it.transform[3]) || it.height || 10, rtl:it.dir === 'rtl' || hasHebrew(it.str)
-    }));
+      h:Math.abs(it.transform[3]) || it.height || 10, rtl:it.dir === 'rtl' || hasHebrew(it.str), sp:!it.str.trim()
+    })).filter(it => !it.sp || it.w > 0);
     items.sort((a, b) => b.y - a.y || a.x - b.x);
     const pl = [];
-    items.forEach(it => {
+    items.filter(it => !it.sp).forEach(it => {
       const ln = pl.find(l => Math.abs(l.y - it.y) < Math.max(2, Math.min(l.h, it.h) * 0.45));
       if(ln){ ln.items.push(it); ln.h = Math.max(ln.h, it.h); } else pl.push({y:it.y, h:it.h, items:[it]});
     });
+    items.filter(it => it.sp).forEach(it => { const ln = pl.find(l => Math.abs(l.y - it.y) < Math.max(2, l.h * 0.45)); if(ln) ln.items.push(it); });
     pl.sort((a, b) => b.y - a.y);
     pl.forEach((l, i) => {
       if(i > 0 && pl[i - 1].y - l.y > Math.max(l.h, pl[i - 1].h) * 2.4) lines.push(null);
@@ -3173,22 +3177,30 @@ async function pdfLines(file){
   }
   return lines;
 }
-function itemStr(it, rev){ return rev && it.rtl ? [...it.str].reverse().join('') : it.str; }
-function lineIsRTL(l){ return l.items.some(i => i.rtl); }
+const MIRROR = {'(':')', ')':'(', '[':']', ']':'[', '{':'}', '}':'{', '<':'>', '>':'<'};
+function itemStr(it, rev, rtlCtx){
+  let s = rev && it.rtl ? [...it.str].reverse().join('') : it.str;
+  if(/^(\S )+\S$/.test(s.trim()) && s.trim().length >= 3) s = s.replace(/ /g, '');
+  if(rtlCtx && (it.rtl || !/[A-Za-z0-9]/.test(s))) s = s.replace(/[()[\]{}<>]/g, c => MIRROR[c]);
+  return s;
+}
+function lineIsRTL(l){ return l.items.some(i => i.rtl && !i.sp); }
+function gapSpace(gap, h){ return gap > h * 0.3; }
 function lineAscText(l, rev){
   const its = [...l.items].sort((a, b) => a.x - b.x);
-  let out = '', end = null;
+  let out = '', end = null, pend = false;
   its.forEach(it => {
-    const s = itemStr(it, rev), cw = it.w / Math.max(1, s.length);
-    if(end !== null && it.x - end > cw * 0.25 && !out.endsWith(' ')) out += ' ';
-    out += s; end = it.x + it.w;
+    if(it.sp){ pend = true; return; }
+    const s = itemStr(it, rev, false);
+    if(end !== null && (pend || gapSpace(it.x - end, it.h)) && !out.endsWith(' ')) out += ' ';
+    out += s; end = it.x + it.w; pend = false;
   });
   return out.replace(/\s+/g, ' ').trim();
 }
 function lineChordTokens(l, rev){
   const out = [];
-  [...l.items].sort((a, b) => a.x - b.x).forEach(it => {
-    const s = itemStr(it, rev), cw = it.w / Math.max(1, s.length);
+  [...l.items].filter(it => !it.sp).sort((a, b) => a.x - b.x).forEach(it => {
+    const s = itemStr(it, rev, false), cw = it.w / Math.max(1, s.length);
     for(const m of s.matchAll(/\S+/g)){
       if(NOISE_RE.test(m[0])) continue;
       out.push({name:m[0], x:it.x + (m.index + m[0].length / 2) * cw});
@@ -3199,36 +3211,44 @@ function lineChordTokens(l, rev){
 function lineLyric(l, rev){
   const rtl = lineIsRTL(l);
   const its = [...l.items].sort((a, b) => rtl ? (b.x + b.w) - (a.x + a.w) : a.x - b.x);
-  let text = '', xs = [], prevEdge = null;
+  let text = '', xs = [], prevEdge = null, pend = false;
   its.forEach(it => {
-    const s = [...itemStr(it, rev)], cw = it.w / Math.max(1, s.length);
+    if(it.sp){ pend = true; return; }
+    const s = [...itemStr(it, rev, rtl)], cw = it.w / Math.max(1, s.length);
     const near = rtl ? it.x + it.w : it.x, far = rtl ? it.x : it.x + it.w;
-    if(prevEdge !== null && Math.abs(near - prevEdge) > cw * 0.25 && !text.endsWith(' ')){ text += ' '; xs.push((prevEdge + near) / 2); }
-    s.forEach((ch, i) => {
-      text += ch;
-      const ltrChar = !it.rtl;
-      xs.push(ltrChar ? it.x + (i + .5) * cw : it.x + it.w - (i + .5) * cw);
-    });
-    prevEdge = far;
+    if(prevEdge !== null && !text.endsWith(' ') && s[0] !== ' ' && (pend || gapSpace(rtl ? prevEdge - near : near - prevEdge, it.h))){ text += ' '; xs.push((prevEdge + near) / 2); }
+    s.forEach((ch, i) => { text += ch; xs.push(!it.rtl ? it.x + (i + .5) * cw : it.x + it.w - (i + .5) * cw); });
+    prevEdge = far; pend = false;
   });
-  return {text, xs, rtl};
+  const t = text.replace(/\s+$/, '');
+  return {text:t, xs:xs.slice(0, t.length), rtl};
 }
+const SITE_JUNK = /(הצג אקורדים|הסתר אקורדים|הדפסת השיר|הדפס שיר|פשט אקורדים|שנה טון|שינוי טון|גלילה אוטומטית|הוסף למועדפים|הוספה למועדפים|כל הזכויות שמורות|tab4u|nagnu|negina|ultimate-guitar|www\.|https?:\/\/)/i;
 function placeChords(lyric, chords){
-  const {text, xs} = lyric;
-  const idx = [];
-  const used = new Set();
-  chords.forEach(c => {
-    let best = -1, bd = Infinity;
-    for(let k = 0; k < text.length; k++){ if(text[k] === ' ') continue; const d = Math.abs(xs[k] - c.x); if(d < bd){ bd = d; best = k; } }
-    if(best < 0){ idx.push({k:text.length, name:c.name}); return; }
-    let k = best;
-    while(k > 0 && text[k - 1] !== ' ') k--;
-    if(used.has(k)) k = best;
-    while(used.has(k) && k < text.length) k++;
-    used.add(k); idx.push({k, name:c.name});
+  const {text, xs, rtl} = lyric, words = [];
+  for(let k = 0; k < text.length; k++){
+    if(text[k] === ' ' || (k > 0 && text[k - 1] !== ' ')) continue;
+    let e = k; while(e + 1 < text.length && text[e + 1] !== ' ') e++;
+    const wx = xs.slice(k, e + 1); words.push({k, e, min:Math.min(...wx), max:Math.max(...wx)});
+  }
+  const dist = (w, x) => x < w.min ? w.min - x : x > w.max ? x - w.max : 0;
+  const ordered = chords.slice().sort((a, b) => rtl ? b.x - a.x : a.x - b.x);
+  const placed = []; let lastW = -1, lastK = -1;
+  ordered.forEach(c => {
+    if(!words.length){ placed.push({k:text.length, name:c.name}); return; }
+    let bi = -1, bd = Infinity;
+    for(let i = Math.max(0, lastW); i < words.length; i++){ const d = dist(words[i], c.x); if(d < bd - 0.01){ bd = d; bi = i; } }
+    if(bi < 0){ placed.push({k:text.length, name:c.name}); return; }
+    let k = words[bi].k;
+    if(bi === lastW){
+      let best = -1, bdc = Infinity;
+      for(let j = Math.max(lastK + 1, words[bi].k); j <= words[bi].e; j++){ const d = Math.abs(xs[j] - c.x); if(d < bdc){ bdc = d; best = j; } }
+      if((best < 0 || best >= words[bi].e - 1) && bi + 1 < words.length){ bi++; k = words[bi].k; } else if(best < 0) k = text.length; else k = best;
+    }
+    placed.push({k, name:c.name}); lastW = bi; lastK = k;
   });
   let out = text;
-  idx.sort((a, b) => b.k - a.k).forEach(({k, name}) => { out = out.slice(0, k) + `[${name}]` + out.slice(k); });
+  placed.map((p, i) => Object.assign(p, {i})).sort((a, b) => b.k - a.k || b.i - a.i).forEach(({k, name}) => { out = out.slice(0, k) + `[${name}]` + out.slice(k); });
   return out;
 }
 function buildSheetFromLines(lines, opts = {}){
@@ -3237,6 +3257,12 @@ function buildSheetFromLines(lines, opts = {}){
     const l = lines[i];
     if(!l){ out.push(''); continue; }
     const asc = lineAscText(l, rev);
+    if(SITE_JUNK.test(asc) || SITE_JUNK.test(lineLyric(l, rev).text)) continue;
+    const toks = asc.split(' '), lab = toks.findIndex(t => /:$/.test(t));
+    if(lab >= 0 && toks.length > 1){
+      const rest = toks.filter((t, i) => i !== lab && !hasHebrew(t)), heb = toks.filter((t, i) => i !== lab && hasHebrew(t));
+      if(rest.length && !heb.length && isChordLine(rest.join(' '))){ out.push(toks[lab]); out.push(rest.join('  ')); continue; }
+    }
     if(isChordLine(asc)){
       const chords = lineChordTokens(l, rev);
       const next = lines[i + 1];
@@ -4271,7 +4297,7 @@ function init(){
   // כניסה אוטומטית
   const savedPin = store.get('pritah.pin');
   if(savedPin) studentLogin(savedPin, true);
-  let tpw = null; try{ tpw = sessionStorage.getItem('pritah.tpw'); }catch(e){}
+  let tpw = store.get('pritah.tpw'); if(!tpw){ try{ tpw = sessionStorage.getItem('pritah.tpw'); }catch(e){} }
   if(tpw) teacherLogin(tpw, true);
   renderStudent(); renderTeacher();
   showView((location.hash || '').slice(1));
