@@ -419,6 +419,53 @@ details.ans dl{ margin:8px 0 0; display:grid; gap:6px; font-size:.94rem; }
 details.ans dt{ color:var(--ink-2); font-size:.85rem; font-weight:700; }
 details.ans dd{ margin:0; white-space:pre-line; overflow-wrap:anywhere; }
 
+/* Library sub-categories */
+.lib-sub{ margin:14px 0 0; padding-inline-start:16px; border-inline-start:3px solid var(--line); }
+.lib-sub h4{ margin-bottom:8px; }
+#c-sub{ margin-top:-6px; }
+
+/* Tracking */
+.chip.due{ background:var(--surface-2); }
+.chip.due.soon{ background:color-mix(in srgb, var(--orange) 22%, var(--surface)); color:var(--orange); }
+.chip.due.late{ background:color-mix(in srgb, var(--red) 16%, var(--surface)); color:var(--red); }
+.late-t{ color:var(--red); }
+.due-banner{ background:color-mix(in srgb, var(--orange) 16%, var(--surface)); border:1px solid color-mix(in srgb, var(--orange) 40%, var(--line)); border-radius:12px; padding:10px 14px; margin:-8px 0 18px; font-weight:600; }
+.due-banner.late{ background:color-mix(in srgb, var(--red) 10%, var(--surface)); border-color:color-mix(in srgb, var(--red) 35%, var(--line)); color:var(--red); }
+.goal{ display:grid; gap:10px; }
+.goal-nums{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.goal-nums > div{ background:var(--surface-2); border-radius:12px; padding:10px 12px; display:grid; }
+.goal-nums b{ font-family:'Secular One',Arial,sans-serif; font-weight:400; font-size:1.8rem; line-height:1.1; }
+.goal-nums small{ color:var(--ink-2); }
+.goal-bar{ height:10px; }
+.wchart{ width:100%; height:auto; display:block; }
+.wbar{ fill:color-mix(in srgb, var(--blue) 35%, var(--surface-2)); }
+.wbar.now{ fill:var(--blue); }
+.wbar.hit{ fill:var(--green); }
+.wval{ fill:var(--ink); font:700 10px 'Assistant',Arial,sans-serif; }
+.wlbl{ fill:var(--ink-2); font:600 10px 'Assistant',Arial,sans-serif; }
+.wgoal{ stroke:var(--orange); stroke-width:1.5; stroke-dasharray:4 3; }
+.lessons{ display:grid; gap:10px; }
+.lesson{ background:var(--surface); border:1px solid var(--line); border-inline-start:4px solid var(--blue); border-radius:12px; padding:10px 14px; }
+.lesson p{ white-space:pre-line; margin-top:4px; }
+.lesson-d{ font-weight:700; color:var(--ink-2); font-size:.9rem; }
+.toast{ position:fixed; bottom:calc(20px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:12px 20px; border-radius:999px; font-weight:700; z-index:50; box-shadow:0 6px 20px rgba(0,0,0,.2); transition:opacity .3s; max-width:calc(100vw - 32px); text-align:center; }
+.toast.out{ opacity:0; }
+.feed-wrap{ border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:14px; }
+.feed{ list-style:none; margin:8px 0 0; padding:0; display:grid; gap:2px; max-height:260px; overflow:auto; }
+.feed li{ display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:10px; align-items:baseline; padding:6px 8px; border-radius:8px; cursor:pointer; font-size:.96rem; }
+.feed li:hover{ background:var(--surface-2); }
+.feed li.new{ background:color-mix(in srgb, var(--amber) 14%, transparent); }
+.feed .dot{ width:8px; height:8px; border-radius:50%; background:var(--blue); display:inline-block; }
+.feed li.done .dot{ background:var(--green); }
+.idle{ margin-bottom:14px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.idle button.chip{ border:0; cursor:pointer; font:inherit; font-size:.88rem; font-weight:600; }
+.mini-goal{ display:grid; gap:3px; min-width:80px; }
+.mini-goal .bar{ height:6px; }
+.t-detail-grid{ display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:24px; align-items:start; }
+@media (max-width: 1380px){ .t-detail-grid{ grid-template-columns:1fr; } .t-detail-grid > .stack{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; } }
+@media (max-width: 760px){ .t-detail-grid > .stack{ grid-template-columns:1fr; } }
+a.btn.wa{ background:#1F9D55; border-color:#1F9D55; color:#fff; }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -513,6 +560,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
         <div class="seg" id="c-filter"></div>
         <input type="search" id="c-search" placeholder="חיפוש, למשל Am" style="max-width:220px" aria-label="חיפוש אקורד">
       </div>
+      <div class="seg" id="c-sub" hidden></div>
       <div class="chord-grid" id="c-grid"></div>
     </div>
   </section>
@@ -553,27 +601,6 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
         <div class="quiz-answers" id="q-answers"></div>
         <p class="muted" style="text-align:center" id="q-score"></p>
       </div>
-    </div>
-  </section>
-
-  <!-- Theory -->
-  <section class="view" id="v-theory">
-    <div class="view-head">
-      <h2>תיאוריה</h2>
-      <p>בכל סולם יש שבעה אקורדים ש"מסתדרים" יחד. בוחרים סולם ושומעים את המהלכים הנפוצים ביותר בשירים.</p>
-    </div>
-    <div class="stack">
-      <div class="panel stack">
-        <div class="row">
-          <div class="opt"><span class="opt-l">סולם</span><div class="seg" id="th-key" style="direction:ltr"></div></div>
-          <div class="opt"><span class="opt-l">סוג</span><div class="seg" id="th-mode"></div></div>
-        </div>
-        <div class="key-chords" id="th-chords"></div>
-      </div>
-      <div class="panel">
-        <h3 style="margin-bottom:6px">מהלכי אקורדים נפוצים</h3>
-        <div id="th-progs"></div>
-      </div>
       <div class="panel stack">
         <div class="spread">
           <div><h3>טבלאות הסולמות</h3><p class="muted">האקורדים בכל סולם לפי הדרגות. לחיצה על אקורד משמיעה אותו.</p></div>
@@ -584,6 +611,23 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
         <div id="tt-minor-wrap" class="stack" style="gap:6px"><h4>סולם מינור (טבעי)</h4><div class="scroll-x" id="tt-minor"></div></div>
         <p class="empty" id="tt-none" hidden>לא זיהיתי את הטוניקה. נסו לכתוב אות, למשל C או Bb, או שם תו, למשל רה.</p>
       </div>
+    </div>
+  </section>
+
+  <!-- Theory -->
+  <section class="view" id="v-theory">
+    <div class="view-head">
+      <h2>תיאוריה</h2>
+      <p>בכל סולם יש שבעה אקורדים ש"מסתדרים" יחד. בוחרים סולם ושומעים אותם.</p>
+    </div>
+    <div class="stack">
+      <div class="panel stack">
+        <div class="row">
+          <div class="opt"><span class="opt-l">סולם</span><div class="seg" id="th-key" style="direction:ltr"></div></div>
+          <div class="opt"><span class="opt-l">סוג</span><div class="seg" id="th-mode"></div></div>
+        </div>
+        <div class="key-chords" id="th-chords"></div>
+      </div>
       <div class="info-grid">
         <div class="panel">
           <h3>שמות התווים</h3>
@@ -591,27 +635,6 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
             <tr><td>C</td><td>דו</td></tr><tr><td>D</td><td>רה</td></tr><tr><td>E</td><td>מי</td></tr><tr><td>F</td><td>פה</td></tr><tr><td>G</td><td>סול</td></tr><tr><td>A</td><td>לה</td></tr><tr><td>B</td><td>סי</td></tr>
           </tbody></table>
           <p style="margin-top:8px" class="muted">דיאז (#) מעלה תו בחצי טון, במול (b) מוריד בחצי טון.</p>
-        </div>
-        <div class="panel">
-          <h3>איך קוראים טאב</h3>
-          <pre class="tab">e|-----0-----|
-B|---1---1---|
-G|-0-------0-|
-D|-----------|
-A|-----------|
-E|-----------|</pre>
-          <p>כל שורה היא מיתר. השורה העליונה היא המיתר הדק ביותר.</p>
-          <p>המספר אומר באיזה סריג ללחוץ, ו־0 הוא מיתר פתוח. קוראים משמאל לימין.</p>
-        </div>
-        <div class="panel">
-          <h3>טונים וחצאי טונים</h3>
-          <p>סריג אחד על הגיטרה הוא חצי טון. שני סריגים הם טון שלם.</p>
-          <p>סולם מז׳ור בנוי כך: טון, טון, חצי, טון, טון, טון, חצי. נסו לנגן את זה על מיתר אחד מכל סריג שתבחרו.</p>
-        </div>
-        <div class="panel">
-          <h3>מה זה BPM</h3>
-          <p>BPM הוא מספר הפעמות בדקה. ב־60 יש פעמה אחת בכל שנייה, וב־120 שתיים.</p>
-          <p>שיטה טובה לתרגול: מוצאים את הקצב שבו מנגנים בלי טעויות, ומעלים אותו ב־5 בכל פעם.</p>
         </div>
       </div>
     </div>
@@ -733,16 +756,22 @@ E|-----------|</pre>
         <div class="row"><span class="sync" id="stu-sync"></span><button class="btn small" id="stu-refresh">רענון</button><button class="btn small" id="stu-logout">יציאה</button></div>
       </div>
       <p class="dash-sum" id="stu-sum"></p>
+      <div class="due-banner" id="stu-due" hidden></div>
       <div class="dash-grid">
         <section>
           <div class="sec-title"><h3>שיעורי הבית שלי</h3></div>
           <div class="tasks" id="stu-tasks"></div>
+          <div id="stu-lessons-wrap" hidden>
+            <div class="sec-title" style="margin-top:22px"><h3>מה עשינו בשיעור</h3></div>
+            <div class="lessons" id="stu-lessons"></div>
+          </div>
           <div id="stu-done-wrap" hidden>
             <div class="sec-title" style="margin-top:22px"><h3>הושלמו</h3></div>
             <div class="tasks" id="stu-done"></div>
           </div>
         </section>
         <div class="dash-side">
+          <div class="panel"><h3 style="margin-bottom:8px">ההתקדמות שלי</h3><div id="stu-goal"></div></div>
           <div class="panel metro-host" id="stu-metro-slot"></div>
           <div class="panel stack">
             <h3>טיימר תרגול</h3>
@@ -761,6 +790,17 @@ E|-----------|</pre>
               <div class="row"><button class="btn primary" id="lf-save">שמור תרגול</button><button class="btn ghost" id="lf-cancel">ביטול</button></div>
               <p class="err" id="lf-err"></p>
             </div>
+          </div>
+          <div class="panel stack">
+            <h3>תזכורת לתרגול</h3>
+            <p class="muted" style="font-size:.95rem">בחרו מתי לתרגל, והטלפון יזכיר לכם דרך היומן.</p>
+            <div class="row" style="align-items:end">
+              <label class="field" style="width:120px">שעה<input type="time" id="rm-time" value="17:00"></label>
+              <label class="field" style="width:110px">כמה דקות<input type="number" id="rm-mins" min="5" max="180" value="20"></label>
+            </div>
+            <div class="seg" id="rm-days" aria-label="ימים"></div>
+            <div class="row"><button class="btn small" id="rm-google">הוספה ליומן Google</button><button class="btn small" id="rm-ics">הוספה ליומן באייפון</button></div>
+            <p class="hint" id="rm-msg"></p>
           </div>
           <div class="panel">
             <h3 style="margin-bottom:6px">התרגולים האחרונים שלי</h3>
@@ -781,7 +821,7 @@ E|-----------|</pre>
       <p class="err" id="t-err2"></p>
     </div>
     <div id="t-dash" hidden>
-      <div class="seg" id="t-mode"><button data-v="students">תלמידים ומשימות</button><button data-v="chords">ספריית אקורדים</button><button data-v="shapes">צורות על הצוואר</button><button data-v="songs">שירים</button><button data-v="band">VELVET</button></div>
+      <div class="seg" id="t-mode"><button data-v="students">תלמידים ומשימות</button><button data-v="chords">ספריית אקורדים</button><button data-v="shapes">צורות על הצוואר</button><button data-v="songs">שירים</button><button data-v="band">VELVET</button><button data-v="settings">הגדרות</button></div>
       <div class="t-grid" id="t-students">
         <aside class="panel stack">
           <div class="spread"><h3>תלמידים</h3><button class="btn small primary" id="t-new-student">תלמיד חדש</button></div>
@@ -794,6 +834,7 @@ E|-----------|</pre>
       <section class="panel" id="t-shapes" hidden></section>
       <section class="panel" id="t-songs" hidden></section>
       <section class="panel" id="t-band" hidden></section>
+      <section class="panel" id="t-settings" hidden></section>
     </div>
   </section>
 </main>
@@ -805,10 +846,29 @@ E|-----------|</pre>
     <label class="field">קוד כניסה <small>4 עד 8 ספרות</small>
       <div class="row" style="flex-wrap:nowrap"><input id="fs-pin" inputmode="numeric" required pattern="\d{4,8}" style="direction:ltr;text-align:center"><button type="button" class="btn" id="fs-gen">קוד אקראי</button></div>
     </label>
+    <div class="two">
+      <label class="field">טלפון <small>(לתזכורות בוואטסאפ)</small><input id="fs-phone" type="tel" dir="ltr" maxlength="30"></label>
+      <label class="field">יעד שבועי <small>(דקות)</small><input id="fs-goal" type="number" min="0" max="3000" placeholder="למשל 60"></label>
+    </div>
+    <label class="field">מייל <small>(אפשר של ההורים)</small><input id="fs-email" type="email" dir="ltr" maxlength="120"></label>
+    <label class="row" style="gap:8px;font-weight:600"><input type="checkbox" id="fs-remind"> לשלוח תזכורות על משימות פתוחות למייל</label>
     <p class="err" id="fs-err"></p>
     <div class="row"><button class="btn primary" type="submit">שמור תלמיד</button><button class="btn ghost" type="button" data-close>ביטול</button></div>
   </form>
 </dialog>
+
+<dialog id="dlg-lesson">
+  <form id="fl">
+    <h3 id="fl-title">סיכום שיעור</h3>
+    <label class="field" style="max-width:200px">תאריך<input type="date" id="fl-date" required></label>
+    <label class="field">מה עשינו ומה לתרגל<textarea id="fl-text" maxlength="2000" required placeholder="למשל: למדנו את האקורד F. לתרגל את המעבר מ־C ל־F לאט."></textarea></label>
+    <p class="hint">התלמיד יראה את הסיכום באזור שלו.</p>
+    <p class="err" id="fl-err"></p>
+    <div class="row"><button class="btn primary" type="submit">שמירה</button><button class="btn ghost" type="button" data-close>ביטול</button><button class="btn danger" type="button" id="fl-del" style="margin-inline-start:auto">מחיקה</button></div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <dialog id="dlg-task">
   <form id="ft">
@@ -949,6 +1009,7 @@ E|-----------|</pre>
   <form id="fk">
     <h3 id="fk-title">קטגוריה חדשה</h3>
     <label class="field">שם הקטגוריה<input id="fk-name" required maxlength="60" placeholder="למשל: אקורדים פתוחים, שלב א׳"></label>
+    <label class="field" id="fk-parent-wrap">מיקום<select id="fk-parent"></select></label>
     <p class="err" id="fk-err"></p>
     <div class="row"><button class="btn primary" type="submit">שמור קטגוריה</button><button class="btn ghost" type="button" data-close>ביטול</button></div>
   </form>
@@ -1441,28 +1502,58 @@ function autoCorrelate(buf, sr){
 }
 
 /* ================== אקורדים ================== */
-const CHORDS = [
-  {n:'C', f:[-1,3,2,0,1,0], c:'maj'}, {n:'D', f:[-1,-1,0,2,3,2], c:'maj'}, {n:'E', f:[0,2,2,1,0,0], c:'maj'},
-  {n:'F', f:[1,3,3,2,1,1], c:'maj', b:1}, {n:'G', f:[3,2,0,0,0,3], c:'maj'}, {n:'A', f:[-1,0,2,2,2,0], c:'maj'},
-  {n:'B', f:[-1,2,4,4,4,2], c:'maj', b:1}, {n:'Bb', f:[-1,1,3,3,3,1], c:'maj', b:1},
-  {n:'Am', f:[-1,0,2,2,1,0], c:'min'}, {n:'Dm', f:[-1,-1,0,2,3,1], c:'min'}, {n:'Em', f:[0,2,2,0,0,0], c:'min'},
-  {n:'Bm', f:[-1,2,4,4,3,2], c:'min', b:1}, {n:'F#m', f:[2,4,4,2,2,2], c:'min', b:1}, {n:'Cm', f:[-1,3,5,5,4,3], c:'min', b:1},
-  {n:'Fm', f:[1,3,3,1,1,1], c:'min', b:1}, {n:'Gm', f:[3,5,5,3,3,3], c:'min', b:1},
-  {n:'C7', f:[-1,3,2,3,1,0], c:'sev'}, {n:'D7', f:[-1,-1,0,2,1,2], c:'sev'}, {n:'E7', f:[0,2,0,1,0,0], c:'sev'},
-  {n:'G7', f:[3,2,0,0,0,1], c:'sev'}, {n:'A7', f:[-1,0,2,0,2,0], c:'sev'}, {n:'B7', f:[-1,2,1,2,0,2], c:'sev'},
-  {n:'Cmaj7', f:[-1,3,2,0,0,0], c:'sev'}, {n:'Dmaj7', f:[-1,-1,0,2,2,2], c:'sev'}, {n:'Fmaj7', f:[-1,-1,3,2,1,0], c:'sev'},
-  {n:'Gmaj7', f:[3,2,0,0,0,2], c:'sev'}, {n:'Amaj7', f:[-1,0,2,1,2,0], c:'sev'},
-  {n:'Am7', f:[-1,0,2,0,1,0], c:'sev'}, {n:'Dm7', f:[-1,-1,0,2,1,1], c:'sev'}, {n:'Em7', f:[0,2,0,0,0,0], c:'sev'}, {n:'Bm7', f:[-1,2,0,2,0,2], c:'sev'},
+const OPEN_VOICINGS = {
+  maj:{0:[-1,3,2,0,1,0], 2:[-1,-1,0,2,3,2], 4:[0,2,2,1,0,0], 7:[3,2,0,0,0,3], 9:[-1,0,2,2,2,0]},
+  min:{2:[-1,-1,0,2,3,1], 4:[0,2,2,0,0,0], 9:[-1,0,2,2,1,0]},
+  '7':{0:[-1,3,2,3,1,0], 2:[-1,-1,0,2,1,2], 4:[0,2,0,1,0,0], 7:[3,2,0,0,0,1], 9:[-1,0,2,0,2,0], 11:[-1,2,1,2,0,2]},
+  M7:{0:[-1,3,2,0,0,0], 2:[-1,-1,0,2,2,2], 4:[0,2,1,1,0,0], 5:[-1,-1,3,2,1,0], 7:[3,2,0,0,0,2], 9:[-1,0,2,1,2,0]},
+  m7:{2:[-1,-1,0,2,1,1], 4:[0,2,0,0,0,0], 9:[-1,0,2,0,1,0]}
+};
+const CHORD_QUALS = [
+  {id:'maj', suf:'', E:[0,2,2,1,0,0], Ef:[1,3,4,2,1,1], A:[0,2,2,2,0], Af:[1,2,3,4,1]},
+  {id:'min', suf:'m', E:[0,2,2,0,0,0], Ef:[1,3,4,1,1,1], A:[0,2,2,1,0], Af:[1,3,4,2,1]},
+  {id:'7', suf:'7', E:[0,2,0,1,0,0], Ef:[1,3,1,2,1,1], A:[0,2,0,2,0], Af:[1,3,1,4,1]},
+  {id:'M7', suf:'maj7', E:[0,2,1,1,0,0], Ef:[1,4,2,3,1,1], A:[0,2,1,2,0], Af:[1,3,2,4,1]},
+  {id:'m7', suf:'m7', E:[0,2,0,0,0,0], Ef:[1,3,1,1,1,1], A:[0,2,0,1,0], Af:[1,3,1,2,1]}
+];
+const CHORD_ROOTS = ['C','C#','Db','D','D#','Eb','E','F','F#','Gb','G','G#','Ab','A','A#','Bb','B'];
+const ROOT_PC = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+function makeChord(root, q){
+  const pc = ROOT_PC[root], open = OPEN_VOICINGS[q.id][pc];
+  if(open) return {n:root + q.suf, f:open.slice(), c:q.id};
+  const e = (pc - 4 + 12) % 12, a = (pc - 9 + 12) % 12;
+  const useE = e >= 1 && (a < 1 || e <= a);
+  if(useE) return {n:root + q.suf, f:q.E.map(x => x + e), fingers:q.Ef.slice(), barre:{fret:e, from:0, to:5}, c:q.id};
+  return {n:root + q.suf, f:[-1].concat(q.A.map(x => x + a)), fingers:[0].concat(q.Af), barre:{fret:a, from:1, to:5}, c:q.id};
+}
+const CHORD_EXTRAS = [
   {n:'Asus2', f:[-1,0,2,2,0,0], c:'sus'}, {n:'Asus4', f:[-1,0,2,2,3,0], c:'sus'}, {n:'Dsus2', f:[-1,-1,0,2,3,0], c:'sus'},
   {n:'Dsus4', f:[-1,-1,0,2,3,3], c:'sus'}, {n:'Esus4', f:[0,2,2,2,0,0], c:'sus'}, {n:'Cadd9', f:[-1,3,2,0,3,0], c:'sus'},
   {n:'E5', f:[0,2,2,-1,-1,-1], c:'pow'}, {n:'A5', f:[-1,0,2,2,-1,-1], c:'pow'}, {n:'D5', f:[-1,-1,0,2,3,-1], c:'pow'},
   {n:'G5', f:[3,5,5,-1,-1,-1], c:'pow'}, {n:'C5', f:[-1,3,5,5,-1,-1], c:'pow'}, {n:'F5', f:[1,3,3,-1,-1,-1], c:'pow'}
 ];
+const CHORDS = [].concat(...CHORD_QUALS.map(q => CHORD_ROOTS.map(r => makeChord(r, q))), CHORD_EXTRAS);
+const QNAME = {maj:'מז׳ור', min:'מינור', '7':'7', M7:'M7', m7:'m7'};
+const QORDER = ['maj','min','7','M7','m7'];
 const CHORD_FILTERS = [
-  {id:'all', label:'הכול'}, {id:'maj', label:'מז׳ור'}, {id:'min', label:'מינור'}, {id:'sev', label:'ספטאקורדים'},
-  {id:'sus', label:'sus ו־add'}, {id:'pow', label:'פאוור'}, {id:'barre', label:'ברר'}
+  {id:'all', label:'הכול'}, {id:'maj', label:'מז׳ור'}, {id:'min', label:'מינור'}, {id:'7', label:'7'},
+  {id:'M7', label:'M7'}, {id:'m7', label:'m7'}, {id:'other', label:'נוספים'}
 ];
-let chordFilter = 'all';
+function chordClass(name){
+  const p = parseChord(name); if(!p || p.bass) return null;
+  const s = p.suf;
+  if(s === '') return 'maj';
+  if(s === 'm' || s === 'min') return 'min';
+  if(s === '7') return '7';
+  if(s === 'maj7' || s === 'M7' || s === 'Δ7' || s === 'Δ') return 'M7';
+  if(s === 'm7' || s === 'min7') return 'm7';
+  return null;
+}
+let chordFilter = 'all', chordSub = '';
+const catParent = c => { const pid = c.data.parentId; return pid && libOf('ccat').some(x => x.id === pid && !x.data.parentId) ? pid : ''; };
+const ccatTops = () => libOf('ccat').filter(c => !catParent(c));
+const ccatKids = id => libOf('ccat').filter(c => catParent(c) === id);
+const ccatTree = id => [id].concat(ccatKids(id).map(c => c.id));
 function chordModel(d){
   const frets = (d.frets || d.f || [0,0,0,0,0,0]).map(Number);
   const fingers = (d.fingers || [0,0,0,0,0,0]).map(Number);
@@ -1509,18 +1600,27 @@ const chordKey = c => c.id || ('b:' + c.name);
 function findChord(key){ return currentChords().find(c => chordKey(c) === key) || (key.indexOf('b:') === 0 ? currentChords().find(c => c.name === key.slice(2)) : null); }
 function renderChords(){
   const custom = hasCustomChords(), chords = currentChords();
-  const cats = custom ? libOf('ccat').filter(c => chords.some(ch => ch.categoryId === c.id)) : [];
   const catIds = libOf('ccat').map(c => c.id);
-  let filters = CHORD_FILTERS;
+  let filters = CHORD_FILTERS, subs = [];
   if(custom){
-    filters = [{id:'all', label:'הכול'}].concat(cats.map(c => ({id:c.id, label:c.data.name})));
-    if(cats.length && chords.some(ch => !catIds.includes(ch.categoryId))) filters.push({id:'none', label:'נוספים'});
+    const tops = ccatTops().filter(c => chords.some(ch => ccatTree(c.id).includes(ch.categoryId)));
+    filters = [{id:'all', label:'הכול'}].concat(tops.map(c => ({id:c.id, label:c.data.name})));
+    if(tops.length && chords.some(ch => !catIds.includes(ch.categoryId))) filters.push({id:'none', label:'נוספים'});
   }
   if(!filters.some(f => f.id === chordFilter)) chordFilter = 'all';
+  if(custom && chordFilter !== 'all' && chordFilter !== 'none') subs = ccatKids(chordFilter).filter(c => chords.some(ch => ch.categoryId === c.id));
+  if(!subs.some(c => c.id === chordSub)) chordSub = '';
   $('#c-filter').innerHTML = filters.map(f => `<button data-v="${esc(f.id)}" aria-pressed="${f.id === chordFilter}">${esc(f.label)}</button>`).join('');
   $('#c-filter').hidden = filters.length < 2;
+  $('#c-sub').hidden = !subs.length;
+  $('#c-sub').innerHTML = subs.length ? `<button data-v="" aria-pressed="${!chordSub}">הכול ב${esc(libOf('ccat').find(c => c.id === chordFilter).data.name)}</button>` + subs.map(c => `<button data-v="${esc(c.id)}" aria-pressed="${c.id === chordSub}">${esc(c.data.name)}</button>`).join('') : '';
   const q = $('#c-search').value.trim().toLowerCase();
-  const match = ch => chordFilter === 'all' || (custom ? (chordFilter === 'none' ? !catIds.includes(ch.categoryId) : ch.categoryId === chordFilter) : (chordFilter === 'barre' ? !!ch.barre : ch.cat === chordFilter));
+  const match = ch => {
+    if(chordFilter === 'all') return true;
+    if(!custom) return chordFilter === 'other' ? (ch.cat === 'sus' || ch.cat === 'pow') : ch.cat === chordFilter;
+    if(chordFilter === 'none') return !catIds.includes(ch.categoryId);
+    return chordSub ? ch.categoryId === chordSub : ccatTree(chordFilter).includes(ch.categoryId);
+  };
   const list = chords.filter(ch => match(ch) && (!q || ch.name.toLowerCase().startsWith(q)));
   $('#c-grid').innerHTML = list.length
     ? list.map(c => `<button class="chord" data-key="${esc(chordKey(c))}" aria-label="אקורד ${esc(c.name)}, לחצו לשמיעה"><span class="cname">${esc(c.name)}</span>${chordSVG(c)}${c.note ? `<span class="cnote">${esc(c.note)}</span>` : ''}</button>`).join('')
@@ -1663,12 +1763,6 @@ function renderTheory(){
   $$('#th-mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === TH.mode));
   const chords = diatonic();
   $('#th-chords').innerHTML = chords.map((c, i) => `<button class="kc" data-i="${i}" aria-label="אקורד ${esc(c.name)}"><small>${c.rn}</small><b>${esc(c.name)}</b></button>`).join('');
-  $('#th-progs').innerHTML = MODE[TH.mode].progs.map((p, k) => `
-    <div class="prog">
-      <div><b>${p.name}</b><div class="muted" style="direction:ltr;text-align:right">${p.d.map(d => MODE[TH.mode].rn[d]).join(' – ')}</div></div>
-      <div class="prog-chords" id="pg-${k}">${p.d.map(d => `<span>${esc(chords[d].name)}</span>`).join(' ')}</div>
-      <button class="btn small" data-prog="${k}">נגן</button>
-    </div>`).join('');
 }
 let progTimers = [];
 function playProg(k){
@@ -1690,8 +1784,11 @@ function serverHandle(req, store, teacherPassword){
   const bool = v => v === true || v === 'true' || v === 'TRUE';
   const now = () => new Date().toISOString();
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  const nStudent = s => ({id:String(s.id), name:String(s.name || ''), pin:String(s.pin || ''), createdAt:String(s.createdAt || '')});
-  const nTask = t => ({id:String(t.id), studentId:String(t.studentId), title:String(t.title || ''), description:String(t.description || ''), targetReps:num(t.targetReps), targetBpm:num(t.targetBpm), reps:num(t.reps), done:bool(t.done), dueDate:String(t.dueDate || ''), attachments:String(t.attachments || ''), createdAt:String(t.createdAt || ''), updatedAt:String(t.updatedAt || '')});
+  const nStudent = s => ({id:String(s.id), name:String(s.name || ''), pin:String(s.pin || ''), createdAt:String(s.createdAt || ''), phone:String(s.phone || ''), email:String(s.email || ''), weeklyGoal:num(s.weeklyGoal), remind:bool(s.remind)});
+  const nLesson = l => ({id:String(l.id), studentId:String(l.studentId), date:String(l.date || ''), text:String(l.text || ''), createdAt:String(l.createdAt || '')});
+  const settingsObj = () => { const o = {}; (store.all('Settings') || []).forEach(r => { o[String(r.key)] = String(r.value); }); return o; };
+  const mail = (to, subject, body) => { if(to && typeof MailApp !== 'undefined'){ try{ MailApp.sendEmail(String(to), subject, body); }catch(e){} } };
+  const nTask = t => ({id:String(t.id), studentId:String(t.studentId), title:String(t.title || ''), description:String(t.description || ''), targetReps:num(t.targetReps), targetBpm:num(t.targetBpm), reps:num(t.reps), done:bool(t.done), dueDate:String(t.dueDate || ''), attachments:String(t.attachments || ''), createdAt:String(t.createdAt || ''), updatedAt:String(t.updatedAt || ''), doneAt:String(t.doneAt || '')});
   const nContent = c => { let d = {}; try{ d = typeof c.data === 'string' ? JSON.parse(c.data || '{}') : (c.data || {}); }catch(e){} return {id:String(c.id), kind:String(c.kind), data:d, updatedAt:String(c.updatedAt || '')}; };
   const nLog = l => ({id:String(l.id), studentId:String(l.studentId), taskId:String(l.taskId || ''), minutes:num(l.minutes), bpm:num(l.bpm), note:String(l.note || ''), date:String(l.date || '')});
 
@@ -1774,25 +1871,46 @@ function serverHandle(req, store, teacherPassword){
     const st = pin ? store.all('Students').map(nStudent).find(s => s.pin === pin) : null;
     if(!st) throw new Error('הקוד לא נמצא. בדקו אותו מול המורה.');
     if(a === 'studentLogin'){
-      return {student:{id:st.id, name:st.name}, tasks:store.all('Tasks').filter(t => String(t.studentId) === st.id).map(nTask), logs:store.all('Logs').filter(l => String(l.studentId) === st.id).map(nLog)};
+      return {student:{id:st.id, name:st.name, weeklyGoal:st.weeklyGoal}, tasks:store.all('Tasks').filter(t => String(t.studentId) === st.id).map(nTask), logs:store.all('Logs').filter(l => String(l.studentId) === st.id).map(nLog), lessons:store.all('Lessons').filter(l => String(l.studentId) === st.id).map(nLesson)};
     }
     if(a === 'studentUpdateTask'){
       const raw = store.all('Tasks').find(t => String(t.id) === String(req.taskId) && String(t.studentId) === st.id);
       if(!raw) throw new Error('המשימה לא נמצאה. ייתכן שהמורה מחק אותה.');
+      const wasDone = bool(raw.done);
       raw.reps = Math.max(0, Math.round(num(req.reps))); raw.done = bool(req.done); raw.updatedAt = now();
+      if(raw.done && !wasDone) raw.doneAt = now();
+      if(!raw.done) raw.doneAt = '';
       store.update('Tasks', raw);
+      if(raw.done && !wasDone){ const S = settingsObj(); if(S.notifyDone === 'true') mail(S.teacherEmail, `${st.name} סיים/ה משימה: ${raw.title}`, `${st.name} סימן/ה את המשימה "${raw.title}" כהושלמה.\nביצועים: ${raw.reps}${num(raw.targetReps) ? ' מתוך ' + num(raw.targetReps) : ''}.`); }
       return {task:nTask(raw)};
     }
     if(a === 'studentAddLog'){
       const log = {id:newId(), studentId:st.id, taskId:String(req.taskId || ''), minutes:Math.max(1, Math.min(600, Math.round(num(req.minutes)))), bpm:Math.round(num(req.bpm)), note:String(req.note || '').slice(0, 300), date:now()};
       store.insert('Logs', log);
+      const S = settingsObj();
+      if(S.notifyPractice === 'true'){ const t = store.all('Tasks').find(x => String(x.id) === log.taskId); mail(S.teacherEmail, `${st.name} תרגל/ה ${log.minutes} דקות`, `${st.name} רשם/ה תרגול של ${log.minutes} דקות${t ? ' על "' + t.title + '"' : ''}.${log.note ? '\nהערה: ' + log.note : ''}`); }
       return {log:nLog(log)};
     }
   }
   if(a.indexOf('teacher') === 0){
     if(!teacherPassword || String(req.password || '') !== String(teacherPassword)) throw new Error('הסיסמה שגויה.');
     if(a === 'teacherLoad'){
-      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember)};
+      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj()};
+    }
+    if(a === 'teacherSaveSettings'){
+      const KEYS = ['teacherEmail','notifyDone','notifyPractice','remindHour','remindDays','siteUrl'], inp = req.settings || {}, rows = store.all('Settings');
+      KEYS.forEach(k => { if(inp[k] === undefined) return; const v = String(inp[k]).slice(0, 300), r = rows.find(x => String(x.key) === k); if(r){ r.value = v; store.update('Settings', r); } else store.insert('Settings', {key:k, value:v}); });
+      return {settings:settingsObj()};
+    }
+    if(a === 'teacherSaveLesson'){
+      const l = req.lesson || {}, text = String(l.text || '').trim().slice(0, 2000), date = String(l.date || '').slice(0, 10);
+      if(!text) throw new Error('צריך לכתוב משהו בסיכום.');
+      if(l.id){ const raw = store.all('Lessons').find(x => String(x.id) === String(l.id)); if(!raw) throw new Error('הסיכום לא נמצא.'); raw.text = text; raw.date = date; store.update('Lessons', raw); return {lesson:nLesson(raw)}; }
+      if(!store.all('Students').some(x => String(x.id) === String(l.studentId))) throw new Error('התלמיד לא נמצא.');
+      const nl = {id:newId(), studentId:String(l.studentId), date, text, createdAt:now()};
+      store.insert('Lessons', nl); return {lesson:nLesson(nl)};
+    }
+    if(a === 'teacherDeleteLesson'){ store.remove('Lessons', x => String(x.id) === String(req.id)); return {};
     }
     if(a === 'teacherSaveMember'){
       const m = req.member || {}, name = String(m.name || '').trim(), pin = String(m.pin || '').trim(), role = String(m.role || '').trim().slice(0, 40);
@@ -1818,6 +1936,8 @@ function serverHandle(req, store, teacherPassword){
     }
     if(a === 'teacherSaveStudent'){
       const s = req.student || {}, name = String(s.name || '').trim(), pin = String(s.pin || '').trim();
+      const extra = {phone:String(s.phone || '').trim().slice(0, 30), email:String(s.email || '').trim().slice(0, 120), weeklyGoal:Math.max(0, Math.min(3000, Math.round(num(s.weeklyGoal)))), remind:bool(s.remind)};
+      if(extra.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(extra.email)) throw new Error('כתובת המייל לא נראית תקינה.');
       if(!name) throw new Error('צריך לכתוב שם.');
       if(!/^\d{4,8}$/.test(pin)) throw new Error('הקוד צריך להיות 4 עד 8 ספרות.');
       const all = store.all('Students');
@@ -1825,10 +1945,10 @@ function serverHandle(req, store, teacherPassword){
       if(s.id){
         const raw = all.find(x => String(x.id) === String(s.id));
         if(!raw) throw new Error('התלמיד לא נמצא.');
-        raw.name = name; raw.pin = pin; store.update('Students', raw);
+        raw.name = name; raw.pin = pin; Object.assign(raw, extra); store.update('Students', raw);
         return {student:nStudent(raw)};
       }
-      const ns = {id:newId(), name, pin, createdAt:now()};
+      const ns = Object.assign({id:newId(), name, pin, createdAt:now()}, extra);
       store.insert('Students', ns);
       return {student:nStudent(ns)};
     }
@@ -1836,6 +1956,7 @@ function serverHandle(req, store, teacherPassword){
       const id = String(req.id);
       store.remove('Tasks', x => String(x.studentId) === id);
       store.remove('Logs', x => String(x.studentId) === id);
+      store.remove('Lessons', x => String(x.studentId) === id);
       store.remove('Students', x => String(x.id) === id);
       return {};
     }
@@ -1848,7 +1969,7 @@ function serverHandle(req, store, teacherPassword){
         if(!raw) throw new Error('המשימה לא נמצאה.');
         Object.keys(fields).forEach(k => { raw[k] = fields[k]; });
         if(bool(t.resetReps)){ raw.reps = 0; raw.done = false; }
-        if(t.done !== undefined) raw.done = bool(t.done);
+        if(t.done !== undefined){ const was = bool(raw.done); raw.done = bool(t.done); if(raw.done && !was) raw.doneAt = now(); if(!raw.done) raw.doneAt = ''; }
         raw.updatedAt = now();
         store.update('Tasks', raw);
         return {tasks:[nTask(raw)]};
@@ -1884,7 +2005,7 @@ function serverHandle(req, store, teacherPassword){
       store.remove('Content', x => String(x.id) === id);
       store.all('Content').forEach(x => {
         const c = nContent(x);
-        if(c.data && c.data.categoryId === id){ c.data.categoryId = ''; x.data = JSON.stringify(c.data); x.updatedAt = now(); store.update('Content', x); }
+        if(c.data && (c.data.categoryId === id || c.data.parentId === id)){ if(c.data.categoryId === id) c.data.categoryId = ''; if(c.data.parentId === id) c.data.parentId = ''; x.data = JSON.stringify(c.data); x.updatedAt = now(); store.update('Content', x); }
       });
       return {items:store.all('Content').map(nContent)};
     }
@@ -1911,6 +2032,8 @@ const LocalDB = (() => {
   if(!db.Content) db.Content = [];
   if(!db.Members) db.Members = [{id:'m_demo', name:'אני', role:'גיטרה', pin:'2222', createdAt:new Date().toISOString()}];
   if(!db.Band) db.Band = [];
+  if(!db.Lessons) db.Lessons = [];
+  if(!db.Settings) db.Settings = [];
   const save = () => store.set(KEY, JSON.stringify(db));
   return {
     all: n => db[n],
@@ -1942,7 +2065,7 @@ async function studentLogin(pin, silent){
   $('#stu-go').disabled = true;
   try{
     const r = await api('studentLogin', {pin});
-    S.pin = pin; S.student = r.student; S.tasks = r.tasks; S.logs = r.logs;
+    S.pin = pin; S.student = r.student; S.tasks = r.tasks; S.logs = r.logs; S.lessons = r.lessons || [];
     store.set('pritah.pin', pin);
     renderStudent();
     if(currentView === 'student') mountMetro($('#stu-metro-slot'));
@@ -1967,6 +2090,14 @@ function renderStudent(){
   $('#stu-hello').textContent = `היי ${S.student.name}`;
   const open = S.tasks.filter(t => !t.done).sort(taskSort), done = S.tasks.filter(t => t.done).sort(taskSort);
   const mins = minutesThisWeek(S.logs);
+  const late = open.filter(t => { const i = dueInfo(t); return i && i.diff < 0; }), soon = open.filter(t => { const i = dueInfo(t); return i && (i.diff === 0 || i.diff === 1); });
+  $('#stu-due').hidden = !late.length && !soon.length;
+  $('#stu-due').className = 'due-banner' + (late.length ? ' late' : '');
+  $('#stu-due').textContent = late.length ? `${late.length === 1 ? 'תאריך היעד של משימה אחת עבר' : `תאריך היעד של ${late.length} משימות עבר`}: ${late.map(t => t.title).join(', ')}.` : soon.length ? `צריך לסיים בקרוב: ${soon.map(t => `${t.title} (${dueInfo(t).text})`).join(', ')}.` : '';
+  $('#stu-goal').innerHTML = goalHTML(S.logs, Number(S.student.weeklyGoal) || 0);
+  const ls = (S.lessons || []).slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  $('#stu-lessons-wrap').hidden = !ls.length;
+  $('#stu-lessons').innerHTML = ls.map(l => `<article class="lesson"><div class="lesson-d">${fmtDate(l.date)}</div><p>${esc(l.text)}</p></article>`).join('');
   $('#stu-sum').textContent = (open.length ? `יש לך ${open.length === 1 ? 'משימה פתוחה אחת' : open.length + ' משימות פתוחות'}. ` : (S.tasks.length ? 'סיימת את כל המשימות. כל הכבוד! ' : 'עוד אין משימות. המורה יוסיף אותן בקרוב. ')) + (mins ? `השבוע תרגלת ${mins} דקות.` : 'השבוע עוד לא נרשם תרגול.');
   $('#stu-tasks').innerHTML = open.length ? open.map(studentTaskHTML).join('') : `<p class="empty">${S.tasks.length ? 'אין משימות פתוחות. אפשר לתרגל חופשי עם המטרונום, ולרשום את הזמן בטיימר.' : 'כשהמורה ייתן משימה, היא תופיע כאן.'}</p>`;
   $('#stu-done-wrap').hidden = !done.length;
@@ -1978,7 +2109,7 @@ function renderStudent(){
 function studentTaskHTML(t){
   const pct = t.targetReps ? Math.min(100, Math.round(t.reps / t.targetReps * 100)) : 0;
   return `<article class="task ${t.done ? 'done' : ''}" data-id="${esc(t.id)}">
-    <div class="task-top"><h4>${esc(t.title)}</h4>${t.done ? '<span class="chip ok">הושלם</span>' : (t.dueDate ? `<span class="chip warn">עד ${fmtDate(t.dueDate)}</span>` : '')}</div>
+    <div class="task-top"><h4>${esc(t.title)}</h4>${t.done ? '<span class="chip ok">הושלם</span>' : dueChip(t)}</div>
     ${t.description ? `<p class="desc">${esc(t.description)}</p>` : ''}
     ${attachmentsHTML(t)}
     ${(t.targetReps || t.targetBpm) ? `<div class="chips">${t.targetReps ? `<span class="chip">יעד: ${t.targetReps} פעמים</span>` : ''}${t.targetBpm ? `<span class="chip">קצב ${t.targetBpm}</span>` : ''}</div>` : ''}
@@ -2032,7 +2163,7 @@ function onStudentTask(e){
   if(act === 'minus'){ t.reps = Math.max(0, t.reps - 1); }
   if(act === 'done'){ t.done = !t.done; }
   queueTaskSave(t);
-  if(wasDone !== t.done){ renderStudent(); return; }
+  if(wasDone !== t.done){ if(t.done) toast(`כל הכבוד! "${t.title}" הושלמה 🎉`); renderStudent(); return; }
   const tmp = document.createElement('div'); tmp.innerHTML = studentTaskHTML(t);
   const fresh = tmp.firstElementChild; card.replaceWith(fresh);
   const c = $('.count', fresh); c.classList.add('pop');
@@ -2059,6 +2190,8 @@ async function saveLog(){
   try{
     const r = await api('studentAddLog', {pin:S.pin, taskId:$('#lf-task').value, minutes, bpm:Metro.bpm, note:$('#lf-note').value.trim()});
     S.logs.push(r.log); timerReset(); renderStudent(); setSync('התרגול נשמר');
+    const g = Number(S.student.weeklyGoal) || 0, m = minutesThisWeek(S.logs);
+    toast(g && m >= g && m - r.log.minutes < g ? 'הגעת ליעד השבועי! 🎉' : `נשמר. השבוע: ${m} דקות.`);
   }catch(e){ $('#lf-err').textContent = e.message; }
   finally{ $('#lf-save').disabled = false; }
 }
@@ -2080,7 +2213,8 @@ function teacherLogout(){ T.pw = null; T.data = null; T.sel = null; try{ session
 function sStats(sid){
   const tasks = T.data.tasks.filter(t => t.studentId === sid), logs = T.data.logs.filter(l => l.studentId === sid);
   const last = logs.reduce((m, l) => l.date > m ? l.date : m, '');
-  return {tasks, logs, open: tasks.filter(t => !t.done).length, done: tasks.filter(t => t.done).length, mins: minutesThisWeek(logs), last};
+  const s = T.data.students.find(x => x.id === sid) || {};
+  return {tasks, logs, open: tasks.filter(t => !t.done).length, done: tasks.filter(t => t.done).length, mins: minutesThisWeek(logs), last, goal:Number(s.weeklyGoal) || 0, late:tasks.filter(t => { const i = dueInfo(t); return i && i.diff < 0; }).length, streak:practiceStreak(logs)};
 }
 let tMode = 'students';
 function renderTeacher(){
@@ -2089,11 +2223,12 @@ function renderTeacher(){
   $('#t-login').hidden = logged; $('#t-dash').hidden = !logged;
   if(!logged) return;
   $$('#t-mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === tMode));
-  $('#t-students').hidden = tMode !== 'students'; $('#t-chords').hidden = tMode !== 'chords'; $('#t-shapes').hidden = tMode !== 'shapes'; $('#t-songs').hidden = tMode !== 'songs'; $('#t-band').hidden = tMode !== 'band';
+  $('#t-students').hidden = tMode !== 'students'; $('#t-chords').hidden = tMode !== 'chords'; $('#t-shapes').hidden = tMode !== 'shapes'; $('#t-songs').hidden = tMode !== 'songs'; $('#t-band').hidden = tMode !== 'band'; $('#t-settings').hidden = tMode !== 'settings';
   if(tMode === 'chords') return renderTeacherChords();
   if(tMode === 'shapes') return renderTeacherShapes();
   if(tMode === 'songs') return renderTeacherSongs();
   if(tMode === 'band') return renderTeacherBand();
+  if(tMode === 'settings') return renderTeacherSettings();
   const students = [...T.data.students].sort((a, b) => a.name.localeCompare(b.name, 'he'));
   $('#t-slist').innerHTML = `<li><button data-sid="" aria-current="${!T.sel}"><span>כל התלמידים</span></button></li>` +
     students.map(s => { const st = sStats(s.id); return `<li><button data-sid="${esc(s.id)}" aria-current="${T.sel === s.id}"><span>${esc(s.name)}</span><small>${st.open ? st.open + ' פתוחות' : ''}</small></button></li>`; }).join('');
@@ -2101,40 +2236,57 @@ function renderTeacher(){
   T.sel ? renderTeacherDetail() : renderTeacherOverview(students);
 }
 function renderTeacherOverview(students){
-  $('#t-main').innerHTML = students.length ? `
+  if(!students.length){ $('#t-main').innerHTML = `<h2 style="margin-bottom:10px">ברוכים הבאים</h2><p class="empty">עוד אין תלמידים. לחצו על "תלמיד חדש", תנו לו שם וקוד, ושלחו לו את הקוד כדי שייכנס לאזור שלו.</p>`; return; }
+  const feed = activityFeed(), seen = tSeen(), fresh = feed.filter(f => f.at > seen).length;
+  const idle = students.filter(s => !minutesThisWeek(T.data.logs.filter(l => l.studentId === s.id)));
+  $('#t-main').innerHTML = `
     <div class="spread" style="margin-bottom:14px"><h2>כל התלמידים</h2><button class="btn primary" data-act="new-task-all">משימה לכמה תלמידים</button></div>
+    <div class="feed-wrap">
+      <div class="spread"><h3>עדכונים אחרונים ${fresh ? `<span class="chip warn">${fresh} חדשים</span>` : ''}</h3>${fresh ? '<button class="btn ghost small" data-act="feed-seen">סימון הכול כנקרא</button>' : ''}</div>
+      ${feed.length ? `<ul class="feed">${feed.map(f => `<li class="${f.at > seen ? 'new' : ''} ${f.kind}" data-sid="${esc(f.sid)}"><span class="dot"></span><span>${f.html}</span><span class="muted" style="white-space:nowrap">${fmtDate(f.at)}</span></li>`).join('')}</ul>` : '<p class="muted">אין עדכונים בשבועיים האחרונים.</p>'}
+    </div>
+    ${idle.length ? `<div class="idle"><b>עוד לא תרגלו השבוע:</b> ${idle.map(s => `<button class="chip" data-act="open-student" data-sid="${esc(s.id)}">${esc(s.name)}</button>`).join(' ')}</div>` : ''}
     <div class="scroll-x"><table class="simple">
-      <thead><tr><th>שם</th><th>משימות פתוחות</th><th>הושלמו</th><th>דקות השבוע</th><th>תרגול אחרון</th></tr></thead>
-      <tbody>${students.map(s => { const st = sStats(s.id); return `<tr class="click" data-sid="${esc(s.id)}" tabindex="0"><td><b>${esc(s.name)}</b></td><td>${st.open}</td><td>${st.done}</td><td>${st.mins}</td><td>${st.last ? fmtDate(st.last) : '<span class="muted">עוד לא</span>'}</td></tr>`; }).join('')}</tbody>
-    </table></div>`
-    : `<h2 style="margin-bottom:10px">ברוכים הבאים</h2><p class="empty">עוד אין תלמידים. לחצו על "תלמיד חדש", תנו לו שם וקוד, ושלחו לו את הקוד כדי שייכנס לאזור שלו.</p>`;
+      <thead><tr><th>שם</th><th>פתוחות</th><th>באיחור</th><th>הושלמו</th><th>השבוע</th><th>ברצף</th><th>תרגול אחרון</th></tr></thead>
+      <tbody>${students.map(s => { const st = sStats(s.id); return `<tr class="click" data-sid="${esc(s.id)}" tabindex="0"><td><b>${esc(s.name)}</b></td><td>${st.open}</td><td>${st.late ? `<span class="chip due late">${st.late}</span>` : '0'}</td><td>${st.done}</td><td>${st.goal ? `<div class="mini-goal"><span>${st.mins}/${st.goal}</span><div class="bar"><i style="width:${Math.min(100, Math.round(st.mins / st.goal * 100))}%"></i></div></div>` : `${st.mins} דק׳`}</td><td>${st.streak ? st.streak + ' ימים' : '–'}</td><td>${st.last ? fmtDate(st.last) : '<span class="muted">עוד לא</span>'}</td></tr>`; }).join('')}</tbody>
+    </table></div>`;
 }
 function renderTeacherDetail(){
   const s = T.data.students.find(x => x.id === T.sel), st = sStats(s.id);
-  const tasks = [...st.tasks].sort((a, b) => (a.done - b.done) || (b.createdAt || '').localeCompare(a.createdAt || ''));
-  const logs = [...st.logs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15);
+  const tasks = [...st.tasks].sort((a, b) => (a.done - b.done) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const logs = [...st.logs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15), lessons = lessonsOf(s.id);
   $('#t-main').innerHTML = `
     <div class="spread" style="margin-bottom:6px">
-      <div><h2>${esc(s.name)}</h2><p class="muted">קוד כניסה: <span class="pin">${esc(s.pin)}</span></p></div>
-      <div class="row"><button class="btn small" data-act="edit-student">עריכה</button><button class="btn small danger" data-act="del-student">מחיקה</button></div>
+      <div><h2>${esc(s.name)}</h2><p class="muted">קוד כניסה: <span class="pin">${esc(s.pin)}</span>${s.phone ? `, <span dir="ltr">${esc(s.phone)}</span>` : ''}${s.remind && s.email ? ', מקבל/ת תזכורות במייל' : ''}</p></div>
+      <div class="row">${s.phone ? `<a class="btn small wa" href="${esc(waReminder(s))}" target="_blank" rel="noopener">תזכורת בוואטסאפ</a>` : ''}<button class="btn small" data-act="edit-student">עריכה</button><button class="btn small danger" data-act="del-student">מחיקה</button></div>
     </div>
-    <p style="margin:10px 0 18px">${st.open} משימות פתוחות, ${st.done} הושלמו. השבוע: ${st.mins} דקות תרגול${st.last ? `, אחרון ב־${fmtDate(st.last)}` : ''}.</p>
-    <div class="spread" style="margin-bottom:4px"><h3>משימות</h3><button class="btn primary" data-act="new-task">משימה חדשה</button></div>
-    ${tasks.length ? `<div>${tasks.map(teacherTaskHTML).join('')}</div>` : `<p class="empty">אין עדיין משימות. משימה שתוסיפו תופיע אצל ${esc(s.name)} מיד בכניסה הבאה.</p>`}
-    <h3 style="margin:22px 0 4px">תרגולים אחרונים</h3>
-    <ul class="logs">${logs.length ? logs.map(l => { const t = T.data.tasks.find(x => x.id === l.taskId); return `<li><span>${esc(t ? t.title : 'תרגול חופשי')}${l.note ? `<br><small class="muted">${esc(l.note)}</small>` : ''}</span><span class="muted" style="white-space:nowrap">${l.minutes} דק׳${l.bpm ? `, קצב ${l.bpm}` : ''}, ${fmtDate(l.date)}</span></li>`; }).join('') : '<li class="muted">עוד לא נרשם תרגול.</li>'}</ul>`;
+    <div class="t-detail-grid">
+      <div>
+        <p style="margin:6px 0 16px">${st.open} משימות פתוחות${st.late ? `, <b class="late-t">${st.late} באיחור</b>` : ''}, ${st.done} הושלמו.</p>
+        <div class="spread" style="margin-bottom:4px"><h3>משימות</h3><button class="btn primary" data-act="new-task">משימה חדשה</button></div>
+        ${tasks.length ? `<div>${tasks.map(teacherTaskHTML).join('')}</div>` : `<p class="empty">אין עדיין משימות. משימה שתוסיפו תופיע אצל ${esc(s.name)} מיד בכניסה הבאה.</p>`}
+        <div class="spread" style="margin:22px 0 6px"><h3>סיכומי שיעורים</h3><button class="btn small" data-act="new-lesson">סיכום שיעור</button></div>
+        ${lessons.length ? `<div class="lessons">${lessons.map(l => `<article class="lesson" data-lid="${esc(l.id)}"><div class="spread"><div class="lesson-d">${fmtDate(l.date)}</div><button class="btn ghost small" data-act="edit-lesson" data-lid="${esc(l.id)}">עריכה</button></div><p>${esc(l.text)}</p></article>`).join('')}</div>` : `<p class="muted">עוד אין סיכומים. מה שתכתוב כאן יופיע אצל ${esc(s.name)} תחת "מה עשינו בשיעור".</p>`}
+      </div>
+      <div class="stack">
+        <div class="sub-panel" style="border:0;padding-top:0"><h3>תרגול</h3>${goalHTML(st.logs, st.goal)}</div>
+        <div><h3 style="margin-bottom:4px">תרגולים אחרונים</h3>
+        <ul class="logs">${logs.length ? logs.map(l => { const t = T.data.tasks.find(x => x.id === l.taskId); return `<li><span>${esc(t ? t.title : 'תרגול חופשי')}${l.note ? `<br><small class="muted">${esc(l.note)}</small>` : ''}</span><span class="muted" style="white-space:nowrap">${l.minutes} דק׳${l.bpm ? `, קצב ${l.bpm}` : ''}, ${fmtDate(l.date)}</span></li>`; }).join('') : '<li class="muted">עוד לא נרשם תרגול.</li>'}</ul></div>
+      </div>
+    </div>`;
 }
 function teacherTaskHTML(t){
   const pct = t.targetReps ? Math.min(100, Math.round(t.reps / t.targetReps * 100)) : 0;
   return `<div class="t-task" data-id="${esc(t.id)}">
     <div>
-      <div class="row" style="gap:8px"><b>${esc(t.title)}</b>${t.done ? '<span class="chip ok">הושלם</span>' : ''}${t.dueDate ? `<span class="chip">עד ${fmtDate(t.dueDate)}</span>` : ''}</div>
+      <div class="row" style="gap:8px"><b>${esc(t.title)}</b>${t.done ? `<span class="chip ok">הושלם${t.doneAt ? ' ב־' + fmtDate(t.doneAt) : ''}</span>` : dueChip(t)}</div>
       ${attachmentNames(t).length ? `<div class="chips" style="margin:4px 0">${attachmentNames(t).map(n => `<span class="chip">${esc(n)}</span>`).join('')}</div>` : ''}
       <div class="muted" style="font-size:.94rem">בוצע ${t.reps}${t.targetReps ? ` מתוך ${t.targetReps}` : ' פעמים'}${t.targetBpm ? `, קצב ${t.targetBpm}` : ''}</div>
     </div>
     <div class="acts">
       <button class="btn ghost small" data-act="edit-task">עריכה</button>
       <button class="btn ghost small" data-act="toggle-task">${t.done ? 'פתח מחדש' : 'סמן הושלם'}</button>
+      <button class="btn ghost small" data-act="dup-task">שכפול</button>
       <button class="btn ghost small danger" data-act="del-task">מחיקה</button>
     </div>
     ${t.targetReps ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}
@@ -2145,6 +2297,7 @@ function openStudentDlg(s){
   T.editStudent = s || null;
   $('#fs-title').textContent = s ? 'עריכת תלמיד' : 'תלמיד חדש';
   $('#fs-name').value = s ? s.name : ''; $('#fs-pin').value = s ? s.pin : genPin(); $('#fs-err').textContent = '';
+  $('#fs-phone').value = s ? s.phone || '' : ''; $('#fs-email').value = s ? s.email || '' : ''; $('#fs-goal').value = s && s.weeklyGoal ? s.weeklyGoal : ''; $('#fs-remind').checked = !!(s && s.remind);
   $('#dlg-student').showModal(); $('#fs-name').focus();
 }
 function genPin(){
@@ -2184,7 +2337,7 @@ async function tCall(action, payload, errEl){
   catch(e){ if(errEl) errEl.textContent = e.message; else alert(e.message); throw e; }
 }
 async function onTeacherMain(e){
-  const row = e.target.closest('tr[data-sid]');
+  const row = e.target.closest('tr[data-sid], .feed li[data-sid]');
   if(row && !e.target.closest('[data-act]')){ T.sel = row.dataset.sid; renderTeacher(); return; }
   const btn = e.target.closest('[data-act]'); if(!btn) return;
   const act = btn.dataset.act, s = T.data.students.find(x => x.id === T.sel);
@@ -2202,6 +2355,11 @@ async function onTeacherMain(e){
     T.sel = null; renderTeacher();
   }
   if(act === 'edit-task') openTaskDlg(task);
+  if(act === 'dup-task'){ openTaskDlg(null, []); $('#ft-title').textContent = 'שכפול משימה'; $('#ft-name').value = task.title; $('#ft-desc').value = task.description; $('#ft-reps').value = task.targetReps || ''; $('#ft-bpm').value = task.targetBpm || ''; $$('#ft-att-list input').forEach(b => { b.checked = (task.attachments || '').split(',').includes(b.value); }); updateAttSum(); }
+  if(act === 'new-lesson') openLessonDlg(null);
+  if(act === 'edit-lesson') openLessonDlg((T.data.lessons || []).find(l => l.id === btn.dataset.lid));
+  if(act === 'feed-seen'){ store.set('pritah.tSeen', new Date().toISOString()); renderTeacher(); }
+  if(act === 'open-student'){ T.sel = btn.dataset.sid; renderTeacher(); }
   if(act === 'toggle-task'){
     const r = await tCall('teacherSaveTask', {task:Object.assign({}, task, {done:!task.done})});
     mergeTasks(r.tasks); renderTeacher();
@@ -2322,19 +2480,31 @@ function updateAttSum(){
 }
 
 /* מסכי המורה */
-function catHead(g, kind){
+function catHead(g, kind, sub){
   if(!g.cat) return `<h3>ללא קטגוריה <small class="muted">${g.list.length}</small></h3>`;
-  return `<div class="spread"><h3>${esc(g.cat.data.name)} <small class="muted">${g.list.length}</small></h3><div class="row" style="gap:2px"><button class="btn ghost small" data-act="${kind === 'ccat' ? 'new-chord' : 'new-shape'}" data-cat="${esc(g.cat.id)}">הוספה לכאן</button><button class="btn ghost small" data-act="edit-cat" data-id="${esc(g.cat.id)}">שינוי שם</button><button class="btn ghost small danger" data-act="del-cat" data-id="${esc(g.cat.id)}">מחיקה</button></div></div>`;
+  const H = sub ? 'h4' : 'h3';
+  return `<div class="spread"><${H}>${sub ? '<span class="muted">תת־קטגוריה: </span>' : ''}${esc(g.cat.data.name)} <small class="muted">${g.list.length}</small></${H}><div class="row" style="gap:2px"><button class="btn ghost small" data-act="${kind === 'ccat' ? 'new-chord' : 'new-shape'}" data-cat="${esc(g.cat.id)}">הוספה לכאן</button><button class="btn ghost small" data-act="edit-cat" data-id="${esc(g.cat.id)}">שינוי שם</button><button class="btn ghost small danger" data-act="del-cat" data-id="${esc(g.cat.id)}">מחיקה</button></div></div>`;
+}
+function chordCardsHTML(list){
+  return list.length ? `<div class="chord-grid">${list.map(c => `<button class="chord" data-act="edit-chord" data-id="${esc(c.id)}" aria-label="עריכת ${esc(c.name)}"><span class="cname">${esc(c.name)}</span>${chordSVG(c)}<span class="cnote">לחצו לעריכה</span></button>`).join('')}</div>` : '<p class="empty">אין עדיין אקורדים כאן.</p>';
 }
 function renderTeacherChords(){
-  const custom = hasCustomChords(), cats = libOf('ccat');
+  const custom = hasCustomChords();
   const chords = libOf('chord').map(i => chordModel(Object.assign({}, i.data, {id:i.id})));
-  let h = `<div class="spread"><h2>ספריית האקורדים</h2><div class="row"><button class="btn" data-act="new-cat" data-kind="ccat">קטגוריה חדשה</button><button class="btn primary" data-act="new-chord">אקורד חדש</button></div></div>`;
-  if(!custom) h += `<div class="banner" style="margin:14px 0 0">כרגע התלמידים רואים את הספרייה הבסיסית. אפשר לייבא אותה לכאן ולערוך כל אקורד, או לבנות ספרייה משלך מאפס. מהרגע שתשמור אקורד ראשון, התלמידים יראו רק את האקורדים שלך.<div class="row" style="margin-top:10px"><button class="btn primary" data-act="import-chords">ייבוא הספרייה הבסיסית</button></div></div>`;
-  if(custom || cats.length){
-    h += groupByCats(cats, chords).map(g => `<section class="lib-group">${catHead(g, 'ccat')}${g.list.length
-      ? `<div class="chord-grid">${g.list.map(c => `<button class="chord" data-act="edit-chord" data-id="${esc(c.id)}" aria-label="עריכת ${esc(c.name)}"><span class="cname">${esc(c.name)}</span>${chordSVG(c)}<span class="cnote">לחצו לעריכה</span></button>`).join('')}</div>`
-      : '<p class="empty">אין עדיין אקורדים כאן.</p>'}</section>`).join('');
+  let h = `<div class="spread"><h2>ספריית האקורדים</h2><div class="row">${custom ? '<button class="btn" data-act="arrange-chords">השלמה וסידור לפי הקטגוריות</button>' : ''}<button class="btn" data-act="new-cat" data-kind="ccat">קטגוריה חדשה</button><button class="btn primary" data-act="new-chord">אקורד חדש</button></div></div>`;
+  if(!custom) h += `<div class="banner" style="margin:14px 0 0">כרגע התלמידים רואים את הספרייה הבסיסית: כל האקורדים בכל 12 הטוניקות, בקטגוריות מז׳ור, מינור, 7, M7 ו־m7. אפשר לייבא אותה לכאן ולערוך כל אקורד, או לבנות ספרייה משלך מאפס. מהרגע שתשמור אקורד ראשון, התלמידים יראו רק את האקורדים שלך.<div class="row" style="margin-top:10px"><button class="btn primary" data-act="import-chords">ייבוא הספרייה הבסיסית</button></div></div>`;
+  else h += `<p class="muted" style="margin-top:6px;max-width:66ch">"השלמה וסידור" מוסיף את האקורדים שחסרים לך מהספרייה הבסיסית, ומכניס אקורדים לקטגוריות מז׳ור, מינור, 7, M7 ו־m7. אקורדים שכבר שייכת לקטגוריות משלך לא יזוזו.</p>`;
+  const tops = ccatTops(), ids = libOf('ccat').map(c => c.id);
+  if(custom || tops.length){
+    h += tops.map(top => {
+      const kids = ccatKids(top.id);
+      return `<section class="lib-group">${catHead({cat:top, list:chords.filter(c => ccatTree(top.id).includes(c.categoryId))}, 'ccat')}
+        ${chordCardsHTML(chords.filter(c => c.categoryId === top.id))}
+        ${kids.map(k => `<div class="lib-sub">${catHead({cat:k, list:chords.filter(c => c.categoryId === k.id)}, 'ccat', true)}${chordCardsHTML(chords.filter(c => c.categoryId === k.id))}</div>`).join('')}
+      </section>`;
+    }).join('');
+    const rest = chords.filter(c => !ids.includes(c.categoryId));
+    if(rest.length || !tops.length) h += `<section class="lib-group">${catHead({cat:null, list:rest}, 'ccat')}${chordCardsHTML(rest)}</section>`;
   }
   $('#t-chords').innerHTML = h;
 }
@@ -2362,15 +2532,46 @@ async function onTeacherLib(e){
   if(act === 'new-shape') openShapeDlg(null, b.dataset.cat || '');
   if(act === 'edit-shape') openShapeDlg(item);
   if(act === 'import-chords') importChords(b);
+  if(act === 'arrange-chords') arrangeChords(b);
 }
 async function importChords(btn){
   btn.disabled = true; btn.textContent = 'מייבא…';
   const rid = () => 'i' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 5);
   const t0 = Date.now(), catMap = {}, items = [];
-  CHORD_FILTERS.filter(f => f.id !== 'all' && f.id !== 'barre').forEach((f, k) => { const id = rid(); catMap[f.id] = id; items.push({id, kind:'ccat', data:{name:f.label, order:t0 + k}}); });
+  QORDER.forEach((q, k) => { const id = rid(); catMap[q] = id; items.push({id, kind:'ccat', data:{name:QNAME[q], order:t0 + k}}); });
   CHORDS.forEach((c, k) => { const m = chordModel(c); items.push({id:rid(), kind:'chord', data:{name:m.name, frets:m.frets, fingers:m.fingers, barre:m.barre, base:0, categoryId:catMap[c.c] || '', note:'', order:t0 + 100 + k}}); });
   try{ await saveItems(items); }
   catch(e){ btn.disabled = false; btn.textContent = 'ייבוא הספרייה הבסיסית'; }
+}
+async function arrangeChords(btn){
+  if(!confirm('להוסיף את האקורדים שחסרים מהספרייה הבסיסית ולסדר את האקורדים בקטגוריות מז׳ור, מינור, 7, M7 ו־m7?')) return;
+  btn.disabled = true; btn.textContent = 'מסדר…';
+  const rid = () => 'i' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 5);
+  const cats = libOf('ccat'), items = [], catId = {}, t0 = Date.now();
+  QORDER.forEach((q, k) => {
+    const c = cats.find(x => !catParent(x) && x.data.name === QNAME[q]);
+    if(c) catId[q] = c.id; else { const id = rid(); catId[q] = id; items.push({id, kind:'ccat', data:{name:QNAME[q], order:t0 + k}}); }
+  });
+  const legacy = new Set(cats.filter(c => ['ספטאקורדים'].includes(c.data.name)).map(c => c.id));
+  const known = new Set(Object.values(catId));
+  const existing = libOf('chord');
+  existing.forEach(i => {
+    const q = chordClass(i.data.name); if(!q) return;
+    const cur = i.data.categoryId || '';
+    if(cur === catId[q]) return;
+    const curExists = cats.some(c => c.id === cur);
+    if(cur && curExists && !legacy.has(cur) && !known.has(cur)) return;
+    items.push({id:i.id, kind:'chord', data:Object.assign({}, i.data, {categoryId:catId[q]})});
+  });
+  const names = new Set(existing.map(i => i.data.name));
+  CHORDS.filter(c => QNAME[c.c] && !names.has(c.n)).forEach((c, k) => { const m = chordModel(c); items.push({id:rid(), kind:'chord', data:{name:m.name, frets:m.frets, fingers:m.fingers, barre:m.barre, base:0, categoryId:catId[c.c], note:'', order:t0 + 300 + k}}); });
+  try{
+    if(items.length) await saveItems(items);
+    for(const c of libOf('ccat').filter(c => legacy.has(c.id))){
+      if(!libOf('chord').some(i => i.data.categoryId === c.id) && !ccatKids(c.id).length){ const r = await tCall('teacherDeleteContent', {id:c.id}); LIB.items = r.items; }
+    }
+    refreshLib();
+  }catch(e){ btn.disabled = false; btn.textContent = 'השלמה וסידור לפי הקטגוריות'; }
 }
 /* קטגוריה */
 let editCat = null;
@@ -2378,15 +2579,23 @@ function openCatDlg(kind, item){
   editCat = {kind, item};
   $('#fk-title').textContent = item ? 'שינוי שם קטגוריה' : (kind === 'ccat' ? 'קטגוריית אקורדים חדשה' : 'קטגוריית צורות חדשה');
   $('#fk-name').value = item ? item.data.name : ''; $('#fk-err').textContent = '';
+  const isC = kind === 'ccat', hasKids = item && ccatKids(item.id).length;
+  $('#fk-parent-wrap').hidden = !isC || hasKids;
+  $('#fk-parent').innerHTML = '<option value="">קטגוריה ראשית</option>' + (isC ? ccatTops().filter(c => !item || c.id !== item.id).map(c => `<option value="${esc(c.id)}">תת־קטגוריה של: ${esc(c.data.name)}</option>`).join('') : '');
+  $('#fk-parent').value = item && isC ? catParent(item) : (editCat.parent || '');
   $('#dlg-cat').showModal(); $('#fk-name').focus();
 }
 async function saveCat(e){
   e.preventDefault();
   const name = $('#fk-name').value.trim(); if(!name) return;
   const it = editCat.item;
-  try{ await saveItems([{id:it ? it.id : '', kind:editCat.kind, data:Object.assign({}, it ? it.data : {order:Date.now()}, {name})}], $('#fk-err')); $('#dlg-cat').close(); }catch(err){}
+  const parentId = editCat.kind === 'ccat' && !$('#fk-parent-wrap').hidden ? $('#fk-parent').value : (it ? it.data.parentId || '' : '');
+  try{ await saveItems([{id:it ? it.id : '', kind:editCat.kind, data:Object.assign({}, it ? it.data : {order:Date.now()}, {name, parentId})}], $('#fk-err')); $('#dlg-cat').close(); }catch(err){}
 }
-function catOptions(kind, sel){ return '<option value="">ללא קטגוריה</option>' + libOf(kind).map(c => `<option value="${esc(c.id)}" ${c.id === sel ? 'selected' : ''}>${esc(c.data.name)}</option>`).join(''); }
+function catOptions(kind, sel){
+  if(kind !== 'ccat') return '<option value="">ללא קטגוריה</option>' + libOf(kind).map(c => `<option value="${esc(c.id)}" ${c.id === sel ? 'selected' : ''}>${esc(c.data.name)}</option>`).join('');
+  return '<option value="">ללא קטגוריה</option>' + ccatTops().map(t => `<option value="${esc(t.id)}" ${t.id === sel ? 'selected' : ''}>${esc(t.data.name)}</option>` + ccatKids(t.id).map(k => `<option value="${esc(k.id)}" ${k.id === sel ? 'selected' : ''}>${esc(t.data.name)} › ${esc(k.data.name)}</option>`).join('')).join('');
+}
 
 /* עורך אקורד */
 const CE = {m:null, orig:null, tool:'dot'};
@@ -3655,6 +3864,161 @@ function linkifyAnswer(v){
   return parts.map((p, i) => i % 2 ? (mediaEmbed(p) ? linkChip({url:p}) : `<a href="${esc(p)}" target="_blank" rel="noopener" dir="ltr">${esc(p)}</a>`) : esc(p)).join('');
 }
 
+/* ================== מעקב, יעדים ותזכורות ================== */
+const DAY_HE = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+const DAY_ICS = ['SU','MO','TU','WE','TH','FR','SA'];
+const localDay = d => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+function practiceStreak(logs){
+  const days = new Set(logs.map(l => localDay(l.date)));
+  const d = new Date(); let n = 0;
+  if(!days.has(localDay(d))) d.setDate(d.getDate() - 1);
+  while(days.has(localDay(d))){ n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function dueInfo(t){
+  if(t.done || !t.dueDate) return null;
+  const [y, m, d] = t.dueDate.split('-').map(Number), due = new Date(y, m - 1, d), today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff = Math.round((due - today) / 86400000);
+  if(diff < 0) return {cls:'late', text:diff === -1 ? 'באיחור של יום' : `באיחור של ${-diff} ימים`, diff};
+  if(diff === 0) return {cls:'soon', text:'להיום', diff};
+  if(diff === 1) return {cls:'soon', text:'עד מחר', diff};
+  return {cls:'', text:`עד ${d}.${m}`, diff};
+}
+const dueChip = t => { const i = dueInfo(t); return i ? `<span class="chip due ${i.cls}">${i.text}</span>` : ''; };
+function weeksData(logs, n = 8){
+  const ws = weekStart(), out = [];
+  for(let i = n - 1; i >= 0; i--){
+    const s = new Date(ws); s.setDate(s.getDate() - i * 7); const e = new Date(s); e.setDate(e.getDate() + 7);
+    out.push({start:s, mins:logs.filter(l => { const d = new Date(l.date); return d >= s && d < e; }).reduce((a, l) => a + (Number(l.minutes) || 0), 0)});
+  }
+  return out;
+}
+function weeksChart(logs, goal){
+  const data = weeksData(logs), W = 320, H = 130, pad = 22, bw = (W - 10) / data.length;
+  const max = Math.max(goal || 0, ...data.map(d => d.mins), 10);
+  const y = v => H - pad - (v / max) * (H - pad - 14);
+  let s = `<svg class="wchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="דקות תרגול ב־8 השבועות האחרונים" dir="ltr">`;
+  data.forEach((d, i) => {
+    const x = 5 + i * bw + bw * .18, w = bw * .64, top = y(d.mins), last = i === data.length - 1;
+    s += `<rect x="${x}" y="${top}" width="${w}" height="${H - pad - top}" rx="4" class="wbar${last ? ' now' : ''}${goal && d.mins >= goal ? ' hit' : ''}"><title>${d.mins} דקות</title></rect>`;
+    if(d.mins) s += `<text x="${x + w / 2}" y="${top - 4}" text-anchor="middle" class="wval">${d.mins}</text>`;
+    s += `<text x="${x + w / 2}" y="${H - 6}" text-anchor="middle" class="wlbl">${d.start.getDate()}.${d.start.getMonth() + 1}</text>`;
+  });
+  if(goal) s += `<line x1="0" x2="${W}" y1="${y(goal)}" y2="${y(goal)}" class="wgoal"/><text x="${W - 30}" y="${y(goal) - 4}" text-anchor="middle" class="wlbl">יעד ${goal}</text>`;
+  return s + '</svg>';
+}
+function goalHTML(logs, goal){
+  const mins = minutesThisWeek(logs), streak = practiceStreak(logs);
+  const pct = goal ? Math.min(100, Math.round(mins / goal * 100)) : 0;
+  return `<div class="goal">
+    <div class="goal-nums"><div><b>${mins}</b><small>${goal ? `מתוך ${goal} דקות השבוע` : 'דקות השבוע'}</small></div><div><b>${streak}</b><small>${streak === 1 ? 'יום ברצף' : 'ימים ברצף'}</small></div></div>
+    ${goal ? `<div class="bar goal-bar"><i style="width:${pct}%"></i></div><p class="muted" style="font-size:.9rem">${mins >= goal ? 'הגעת ליעד השבועי. כל הכבוד!' : `נשארו ${goal - mins} דקות ליעד.`}</p>` : ''}
+    ${weeksChart(logs, goal)}
+  </div>`;
+}
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.hidden = false; t.classList.remove('out');
+  clearTimeout(toast.t); toast.t = setTimeout(() => { t.classList.add('out'); setTimeout(() => { t.hidden = true; }, 300); }, 2600);
+}
+const siteBase = () => location.origin + location.pathname.replace(/index\.html$/, '');
+
+/* תזכורת ליומן לתלמיד */
+function remindPrefs(){ try{ return Object.assign({time:'17:00', days:[0,1,2,3,4], mins:20}, JSON.parse(store.get('pritah.remind') || '{}')); }catch(e){ return {time:'17:00', days:[0,1,2,3,4], mins:20}; } }
+function renderRemind(){
+  const p = remindPrefs();
+  $('#rm-time').value = p.time; $('#rm-mins').value = p.mins;
+  $('#rm-days').innerHTML = DAY_HE.map((d, i) => `<button type="button" data-v="${i}" aria-pressed="${p.days.includes(i)}">${d}</button>`).join('');
+}
+function readRemind(){
+  const p = {time:$('#rm-time').value || '17:00', mins:clamp(Number($('#rm-mins').value) || 20, 5, 180), days:$$('#rm-days button[aria-pressed="true"]').map(b => Number(b.dataset.v))};
+  store.set('pritah.remind', JSON.stringify(p)); return p;
+}
+function nextAt(days, time){
+  const [hh, mm] = time.split(':').map(Number), now = new Date();
+  for(let i = 0; i < 8; i++){ const x = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, hh, mm); if(days.includes(x.getDay()) && x > now) return x; }
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, hh, mm);
+}
+const calFmt = d => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}00`;
+function remindCal(kind){
+  const p = readRemind(), msg = $('#rm-msg');
+  if(!p.days.length){ msg.textContent = 'בחרו לפחות יום אחד.'; return; }
+  const s = nextAt(p.days, p.time), e = new Date(s.getTime() + p.mins * 60000);
+  const rr = 'RRULE:FREQ=WEEKLY;BYDAY=' + p.days.map(d => DAY_ICS[d]).join(',');
+  const title = 'תרגול גיטרה', url = siteBase() + '#student';
+  if(kind === 'google'){
+    window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${calFmt(s)}/${calFmt(e)}&ctz=Asia%2FJerusalem&recur=${encodeURIComponent(rr)}&details=${encodeURIComponent('שיעורי הבית שלי: ' + url)}`, '_blank', 'noopener');
+  } else {
+    const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//pritah//he','BEGIN:VEVENT',`UID:${Date.now()}@pritah`,`DTSTAMP:${calFmt(new Date())}`,`DTSTART:${calFmt(s)}`,`DTEND:${calFmt(e)}`,rr,`SUMMARY:${title}`,`DESCRIPTION:שיעורי הבית שלי: ${url}`,'BEGIN:VALARM','TRIGGER:PT0M','ACTION:DISPLAY',`DESCRIPTION:${title}`,'END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics], {type:'text/calendar'})); a.download = 'practice-reminder.ics';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  msg.textContent = 'בחלון שנפתח מאשרים את השמירה ביומן.';
+}
+
+/* מורה: עדכונים, וואטסאפ, סיכומי שיעורים, הגדרות */
+const tSeen = () => store.get('pritah.tSeen') || '';
+function activityFeed(){
+  const since = new Date(Date.now() - 14 * 86400000).toISOString(), name = id => (T.data.students.find(s => s.id === id) || {}).name || '';
+  const items = [];
+  T.data.tasks.filter(t => t.done).forEach(t => { const at = t.doneAt || t.updatedAt; if(at >= since && name(t.studentId)) items.push({at, sid:t.studentId, html:`<b>${esc(name(t.studentId))}</b> סיים/ה את המשימה "${esc(t.title)}"`, kind:'done'}); });
+  T.data.logs.forEach(l => { if(l.date >= since && name(l.studentId)){ const t = T.data.tasks.find(x => x.id === l.taskId); items.push({at:l.date, sid:l.studentId, html:`<b>${esc(name(l.studentId))}</b> תרגל/ה ${l.minutes} דקות${t ? ` על "${esc(t.title)}"` : ''}${l.note ? `: <span class="muted">${esc(l.note)}</span>` : ''}`, kind:'log'}); } });
+  return items.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 25);
+}
+function waReminder(s){
+  const open = T.data.tasks.filter(t => t.studentId === s.id && !t.done).sort(taskSort);
+  const mins = minutesThisWeek(T.data.logs.filter(l => l.studentId === s.id)), goal = Number(s.weeklyGoal) || 0;
+  const lines = [`היי ${s.name}! 🎸 תזכורת לשיעורי הבית בגיטרה:`].concat(open.length ? open.map(t => `• ${t.title}${t.dueDate ? ` (${dueInfo(t) ? dueInfo(t).text : ''})` : ''}`) : ['אין כרגע משימות פתוחות, אפשר לתרגל חופשי.'],
+    [goal ? `השבוע תרגלת ${mins} דקות מתוך ${goal}.` : (mins ? `השבוע תרגלת ${mins} דקות.` : ''), `כניסה לאזור שלך: ${siteBase()}#student`]).filter(Boolean);
+  return waOf(s.phone) + '?text=' + encodeURIComponent(lines.join('\n'));
+}
+let editLesson = null;
+function openLessonDlg(l){
+  editLesson = l || null;
+  $('#fl-title').textContent = l ? 'עריכת סיכום שיעור' : 'סיכום שיעור';
+  $('#fl-date').value = l ? l.date : localDay(new Date()); $('#fl-text').value = l ? l.text : '';
+  $('#fl-del').hidden = !l; $('#fl-err').textContent = '';
+  $('#dlg-lesson').showModal(); $('#fl-text').focus();
+}
+async function saveLesson(e){
+  e.preventDefault();
+  const lesson = {id:editLesson ? editLesson.id : '', studentId:editLesson ? editLesson.studentId : T.sel, date:$('#fl-date').value, text:$('#fl-text').value};
+  try{
+    const r = await tCall('teacherSaveLesson', {lesson}, $('#fl-err'));
+    T.data.lessons = (T.data.lessons || []).filter(x => x.id !== r.lesson.id).concat([r.lesson]);
+    $('#dlg-lesson').close(); renderTeacher();
+  }catch(err){}
+}
+async function deleteLesson(){
+  if(!editLesson || !confirm('למחוק את סיכום השיעור?')) return;
+  try{ await tCall('teacherDeleteLesson', {id:editLesson.id}, $('#fl-err')); T.data.lessons = T.data.lessons.filter(x => x.id !== editLesson.id); $('#dlg-lesson').close(); renderTeacher(); }catch(err){}
+}
+const lessonsOf = sid => (T.data && T.data.lessons || []).filter(l => l.studentId === sid).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+function renderTeacherSettings(){
+  const st = T.data.settings || {}, days = String(st.remindDays || '0,1,2,3,4').split(',').filter(Boolean).map(Number), hour = Number(st.remindHour || 17);
+  $('#t-settings').innerHTML = `<h2>הגדרות</h2>
+    <div class="sub-panel" style="margin-top:12px">
+      <h3>עדכונים אליך במייל</h3>
+      <label class="field" style="max-width:340px">המייל שלך<input type="email" id="set-email" dir="ltr" value="${esc(st.teacherEmail || '')}"></label>
+      <label class="row" style="gap:8px;font-weight:600"><input type="checkbox" id="set-done" ${st.notifyDone === 'true' ? 'checked' : ''}> כשתלמיד מסיים משימה</label>
+      <label class="row" style="gap:8px;font-weight:600"><input type="checkbox" id="set-practice" ${st.notifyPractice === 'true' ? 'checked' : ''}> כשתלמיד רושם תרגול</label>
+    </div>
+    <div class="sub-panel">
+      <h3>תזכורות לתלמידים במייל</h3>
+      <p class="muted" style="max-width:62ch">נשלחות רק לתלמידים שסימנת להם "תזכורות במייל" ויש להם מייל, ורק כשיש להם משימות פתוחות. במייל מופיעות המשימות, תאריכי היעד וההתקדמות ביעד השבועי.</p>
+      <div class="row" style="align-items:end">
+        <label class="field" style="width:130px">שעה<select id="set-hour">${Array.from({length:15}, (_, i) => i + 8).map(h => `<option value="${h}" ${h === hour ? 'selected' : ''}>${h}:00</option>`).join('')}</select></label>
+        <div class="opt"><span class="opt-l">ימים</span><div class="seg" id="set-days">${DAY_HE.map((d, i) => `<button type="button" data-v="${i}" aria-pressed="${days.includes(i)}">${d}</button>`).join('')}</div></div>
+      </div>
+      <p class="hint">כדי שהתזכורות יעבדו, צריך להריץ פעם אחת את <span dir="ltr">setup</span> ב־Apps Script אחרי העדכון. זה מפעיל בדיקה אוטומטית פעם בשעה.</p>
+    </div>
+    <div class="row" style="margin-top:14px"><button class="btn primary" id="set-save">שמירת ההגדרות</button><span class="muted" id="set-msg"></span></div>`;
+}
+async function saveTeacherSettings(){
+  const settings = {teacherEmail:$('#set-email').value.trim(), notifyDone:String($('#set-done').checked), notifyPractice:String($('#set-practice').checked), remindHour:$('#set-hour').value, remindDays:$$('#set-days button[aria-pressed="true"]').map(b => b.dataset.v).join(','), siteUrl:siteBase()};
+  if((settings.notifyDone === 'true' || settings.notifyPractice === 'true') && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(settings.teacherEmail)){ $('#set-msg').textContent = 'כדי לקבל עדכונים צריך מייל תקין.'; return; }
+  try{ const r = await tCall('teacherSaveSettings', {settings}, $('#set-msg')); T.data.settings = r.settings; $('#set-msg').textContent = 'נשמר.'; }catch(e){}
+}
+
 /* ================== ניווט ================== */
 const VIEWS = ['metronome','tuner','chords','fretboard','theory','songs','student','teacher','velvet'];
 let currentView = 'metronome';
@@ -3704,7 +4068,8 @@ function init(){
 
   // אקורדים
   $('#c-filter').innerHTML = CHORD_FILTERS.map(f => `<button data-v="${f.id}">${f.label}</button>`).join('');
-  $('#c-filter').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ chordFilter = b.dataset.v; renderChords(); } });
+  $('#c-filter').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ chordFilter = b.dataset.v; chordSub = ''; renderChords(); } });
+  $('#c-sub').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ chordSub = b.dataset.v; renderChords(); } });
   $('#c-search').addEventListener('input', renderChords);
   $('#c-grid').addEventListener('click', e => { const b = e.target.closest('.chord'); if(!b) return; const c = findChord(b.dataset.key); if(c){ strumFrets(c.frets); flash(b); } });
   renderChords();
@@ -3728,7 +4093,6 @@ function init(){
   $('#th-mode').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ TH.mode = b.dataset.v; renderTheory(); } });
   $('#th-key').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ TH.root = Number(b.dataset.v); renderTheory(); } });
   $('#th-chords').addEventListener('click', e => { const b = e.target.closest('.kc'); if(!b) return; playChord(diatonic()[Number(b.dataset.i)]); flash(b); });
-  $('#th-progs').addEventListener('click', e => { const b = e.target.closest('[data-prog]'); if(b) playProg(Number(b.dataset.prog)); });
   renderTheory();
 
   // תלמיד
@@ -3757,7 +4121,8 @@ function init(){
   $('#fs-gen').addEventListener('click', () => { $('#fs-pin').value = genPin(); });
   $('#fs').addEventListener('submit', async e => {
     e.preventDefault();
-    const student = {id: T.editStudent ? T.editStudent.id : '', name: $('#fs-name').value, pin: $('#fs-pin').value};
+    const student = {id: T.editStudent ? T.editStudent.id : '', name: $('#fs-name').value, pin: $('#fs-pin').value, phone:$('#fs-phone').value, email:$('#fs-email').value, weeklyGoal:$('#fs-goal').value, remind:$('#fs-remind').checked};
+    if(student.remind && !student.email.trim()){ $('#fs-err').textContent = 'כדי לשלוח תזכורות צריך מייל.'; return; }
     try{
       const r = await tCall('teacherSaveStudent', {student}, $('#fs-err'));
       const i = T.data.students.findIndex(x => x.id === r.student.id);
@@ -3894,6 +4259,15 @@ function init(){
   const bpin = store.get('pritah.bandpin');
   if(bpin) bandLogin(bpin, true);
 
+  // מעקב ותזכורות
+  renderRemind();
+  $('#rm-days').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); readRemind(); } });
+  $('#rm-time').addEventListener('change', readRemind); $('#rm-mins').addEventListener('change', readRemind);
+  $('#rm-google').addEventListener('click', () => remindCal('google'));
+  $('#rm-ics').addEventListener('click', () => remindCal('ics'));
+  $('#fl').addEventListener('submit', saveLesson);
+  $('#fl-del').addEventListener('click', deleteLesson);
+  $('#t-settings').addEventListener('click', e => { const d = e.target.closest('#set-days button'); if(d) d.setAttribute('aria-pressed', d.getAttribute('aria-pressed') !== 'true'); if(e.target.id === 'set-save') saveTeacherSettings(); });
   // כניסה אוטומטית
   const savedPin = store.get('pritah.pin');
   if(savedPin) studentLogin(savedPin, true);
