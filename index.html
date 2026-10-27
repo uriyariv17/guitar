@@ -512,6 +512,10 @@ a.btn.wa{ background:#1F9D55; border-color:#1F9D55; color:#fff; }
 .y-task.done{ opacity:.65; }
 .y-task.done b{ text-decoration:line-through; }
 .y-check input{ width:22px; height:22px; margin-top:2px; }
+.y-ring{ display:grid; place-items:center; min-width:34px; height:28px; padding:0 6px; border-radius:999px; background:var(--surface-2); font:700 .8rem 'Assistant',Arial,sans-serif; color:var(--ink-2); }
+.t-who{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px; font-size:.88rem; }
+.t-who .who{ padding:1px 8px; border-radius:999px; background:var(--surface-2); color:var(--ink-2); }
+.t-who .who.yes{ background:color-mix(in srgb, var(--green) 16%, var(--surface)); color:var(--green); font-weight:700; }
 .y-compose{ display:grid; gap:6px; }
 .y-compose textarea{ min-height:70px; }
 .y-compose .btn{ justify-self:start; }
@@ -544,6 +548,12 @@ a.btn.wa{ background:#1F9D55; border-color:#1F9D55; color:#fff; }
 .home-tools{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; margin:28px auto 0; max-width:860px; }
 .home-tools .chip{ border:0; cursor:pointer; font:600 .92rem 'Assistant',Arial,sans-serif; padding:5px 14px; }
 .home-tools .chip:hover{ background:var(--line); }
+
+.fbtn{ appearance:none; border:0; border-radius:14px; padding:10px 22px; background:#FF2D55; color:#fff; font:400 1.5rem 'Secular One',Arial,sans-serif; letter-spacing:.02em; cursor:pointer; box-shadow:0 4px 0 #A3002A, 0 8px 18px rgba(0,0,0,.25); transform:rotate(-3deg); direction:ltr; }
+.fbtn:hover{ filter:brightness(1.08); }
+.fbtn:active{ transform:rotate(-3deg) translateY(3px); box-shadow:0 1px 0 #A3002A; }
+.fbtn.shake{ animation:fshake .5s; }
+@keyframes fshake{ 0%,100%{ transform:rotate(-3deg); } 20%{ transform:rotate(6deg) scale(1.12); } 40%{ transform:rotate(-9deg) scale(1.15); } 60%{ transform:rotate(5deg) scale(1.1); } 80%{ transform:rotate(-5deg); } }
 
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
@@ -827,7 +837,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
 
   <!-- הרכבים צעירים -->
   <section class="view" id="v-youth">
-    <div class="velvet-head youth-head"><div><span class="yh-brand">הרכבים צעירים</span><span class="yh-group" id="yo-gname"></span></div><span id="yo-user"></span></div>
+    <div class="velvet-head youth-head"><div><span class="yh-brand">הרכבים צעירים</span><span class="yh-group" id="yo-gname"></span></div><span class="row" style="gap:12px"><span id="yo-user"></span><button type="button" class="fbtn" id="yo-fuck" hidden>Fuck!</button></span></div>
     <div class="login panel" id="yo-login">
       <h2>האזור של ההרכב</h2>
       <p class="muted">הכניסו את הקוד האישי שקיבלתם מהמנחים.</p>
@@ -2096,19 +2106,19 @@ function serverHandle(req, store, teacherPassword){
       return {me:{id:me.id, name:me.name, role:me.role, staff:me.staff, groupId:me.groupId}, people:vis, items:store.all('Youth').map(nY).filter(it => canGroup(it.groupId)).filter(it => it.kind !== 'ynote' || it.data.visibility === 'all' || it.authorId === me.id || (it.data.visibility === 'to' && (it.data.to || []).indexOf(me.id) >= 0))};
     }
     if(a === 'youthSave'){
-      const KINDS = ['group','song','task','rehearsal','post','rsvp','ynote'], STAFF_ONLY = ['group','song','rehearsal'], list = req.items || [], out = [];
+      const KINDS = ['group','song','task','rehearsal','post','rsvp','ynote','tdone'], STAFF_ONLY = ['group','song','rehearsal'], list = req.items || [], out = [];
       if(!list.length) throw new Error('אין מה לשמור.');
       list.forEach(it => {
         if(KINDS.indexOf(it.kind) < 0) throw new Error('סוג פריט לא מוכר.');
         if(STAFF_ONLY.indexOf(it.kind) >= 0 && !me.staff) throw new Error('רק המנחים יכולים לערוך את זה.');
         const data = it.data || {};
-        if(it.kind === 'rsvp' && !me.staff) data.personId = me.id;
+        if((it.kind === 'rsvp' || it.kind === 'tdone') && !me.staff) data.personId = me.id;
         const json = JSON.stringify(data);
         if(json.length > 45000) throw new Error('הפריט גדול מדי לשמירה.');
         const raw = it.id ? store.all('Youth').find(x => String(x.id) === String(it.id)) : null;
         if(raw){
           if(String(raw.kind) !== it.kind || !canGroup(String(raw.groupId))) throw new Error('אין הרשאה לפריט הזה.');
-          if(!me.staff && (it.kind === 'post' || it.kind === 'rsvp') && String(raw.authorId) !== me.id) throw new Error('אפשר לערוך רק דברים שכתבת.');
+          if(!me.staff && (it.kind === 'post' || it.kind === 'rsvp' || it.kind === 'tdone') && String(raw.authorId) !== me.id) throw new Error('אפשר לערוך רק דברים שכתבת.');
           if(it.kind === 'ynote' && String(raw.authorId) !== me.id) throw new Error('אפשר לערוך רק הערות שכתבת.');
           raw.data = json; raw.updatedAt = now(); store.update('Youth', raw); out.push(nY(raw)); return;
         }
@@ -2132,6 +2142,7 @@ function serverHandle(req, store, teacherPassword){
       } else {
         store.remove('Youth', x => String(x.id) === id);
         if(String(raw.kind) === 'song') store.remove('Youth', x => String(x.kind) === 'ynote' && nY(x).data.songId === id);
+        if(String(raw.kind) === 'task') store.remove('Youth', x => String(x.kind) === 'tdone' && nY(x).data.taskId === id);
       }
       return {};
     }
@@ -2156,7 +2167,7 @@ function serverHandle(req, store, teacherPassword){
       if(!me.staff) throw new Error('רק המנחים יכולים לנהל חברים.');
       const id = String(req.id);
       store.remove('YouthPeople', x => String(x.id) === id && !bool(x.staff));
-      store.remove('Youth', x => String(x.kind) === 'rsvp' && nY(x).data.personId === id);
+      store.remove('Youth', x => (String(x.kind) === 'rsvp' || String(x.kind) === 'tdone') && nY(x).data.personId === id);
       return {};
     }
   }
@@ -3850,7 +3861,7 @@ function noteHTML(n){
   const mine = n.authorId === B.member.id, col = n.data.color || 'yellow';
   return `<div class="ncard c-${col}" data-nid="${esc(n.id)}" data-line="${n._at ?? -1}">
     <div class="ncard-h"><b>${esc(memberName(n.authorId))}</b>${n.data.visibility === 'all' ? '' : '<span class="lock">פרטית</span>'}${mine ? `<span class="ncard-acts"><button type="button" data-act="edit-note" data-id="${esc(n.id)}">עריכה</button><button type="button" class="del" data-act="del-note" data-id="${esc(n.id)}">מחיקה</button></span>` : ''}</div>
-    ${n.data.lineText && (n.data.orphan || n._at === undefined || n._at < 0) && n.data.line >= 0 ? `<div class="ncard-q">“${esc(n.data.lineText)}”</div>` : ''}
+    ${n.data.lineText && (n.data.orphan || n._at === undefined || n._at < 0) && n.data.line >= 0 ? `<div class="ncard-q">“\u2068${esc(n.data.lineText)}\u2069”</div>` : ''}
     <div class="ncard-t">${esc(n.data.text)}</div></div>`;
 }
 function layoutNotes(){ layoutNotesIn({wrap:'#vb-wrap', sheet:'#vb-sheet', rail:'#vb-rail', byLine:B.byLine, openLines:B.openLines, html:noteHTML}); }
@@ -3860,7 +3871,7 @@ function noteHTML_old(n){
   const mine = n.authorId === B.member.id;
   return `<div class="bnote ${n.data.visibility === 'all' ? 'pub' : 'priv'}" data-nid="${esc(n.id)}">
     <div class="bnote-h"><b>${esc(memberName(n.authorId))}</b><span class="chip">${n.data.visibility === 'all' ? 'לכולם' : 'רק לי'}</span>${mine ? `<button class="btn ghost small" data-act="edit-note" data-id="${esc(n.id)}">עריכה</button><button class="btn ghost small danger" data-act="del-note" data-id="${esc(n.id)}">מחיקה</button>` : ''}</div>
-    ${n.data.lineText && n.data.orphan ? `<div class="muted bnote-q">“${esc(n.data.lineText)}”</div>` : ''}
+    ${n.data.lineText && n.data.orphan ? `<div class="muted bnote-q">“\u2068${esc(n.data.lineText)}\u2069”</div>` : ''}
     <div class="bnote-t">${esc(n.data.text)}</div></div>`;
 }
 const plainLine = t => String(t || '').replace(/\{\{[^{}]*\}\}/g, '').replace(/https?:\/\/\S+/g, '').replace(/\[([^\]\s]{1,14})\]/g, '').trim();
@@ -3984,7 +3995,7 @@ function openNoteDlg(n, line, lineText){
   if(NOTE_CTX !== 'youth') setNoteCtx('band');
   B.editNote = {item:n, line, lineText};
   $('#nt-title').textContent = n ? 'עריכת הערה' : (line >= 0 ? 'הערה לשורה' : 'הערה לשיר');
-  $('#nt-quote').hidden = !lineText; $('#nt-quote').textContent = lineText ? `“${lineText}”` : '';
+  $('#nt-quote').hidden = !lineText; $('#nt-quote').textContent = lineText ? `“\u2068${lineText}\u2069”` : '';
   $('#nt-text').value = n ? n.data.text : '';
   const col = n ? (n.data.color || 'yellow') : (B.lastColor || 'yellow');
   $$('#nt-color .mk-sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === col));
@@ -4577,7 +4588,7 @@ async function youthLogin(pin, silent){
   }catch(e){ if(!silent) $('#yo-err').textContent = e.message; else store.del('pritah.youthpin'); }
   finally{ $('#yo-go').disabled = false; }
 }
-function youthLogout(){ Object.assign(Y, {pin:null, me:null, people:[], items:[], songId:null, rehId:null}); store.del('pritah.youthpin'); $('#yo-pin').value = ''; updateYouthTab(); renderYouth(); }
+function youthLogout(){ $('#yo-fuck').hidden = true; Object.assign(Y, {pin:null, me:null, people:[], items:[], songId:null, rehId:null}); store.del('pritah.youthpin'); $('#yo-pin').value = ''; updateYouthTab(); renderYouth(); }
 function updateYouthTab(){ $('#tab-youth').hidden = !(Y.me || T.data || currentView === 'youth'); if(currentView === 'home') renderHomeState(); }
 
 function renderYouth(){
@@ -4592,8 +4603,10 @@ function renderYouth(){
   }
   const g = yGet(Y.gid);
   $('#yo-gname').textContent = g ? g.data.name : '';
+  $('#yo-fuck').hidden = !(g && g.data.fuckBtn);
   $$('#yo-tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === Y.tab && !Y.songId && !Y.rehId));
   $('#yo-tabs').hidden = !g;
+  if(!logged || !g) $('#yo-fuck').hidden = true;
   if(!g){
     $('#yo-main').innerHTML = yStaff() ? `<h2>ברוכים הבאים</h2><p class="empty" style="margin-top:10px">עוד אין הרכבים. לחצו על "הרכב חדש" כדי ליצור את הראשון, ואז הוסיפו אליו את החברים.</p>` : '<p class="empty">ההרכב שלך לא נמצא. פנו למנחים.</p>';
     return;
@@ -4618,7 +4631,7 @@ function yRsvpHTML(r){
 function yCalLinks(r){ return `<button class="btn small" data-act="cal-google" data-id="${esc(r.id)}">הוספה ליומן Google</button><button class="btn small" data-act="cal-ics" data-id="${esc(r.id)}">ליומן באייפון</button>`; }
 function yHome(){
   const next = upcomingRehs()[0];
-  const myTasks = yOf('task').filter(t => !t.data.done && (Y.me.staff || !t.data.assignee || t.data.assignee === Y.me.id || t.data.assignee === 'all'));
+  const myTasks = yOf('task').filter(t => Y.me.staff ? !taskDone(t) : (isDoer(t) && !myTaskDone(t)));
   const posts = yOf('post').sort((a, b) => (b.data.pinned ? 1 : 0) - (a.data.pinned ? 1 : 0) || String(b.data.createdAt || '').localeCompare(String(a.data.createdAt || '')));
   $('#yo-main').innerHTML = `
     <div class="y-home">
@@ -4778,32 +4791,41 @@ function rehGoogle(r){
 }
 
 /* משימות */
+const isGroupTask = t => !t.data.assignee || t.data.assignee === 'all';
+const taskDoers = t => isGroupTask(t) ? yMembers().map(m => m.id) : [t.data.assignee];
+const taskDoneSet = t => new Set(yAll('tdone').filter(x => x.data.taskId === t.id).map(x => x.data.personId).concat(!isGroupTask(t) && t.data.done ? [t.data.assignee] : []));
+const isDoer = t => taskDoers(t).includes(Y.me.id);
+const myTaskDone = t => taskDoneSet(t).has(Y.me.id);
+function taskDone(t){ const set = taskDoneSet(t), doers = taskDoers(t); return doers.length > 0 && doers.every(id => set.has(id)); }
 function yTaskHTML(t){
-  const d = t.data, due = dueInfo({done:d.done, dueDate:d.dueDate}), reh = d.rehearsalId ? yGet(d.rehearsalId) : null;
-  const who = !d.assignee ? 'כולם' : d.assignee === 'all' ? 'כל אחד בנפרד' : yName(d.assignee);
-  const canEdit = yStaff() || t.authorId === Y.me.id;
-  return `<div class="y-task ${d.done ? 'done' : ''}">
-    <label class="y-check"><input type="checkbox" data-act="task-done" data-id="${esc(t.id)}" ${d.done ? 'checked' : ''} aria-label="סימון המשימה כבוצעה"></label>
+  const d = t.data, set = taskDoneSet(t), doers = taskDoers(t), allDone = taskDone(t), mine = myTaskDone(t);
+  const due = dueInfo({done:allDone, dueDate:d.dueDate}), reh = d.rehearsalId ? yGet(d.rehearsalId) : null;
+  const group = isGroupTask(t), canEdit = yStaff() || t.authorId === Y.me.id;
+  const doneCount = doers.filter(id => set.has(id)).length;
+  return `<div class="y-task ${(isDoer(t) ? mine : allDone) ? 'done' : ''}">
+    ${isDoer(t) ? `<label class="y-check"><input type="checkbox" data-act="task-done" data-id="${esc(t.id)}" ${mine ? 'checked' : ''} aria-label="סימון שביצעתי"></label>` : `<span class="y-check y-ring" title="${doneCount} מתוך ${doers.length}">${allDone ? '✓' : `${doneCount}/${doers.length}`}</span>`}
     <div><b>${esc(d.title)}</b>${d.details ? `<div class="muted" style="white-space:pre-line;font-size:.94rem">${linkifyAnswer(d.details)}</div>` : ''}
-      <div class="chips" style="margin-top:4px"><span class="chip">${esc(who)}</span>${due ? `<span class="chip due ${due.cls}">${due.text}</span>` : ''}${reh ? `<span class="chip">לחזרה של ${esc(fmtRehDate(reh).split(',').slice(0, 2).join(','))}</span>` : ''}${d.done && d.doneBy ? `<span class="chip ok">בוצע ע״י ${esc(yName(d.doneBy))}</span>` : ''}</div></div>
+      <div class="chips" style="margin-top:4px"><span class="chip">${group ? 'כל ההרכב, כל אחד מסמן' : esc(yName(d.assignee))}</span>${due ? `<span class="chip due ${due.cls}">${due.text}</span>` : ''}${reh ? `<span class="chip">לחזרה של ${esc(fmtRehDate(reh).split(',').slice(0, 2).join(','))}</span>` : ''}${isDoer(t) && mine ? '<span class="chip ok">ביצעתי</span>' : ''}</div>
+      ${group && doers.length ? `<div class="t-who"><span class="muted">${doneCount === doers.length ? 'כולם ביצעו' : `ביצעו ${doneCount} מתוך ${doers.length}`}:</span> ${doers.map(id => `<span class="who ${set.has(id) ? 'yes' : ''}">${set.has(id) ? '✓ ' : ''}${esc(yName(id))}</span>`).join('')}</div>` : ''}
+    </div>
     ${canEdit ? `<div class="acts"><button class="btn ghost small" data-act="edit-task" data-id="${esc(t.id)}">עריכה</button></div>` : ''}
   </div>`;
 }
 function yTasksList(){
-  const all = yOf('task'), mineF = t => !t.data.assignee || t.data.assignee === 'all' || t.data.assignee === Y.me.id;
-  const f = Y.taskF, list = all.filter(t => f === 'done' ? t.data.done : !t.data.done).filter(t => f !== 'mine' || mineF(t))
+  const all = yOf('task'), f = Y.taskF;
+  const list = all.filter(t => f === 'done' ? taskDone(t) : f === 'mine' ? (isDoer(t) && !myTaskDone(t)) : !taskDone(t))
     .sort((a, b) => (a.data.dueDate || '9999').localeCompare(b.data.dueDate || '9999'));
   $('#yo-main').innerHTML = `<div class="spread" style="margin-bottom:12px"><h2>משימות</h2><button class="btn primary" data-act="new-task">משימה חדשה</button></div>
-    <div class="seg" id="yo-taskf" style="margin-bottom:12px">${[['open', 'פתוחות'], ['mine', 'שלי'], ['done', 'בוצעו']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${f === v}">${l}</button>`).join('')}</div>
-    ${list.length ? `<div class="y-tasks">${list.map(yTaskHTML).join('')}</div>` : `<p class="empty">${f === 'done' ? 'עוד לא בוצעו משימות.' : 'אין משימות פתוחות.'}</p>`}`;
+    <div class="seg" id="yo-taskf" style="margin-bottom:12px">${[['open', 'פתוחות'], ['mine', 'שלי לביצוע'], ['done', 'הושלמו']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${f === v}">${l}</button>`).join('')}</div>
+    ${list.length ? `<div class="y-tasks">${list.map(yTaskHTML).join('')}</div>` : `<p class="empty">${f === 'done' ? 'עוד אין משימות שכולם השלימו.' : f === 'mine' ? 'אין לך משימות פתוחות. כל הכבוד!' : 'אין משימות פתוחות.'}</p>`}`;
 }
 function openYTaskDlg(t, rehId){
   Y.editTask = t || null;
   const d = t ? t.data : {rehearsalId:rehId || '', assignee:yStaff() ? '' : Y.me.id};
   $('#yt-title').textContent = t ? 'עריכת משימה' : 'משימה חדשה';
   $('#yt-name').value = d.title || ''; $('#yt-details').value = d.details || ''; $('#yt-due').value = d.dueDate || '';
-  $('#yt-assignee').innerHTML = '<option value="">כל ההרכב, משימה אחת</option><option value="all">כל אחד בנפרד</option>' + Y.people.filter(p => p.staff || p.groupId === Y.gid).map(p => `<option value="${esc(p.id)}">${esc(p.name)}${p.staff ? ' (מנחה)' : ''}</option>`).join('');
-  $('#yt-assignee').value = d.assignee || '';
+  $('#yt-assignee').innerHTML = '<option value="">כל ההרכב, כל אחד מסמן שביצע</option>' + Y.people.filter(p => p.staff || p.groupId === Y.gid).map(p => `<option value="${esc(p.id)}">${esc(p.name)}${p.staff ? ' (מנחה)' : ''}</option>`).join('');
+  $('#yt-assignee').value = d.assignee === 'all' ? '' : (d.assignee || '');
   $('#yt-reh').innerHTML = '<option value="">לא קשור לחזרה</option>' + yRehs().filter(r => upcomingRehs().includes(r) || r.id === d.rehearsalId).map(r => `<option value="${esc(r.id)}">${esc(fmtRehDate(r))}</option>`).join('');
   $('#yt-reh').value = d.rehearsalId || '';
   $('#yt-del').hidden = !t; $('#yt-err').textContent = '';
@@ -4825,6 +4847,7 @@ function yMembersView(){
     ${mem.length ? mem.map(m => `<div class="t-task"><div><b>${esc(m.name)}</b><div class="muted" style="font-size:.94rem">${m.role ? esc(m.role) : 'בלי תפקיד קבוע'}${yStaff() ? `, קוד: <span class="pin">${esc(m.pin)}</span>` : ''}</div></div>
       ${yStaff() ? `<div class="acts"><button class="btn ghost small" data-act="copy-invite" data-id="${esc(m.id)}">העתקת הזמנה</button><button class="btn ghost small" data-act="edit-person" data-id="${esc(m.id)}">עריכה</button><button class="btn ghost small danger" data-act="del-person" data-id="${esc(m.id)}">הסרה</button></div>` : ''}</div>`).join('')
       : `<p class="empty">${yStaff() ? 'עוד אין חברים. לחצו על "חבר חדש", ושלחו לכל אחד את הקוד שלו עם "העתקת הזמנה".' : 'עוד אין חברים בהרכב.'}</p>`}
+    ${yStaff() ? `<label class="row" style="gap:8px;font-weight:600;margin-top:18px"><input type="checkbox" data-act="fuck-toggle" ${g.data.fuckBtn ? 'checked' : ''}> להציג בהרכב הזה את כפתור Fuck!</label>` : ''}
     <h3 style="margin:22px 0 6px">המנחים</h3><div class="chips">${staff.map(p => `<span class="chip">${esc(p.name)}</span>`).join('')}</div>
 `;
 }
@@ -4910,8 +4933,18 @@ async function onYouthChange(e){
   const t = e.target;
   if(t.dataset.act === 'task-done'){
     const task = yGet(t.dataset.id), done = t.checked;
-    try{ await ySave([{id:task.id, kind:'task', groupId:task.groupId, data:Object.assign({}, task.data, {done, doneBy:done ? Y.me.id : '', doneAt:done ? new Date().toISOString() : ''})}]); if(done) toast('כל הכבוד! המשימה סומנה כבוצעה'); }catch(err){ t.checked = !done; }
+    const ex = yAll('tdone').find(x => x.data.taskId === task.id && x.data.personId === Y.me.id);
+    try{
+      if(done && !ex) await ySave([{id:`td_${task.id}_${Y.me.id}`.replace(/[^A-Za-z0-9_]/g, '').slice(0, 60), kind:'tdone', groupId:task.groupId, data:{taskId:task.id, personId:Y.me.id, at:new Date().toISOString()}}]);
+      if(!done){
+        if(ex) await yDel(ex.id);
+        if(!isGroupTask(task) && task.data.done) await ySave([{id:task.id, kind:'task', groupId:task.groupId, data:Object.assign({}, task.data, {done:false})}]);
+        renderYouth();
+      }
+      if(done) toast(taskDone(task) && isGroupTask(task) ? 'כל הכבוד! כל ההרכב השלים את המשימה' : 'כל הכבוד! סימנת שביצעת');
+    }catch(err){ t.checked = !done; }
   }
+  if(t.dataset.act === 'fuck-toggle'){ const g = yGet(Y.gid); ySave([{id:g.id, kind:'group', data:Object.assign({}, g.data, {fuckBtn:t.checked})}]); }
   if(t.dataset.act === 'song-done'){
     const r = yGet(Y.rehId), d = Object.assign({}, r.data.done || {}); if(t.checked) d[t.dataset.id] = true; else delete d[t.dataset.id];
     ySave([{id:r.id, kind:'rehearsal', groupId:Y.gid, data:Object.assign({}, r.data, {done:d})}]);
@@ -4985,7 +5018,7 @@ function yNoteHTML(n){
   const mine = n.authorId === Y.me.id, col = n.data.color || 'yellow', canDel = mine || yStaff();
   return `<div class="ncard c-${col}" data-nid="${esc(n.id)}" data-line="${n._at ?? -1}">
     <div class="ncard-h"><b>${esc(yName(n.authorId))}</b>${yVisLabel(n)}${canDel ? `<span class="ncard-acts">${mine ? `<button type="button" data-act="edit-ynote" data-id="${esc(n.id)}">עריכה</button>` : ''}<button type="button" class="del" data-act="del-ynote" data-id="${esc(n.id)}">מחיקה</button></span>` : ''}</div>
-    ${n.data.lineText && (n.data.orphan || n._at === undefined || n._at < 0) && n.data.line >= 0 ? `<div class="ncard-q">“${esc(n.data.lineText)}”</div>` : ''}
+    ${n.data.lineText && (n.data.orphan || n._at === undefined || n._at < 0) && n.data.line >= 0 ? `<div class="ncard-q">“\u2068${esc(n.data.lineText)}\u2069”</div>` : ''}
     <div class="ncard-t">${esc(n.data.text)}</div></div>`;
 }
 function yRenderNotes(s){
@@ -5074,6 +5107,45 @@ function asStart(btn){
 }
 function asStop(){ AS.on = false; AS.paused = false; cancelAnimationFrame(AS.raf); asRender(); }
 function asSpeed(d){ AS.speed = clamp(AS.speed + d, 1, 10); store.set('pritah.asSpeed', AS.speed); asRender(); }
+
+/* ================== Fuck! ================== */
+function screamSynth(){
+  const ctx = ac(), t = ctx.currentTime + 0.02, out = ctx.createGain();
+  out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(0.5, t + 0.04);
+  out.gain.setValueAtTime(0.5, t + 0.45); out.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+  const lp = ctx.createBiquadFilter(); lp.type = 'bandpass'; lp.frequency.value = 1400; lp.Q.value = 0.8;
+  lp.connect(out); out.connect(ctx.destination);
+  [1, 1.5, 2.01].forEach((m, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain(), vib = ctx.createOscillator(), vg = ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(620 * m, t); o.frequency.exponentialRampToValueAtTime(980 * m, t + 0.12); o.frequency.exponentialRampToValueAtTime(760 * m, t + 0.85);
+    vib.frequency.value = 7.5; vg.gain.value = 28 * m; vib.connect(vg); vg.connect(o.frequency);
+    g.gain.value = [0.5, 0.25, 0.15][i];
+    o.connect(g); g.connect(lp); o.start(t); vib.start(t); o.stop(t + 0.95); vib.stop(t + 0.95);
+  });
+  const len = Math.floor(ctx.sampleRate * 0.9), nb = ctx.createBuffer(1, len, ctx.sampleRate), nd = nb.getChannelData(0);
+  for(let i = 0; i < len; i++) nd[i] = (Math.random() * 2 - 1) * 0.35;
+  const ns = ctx.createBufferSource(), ng = ctx.createGain(); ns.buffer = nb; ng.gain.value = 0.35; ns.connect(ng); ng.connect(lp); ns.start(t);
+}
+function femaleVoice(){
+  const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
+  const en = vs.filter(v => /^en/i.test(v.lang));
+  return en.find(v => /female|samantha|victoria|karen|zira|tessa|moira|fiona|susan|allison|ava|serena|google us english|google uk english female/i.test(v.name)) || en[0] || null;
+}
+function shoutFuck(btn){
+  btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake');
+  screamSynth();
+  if(window.speechSynthesis){
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance('FUCK!'), v = femaleVoice();
+      if(v){ u.voice = v; u.lang = v.lang; } else u.lang = 'en-US';
+      u.pitch = 2; u.rate = 1.15; u.volume = 1;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+}
+if(window.speechSynthesis) speechSynthesis.onvoiceschanged = () => {};
 
 /* ================== ניווט ================== */
 function renderHomeState(){
@@ -5296,6 +5368,7 @@ function init(){
   $('#yo-go').addEventListener('click', () => { const p = $('#yo-pin').value.trim(); if(p) youthLogin(p); else $('#yo-err').textContent = 'הכניסו את הקוד שלכם.'; });
   $('#yo-pin').addEventListener('keydown', e => { if(e.key === 'Enter') $('#yo-go').click(); });
   $('#yo-logout').addEventListener('click', youthLogout);
+  $('#yo-fuck').addEventListener('click', e => shoutFuck(e.currentTarget));
   $('#yo-refresh').addEventListener('click', () => youthLogin(Y.pin));
   $('#yo-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ Y.tab = b.dataset.v; Y.songId = null; Y.rehId = null; renderYouth(); } });
   $('#yo-group').addEventListener('change', e => { Y.gid = e.target.value; store.set('pritah.ygid', Y.gid); Y.songId = null; Y.rehId = null; renderYouth(); });
