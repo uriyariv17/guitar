@@ -1,3 +1,6 @@
+
+index.html
+100%
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -515,6 +518,26 @@ a.btn.wa{ background:#1F9D55; border-color:#1F9D55; color:#fff; }
 @media (max-width: 560px){ .role-row{ grid-template-columns:1fr; } }
 .roles-table td, .roles-table th{ white-space:nowrap; }
 
+/* Home */
+.home-hero{ text-align:center; margin:18px 0 26px; }
+.home-hero h1{ font-size:clamp(1.8rem, 5vw, 2.6rem); }
+.home-hero p{ margin-top:8px; }
+.home-grid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; max-width:860px; margin:0 auto; }
+@media (max-width: 640px){ .home-grid{ grid-template-columns:1fr; } }
+.home-card{ appearance:none; position:relative; display:grid; grid-template-columns:auto minmax(0,1fr); gap:16px; align-items:center; text-align:start; padding:22px 20px; border-radius:18px; border:1px solid var(--line); background:var(--surface); color:var(--ink); cursor:pointer; font:inherit; transition:transform .12s, box-shadow .12s; }
+.home-card:hover{ transform:translateY(-2px); box-shadow:0 8px 24px rgba(15,25,50,.09); }
+.hc-icon{ width:58px; height:58px; border-radius:16px; display:grid; place-items:center; background:var(--hc); }
+.hc-icon svg{ width:30px; height:30px; fill:#fff; }
+.hc-text{ display:grid; gap:3px; }
+.hc-text b{ font-family:'Secular One',Arial,sans-serif; font-weight:400; font-size:1.45rem; line-height:1.1; }
+.hc-text small{ color:var(--ink-2); font-size:.95rem; }
+.hc-state{ position:absolute; top:10px; inset-inline-end:12px; font-size:.78rem; font-weight:700; color:var(--green); background:color-mix(in srgb, var(--green) 14%, var(--surface)); padding:1px 9px; border-radius:999px; }
+.hc-teacher{ --hc:var(--blue); } .hc-student{ --hc:#D99A00; } .hc-velvet{ --hc:var(--velvet); } .hc-youth{ --hc:var(--youth); }
+.hc-velvet .hc-text b{ letter-spacing:.14em; }
+.home-tools{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; margin:28px auto 0; max-width:860px; }
+.home-tools .chip{ border:0; cursor:pointer; font:600 .92rem 'Assistant',Arial,sans-serif; padding:5px 14px; }
+.home-tools .chip:hover{ background:var(--line); }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -541,7 +564,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
 <body>
 <header class="top">
   <div class="top-inner">
-    <div class="brand"><svg viewBox="0 0 24 26" aria-hidden="true"><path d="M12 1C20 1 23.5 4.5 22.6 9.6 21.6 15.3 15.6 22.4 12 25 8.4 22.4 2.4 15.3 1.4 9.6.5 4.5 4 1 12 1Z"/></svg><span id="app-name">פריטה</span></div>
+    <div class="brand" id="brand-home" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer"><svg viewBox="0 0 24 26" aria-hidden="true"><path d="M12 1C20 1 23.5 4.5 22.6 9.6 21.6 15.3 15.6 22.4 12 25 8.4 22.4 2.4 15.3 1.4 9.6.5 4.5 4 1 12 1Z"/></svg><span id="app-name">פריטה</span></div>
     <nav class="tabs" aria-label="ניווט">
       <button class="tab" data-view="metronome">מטרונום</button>
       <button class="tab" data-view="tuner">טיונר</button>
@@ -565,6 +588,20 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
     <div style="margin-top:6px">פתחו את התפריט בפינת המסך ובחרו "פתח בדפדפן", או העתיקו את הקישור והדביקו אותו בכרום או בספארי.</div>
     <div class="row" style="margin-top:10px"><button class="btn small" id="inapp-copy">העתקת הקישור</button><span class="muted" id="inapp-msg"></span></div>
   </div>
+  <!-- Home -->
+  <section class="view" id="v-home">
+    <div class="home-hero"><h1>שלום! לאן נכנסים?</h1><p class="muted">בחרו את האזור שלכם. בכל אזור נכנסים עם הקוד או הסיסמה האישיים.</p></div>
+    <div class="home-grid">
+      <button class="home-card hc-teacher" data-go="teacher"><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 8l10 5 8-4v6h2V8L12 3Zm-6 9.2V16c0 2 2.7 3.5 6 3.5s6-1.5 6-3.5v-3.8l-6 3-6-3Z"/></svg></span><span class="hc-text"><b>מורה</b><small>ניהול תלמידים, משימות, ספריית אקורדים ושירים</small></span><span class="hc-state" data-state="teacher"></span></button>
+      <button class="home-card hc-student" data-go="student"><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5Z"/></svg></span><span class="hc-text"><b>תלמיד</b><small>שיעורי הבית שלי, מטרונום ומעקב תרגול</small></span><span class="hc-state" data-state="student"></span></button>
+      <button class="home-card hc-velvet" data-go="velvet"><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v10.6A4 4 0 1 0 16 17V7h4V3h-6Z"/></svg></span><span class="hc-text"><b dir="ltr">VELVET</b><small>האזור של הלהקה: שירים, סטליסט ומועמדים</small></span><span class="hc-state" data-state="velvet"></span></button>
+      <button class="home-card hc-youth" data-go="youth"><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8 13c-3.3 0-6 1.7-6 4v2h12v-2c0-2.3-2.7-4-6-4Zm8 .5c-.8 0-1.6.1-2.3.4 1.4.9 2.3 2.1 2.3 3.6V19h6v-1.8c0-2.1-2.7-3.7-6-3.7Z"/></svg></span><span class="hc-text"><b>הרכבים צעירים</b><small>שירים, חזרות, תפקידים ומשימות להרכב</small></span><span class="hc-state" data-state="youth"></span></button>
+    </div>
+    <div class="home-tools"><span class="muted">כלים פתוחים לכולם:</span>
+      <button class="chip" data-go="metronome">מטרונום</button><button class="chip" data-go="tuner">טיונר</button><button class="chip" data-go="chords">אקורדים</button><button class="chip" data-go="fretboard">צוואר וסולמות</button><button class="chip" data-go="theory">תיאוריה</button><button class="chip" data-go="songs">שירים</button>
+    </div>
+  </section>
+
   <!-- Metronome -->
   <section class="view" id="v-metronome">
     <div class="view-head">
@@ -1124,7 +1161,8 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
     <div class="opt"><span class="opt-l">צבע מרקר</span><div class="row" id="nt-color" style="gap:8px">
       <button type="button" class="mk-sw" data-v="yellow" style="background:#FFD84D" aria-label="צהוב"></button><button type="button" class="mk-sw" data-v="green" style="background:#7FE0A4" aria-label="ירוק"></button><button type="button" class="mk-sw" data-v="pink" style="background:#FF9CCB" aria-label="ורוד"></button><button type="button" class="mk-sw" data-v="blue" style="background:#8EC1FF" aria-label="כחול"></button><button type="button" class="mk-sw" data-v="orange" style="background:#FFB46B" aria-label="כתום"></button>
     </div><span class="hint" id="nt-color-hint">בהערה לשורה, השורה נצבעת בצבע הזה. אפשר גם רק לצבוע, בלי לכתוב.</span></div>
-    <div class="opt"><span class="opt-l">מי רואה אותה</span><div class="seg" id="nt-vis"><button type="button" data-v="mine">רק אני</button><button type="button" data-v="all">כל הלהקה</button></div></div>
+    <div class="opt"><span class="opt-l">מי רואה אותה</span><div class="seg" id="nt-vis"><button type="button" data-v="mine">רק אני</button><button type="button" data-v="all" id="nt-vis-all">כל הלהקה</button><button type="button" data-v="to" id="nt-vis-to" hidden>חברים מסוימים</button></div></div>
+    <div class="field" id="nt-to-wrap" hidden><span>למי</span><div class="assign" id="nt-to"></div></div>
     <p class="err" id="nt-err"></p>
     <div class="row"><button class="btn primary" type="submit">שמור</button><button class="btn ghost" type="button" data-close>ביטול</button><button class="btn danger" type="button" id="nt-del" style="margin-inline-start:auto">מחיקה</button></div>
   </form>
@@ -2040,10 +2078,10 @@ function serverHandle(req, store, teacherPassword){
     if(a === 'youthLogin'){
       const people = store.all('YouthPeople').map(nPerson);
       const vis = me.staff ? people : people.filter(p => p.groupId === me.groupId || p.staff).map(p => ({id:p.id, groupId:p.groupId, name:p.name, role:p.role, staff:p.staff}));
-      return {me:{id:me.id, name:me.name, role:me.role, staff:me.staff, groupId:me.groupId}, people:vis, items:store.all('Youth').map(nY).filter(it => canGroup(it.groupId))};
+      return {me:{id:me.id, name:me.name, role:me.role, staff:me.staff, groupId:me.groupId}, people:vis, items:store.all('Youth').map(nY).filter(it => canGroup(it.groupId)).filter(it => it.kind !== 'ynote' || it.data.visibility === 'all' || it.authorId === me.id || (it.data.visibility === 'to' && (it.data.to || []).indexOf(me.id) >= 0))};
     }
     if(a === 'youthSave'){
-      const KINDS = ['group','song','task','rehearsal','post','rsvp'], STAFF_ONLY = ['group','song','rehearsal'], list = req.items || [], out = [];
+      const KINDS = ['group','song','task','rehearsal','post','rsvp','ynote'], STAFF_ONLY = ['group','song','rehearsal'], list = req.items || [], out = [];
       if(!list.length) throw new Error('אין מה לשמור.');
       list.forEach(it => {
         if(KINDS.indexOf(it.kind) < 0) throw new Error('סוג פריט לא מוכר.');
@@ -2056,6 +2094,7 @@ function serverHandle(req, store, teacherPassword){
         if(raw){
           if(String(raw.kind) !== it.kind || !canGroup(String(raw.groupId))) throw new Error('אין הרשאה לפריט הזה.');
           if(!me.staff && (it.kind === 'post' || it.kind === 'rsvp') && String(raw.authorId) !== me.id) throw new Error('אפשר לערוך רק דברים שכתבת.');
+          if(it.kind === 'ynote' && String(raw.authorId) !== me.id) throw new Error('אפשר לערוך רק הערות שכתבת.');
           raw.data = json; raw.updatedAt = now(); store.update('Youth', raw); out.push(nY(raw)); return;
         }
         const id = /^[A-Za-z0-9_]{4,60}$/.test(String(it.id || '')) ? String(it.id) : newId();
@@ -2071,10 +2110,14 @@ function serverHandle(req, store, teacherPassword){
       if(!raw) return {};
       if(!canGroup(String(raw.groupId))) throw new Error('אין הרשאה לפריט הזה.');
       if(!me.staff && String(raw.authorId) !== me.id) throw new Error('אפשר למחוק רק דברים שיצרת.');
+      if(me.staff && String(raw.kind) === 'ynote' && String(raw.authorId) !== me.id){ const nd = nY(raw).data; if(nd.visibility !== 'all' && !(nd.visibility === 'to' && (nd.to || []).indexOf(me.id) >= 0)) throw new Error('אין הרשאה להערה הזו.'); }
       if(String(raw.kind) === 'group'){
         store.remove('Youth', x => String(x.groupId) === id);
         store.remove('YouthPeople', x => String(x.groupId) === id && !bool(x.staff));
-      } else store.remove('Youth', x => String(x.id) === id);
+      } else {
+        store.remove('Youth', x => String(x.id) === id);
+        if(String(raw.kind) === 'song') store.remove('Youth', x => String(x.kind) === 'ynote' && nY(x).data.songId === id);
+      }
       return {};
     }
     if(a === 'youthSavePerson'){
@@ -2371,6 +2414,7 @@ function studentLogout(){
 function taskSort(a, b){ return (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || (b.createdAt || '').localeCompare(a.createdAt || ''); }
 function renderStudent(){
   const logged = !!S.student;
+  if(currentView === 'home') renderHomeState();
   $('#stu-login').hidden = logged; $('#stu-dash').hidden = !logged;
   if(!logged) return;
   $('#stu-hello').textContent = `היי ${S.student.name}`;
@@ -3655,7 +3699,7 @@ async function bandLogin(pin, silent){
   finally{ $('#vb-go').disabled = false; }
 }
 function bandLogout(){ Object.assign(B, {pin:null, member:null, members:[], items:[], songId:null}); store.del('pritah.bandpin'); $('#vb-pin').value = ''; updateBandTab(); renderBand(); }
-function updateBandTab(){ $('#tab-velvet').hidden = !(B.member || T.data || currentView === 'velvet'); }
+function updateBandTab(){ $('#tab-velvet').hidden = !(B.member || T.data || currentView === 'velvet'); if(currentView === 'home') renderHomeState(); }
 
 function renderBand(){
   const logged = !!B.member;
@@ -3717,32 +3761,7 @@ function noteHTML(n){
     ${n.data.lineText && (n.data.orphan || n._at === undefined || n._at < 0) && n.data.line >= 0 ? `<div class="ncard-q">“${esc(n.data.lineText)}”</div>` : ''}
     <div class="ncard-t">${esc(n.data.text)}</div></div>`;
 }
-function layoutNotes(){
-  const wrap = $('#vb-wrap'), el = $('#vb-sheet'), rail = $('#vb-rail');
-  if(!wrap || !B.byLine) return;
-  const narrow = wrap.clientWidth < 760;
-  wrap.classList.toggle('narrow', narrow);
-  $$('.inline-notes', el).forEach(x => x.remove());
-  rail.innerHTML = '';
-  if(narrow){
-    (B.openLines || new Set()).forEach(li => {
-      const ln = el.querySelector(`.ln[data-l="${li}"]`), list = (B.byLine[li] || []).filter(n => n.data.text);
-      if(ln && list.length) ln.insertAdjacentHTML('afterend', `<div class="inline-notes">${list.map(noteHTML).join('')}</div>`);
-    });
-    return;
-  }
-  let bottom = 0;
-  Object.keys(B.byLine).map(Number).sort((a, b) => a - b).forEach(li => {
-    const ln = el.querySelector(`.ln[data-l="${li}"]`); if(!ln) return;
-    B.byLine[li].filter(n => n.data.text).forEach(n => {
-      rail.insertAdjacentHTML('beforeend', noteHTML(n));
-      const card = rail.lastElementChild, top = Math.max(ln.offsetTop, bottom);
-      card.style.top = top + 'px';
-      bottom = top + card.offsetHeight + 6;
-    });
-  });
-  rail.style.minHeight = bottom + 'px';
-}
+function layoutNotes(){ layoutNotesIn({wrap:'#vb-wrap', sheet:'#vb-sheet', rail:'#vb-rail', byLine:B.byLine, openLines:B.openLines, html:noteHTML}); }
 let notesResizeT = null;
 window.addEventListener('resize', () => { clearTimeout(notesResizeT); notesResizeT = setTimeout(layoutNotes, 150); });
 function noteHTML_old(n){
@@ -3870,6 +3889,7 @@ async function onBandMain(e){
 
 /* הערות */
 function openNoteDlg(n, line, lineText){
+  if(NOTE_CTX !== 'youth') setNoteCtx('band');
   B.editNote = {item:n, line, lineText};
   $('#nt-title').textContent = n ? 'עריכת הערה' : (line >= 0 ? 'הערה לשורה' : 'הערה לשיר');
   $('#nt-quote').hidden = !lineText; $('#nt-quote').textContent = lineText ? `“${lineText}”` : '';
@@ -3881,6 +3901,7 @@ function openNoteDlg(n, line, lineText){
   const vis = n ? n.data.visibility : 'mine';
   $$('#nt-vis button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === vis));
   $('#nt-err').textContent = '';
+  if(typeof syncNoteTo === 'function') syncNoteTo();
   $('#dlg-note').showModal(); $('#nt-text').focus();
 }
 async function saveNote(e){
@@ -3890,6 +3911,7 @@ async function saveNote(e){
   const color = ($('#nt-color .mk-sw[aria-pressed="true"]') || {dataset:{}}).dataset.v || 'yellow';
   B.lastColor = color;
   const vis = ($('#nt-vis button[aria-pressed="true"]') || {}).dataset.v || 'mine';
+  if(NOTE_CTX === 'youth') return saveYNote(text, color, vis);
   const data = Object.assign({}, ed.item ? ed.item.data : {createdAt:new Date().toISOString()}, {songId:B.songId, line:ed.line, lineText:ed.lineText, text, color, visibility:vis});
   delete data.orphan;
   try{ await bSave([{id:ed.item ? ed.item.id : '', kind:'note', data}], $('#nt-err')); $('#dlg-note').close(); }catch(err){}
@@ -4463,7 +4485,7 @@ async function youthLogin(pin, silent){
   finally{ $('#yo-go').disabled = false; }
 }
 function youthLogout(){ Object.assign(Y, {pin:null, me:null, people:[], items:[], songId:null, rehId:null}); store.del('pritah.youthpin'); $('#yo-pin').value = ''; updateYouthTab(); renderYouth(); }
-function updateYouthTab(){ $('#tab-youth').hidden = !(Y.me || T.data || currentView === 'youth'); }
+function updateYouthTab(){ $('#tab-youth').hidden = !(Y.me || T.data || currentView === 'youth'); if(currentView === 'home') renderHomeState(); }
 
 function renderYouth(){
   const logged = !!Y.me;
@@ -4566,15 +4588,18 @@ function ySongView(){
           <div class="seg"><button data-act="fs-down" aria-label="הקטנת טקסט">א−</button><button data-act="fs-up" aria-label="הגדלת טקסט">א+</button></div>
         </div></div>
       <p class="muted">${saved ? `ההרכב מנגן ב־${esc(bandKey(s, saved))}. המקור ב־${esc(orig)}.` : `ההרכב מנגן בסולם המקורי${orig ? `, ${esc(orig)}` : ''}.`}</p>
+      <div class="spread"><div class="seg" id="yo-nf">${[['all', 'כל ההערות'], ['mine', 'שלי'], ['pub', 'כלליות'], ['tome', 'אליי']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${(Y.noteF || 'all') === v}">${l}</button>`).join('')}</div><span class="hint">לחיצה על שורה בשיר מוסיפה לה הערה או מרקר.</span></div>
       <div class="att-chords" id="yo-chords"></div>
-      <div class="sheet" id="yo-sheet"></div></div>`;
+      <div class="sheet-wrap" id="yo-wrap"><div class="sheet bsheet" id="yo-sheet"></div><aside class="note-rail" id="yo-rail" aria-label="הערות"></aside></div></div>`;
   }
+  h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>הערות לשיר</h3><button class="btn small" data-act="new-ynote">הערה חדשה</button></div><div id="yo-song-notes" class="song-notes"></div></div>`;
   $('#yo-main').innerHTML = h;
   if(d.sheet && d.sheet.trim()){
     const {html, used} = renderSheetHTML(d.sheet, Y.shift), el = $('#yo-sheet');
     el.innerHTML = html; el.dir = d.dir || (hasHebrew(d.sheet) ? 'rtl' : 'ltr'); el.style.fontSize = SH.size + 'px';
     $('#yo-chords').innerHTML = chordStripHTML(used);
   }
+  yRenderNotes(s);
 }
 let resetYouthPdf = () => {};
 function openYSongDlg(s){
@@ -4730,10 +4755,28 @@ async function onYouthMain(e){
   const c = e.target.closest('[data-c]');
   if(c){ playChordName(c.dataset.c); c.classList.add('on'); setTimeout(() => c.classList.remove('on'), 500); return; }
   const tf = e.target.closest('#yo-taskf button'); if(tf){ Y.taskF = tf.dataset.v; return renderYouth(); }
+  const nf = e.target.closest('#yo-nf button'); if(nf){ Y.noteF = nf.dataset.v; return renderYouth(); }
+  const lnClick = !e.target.closest('[data-act]') && e.target.closest('#yo-sheet .ln[data-l]');
+  if(lnClick){
+    const li = Number(lnClick.dataset.l), raw = String(yGet(Y.songId).data.sheet || '').split('\n')[li];
+    const mineHl = ((Y.byLine || {})[li] || []).find(n => n.authorId === Y.me.id && !n.data.text);
+    if(mineHl) return openYNoteDlg(mineHl, mineHl.data.line, mineHl.data.lineText || '');
+    if(plainLine(raw)) openYNoteDlg(null, li, plainLine(raw));
+    return;
+  }
   const btn = e.target.closest('[data-act]'); if(!btn) return;
   const act = btn.dataset.act, id = btn.dataset.id;
   if(act === 'tab'){ Y.tab = btn.dataset.v; return renderYouth(); }
   if(act === 'back'){ Y.songId = null; Y.rehId = null; return renderYouth(); }
+  if(act === 'new-ynote') return openYNoteDlg(null, -1, '');
+  if(act === 'edit-ynote'){ const n = yGet(id); return openYNoteDlg(n, n.data.line, n.data.lineText || ''); }
+  if(act === 'del-ynote'){ if(!confirm('למחוק את ההערה?')) return; await yDel(id); return renderYouth(); }
+  if(act === 'toggle-ynotes'){
+    const li = Number(btn.dataset.line); Y.openLines = Y.openLines || new Set();
+    if($('#yo-wrap').classList.contains('narrow')){ Y.openLines.has(li) ? Y.openLines.delete(li) : Y.openLines.add(li); yLayoutNotes(); }
+    else { const c = $(`#yo-rail .ncard[data-line="${li}"]`); if(c) c.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+    return;
+  }
   if(act === 'open-song'){ Y.rehId = null; Y.songId = id; Y.shift = Number(yGet(id).data.shift) || 0; renderYouth(); return window.scrollTo(0, 0); }
   if(act === 'open-reh'){ Y.songId = null; Y.rehId = id; renderYouth(); return window.scrollTo(0, 0); }
   if(act === 'post'){ const text = $('#yo-post').value.trim(); if(!text) return; await ySave([{id:'', kind:'post', groupId:Y.gid, data:{text, createdAt:new Date().toISOString(), pinned:false}}]); return; }
@@ -4810,11 +4853,113 @@ async function onTeacherYouth(e){
   if(act === 'ys-del'){ const p = list.find(x => x.id === b.dataset.id); if(!confirm(`להסיר את ${p.name} מהמנחים?`)) return; await tCall('teacherDeleteYouthStaff', {id:p.id}); T.data.youthStaff = list.filter(x => x.id !== p.id); renderTeacher(); }
 }
 
+/* הערות ומרקרים בשירים של ההרכב */
+function layoutNotesIn(c){
+  const wrap = $(c.wrap), el = $(c.sheet), rail = $(c.rail);
+  if(!wrap || !el || !c.byLine) return;
+  const narrow = wrap.clientWidth < 760;
+  wrap.classList.toggle('narrow', narrow);
+  $$('.inline-notes', el).forEach(x => x.remove());
+  rail.innerHTML = '';
+  if(narrow){
+    (c.openLines || new Set()).forEach(li => {
+      const ln = el.querySelector(`.ln[data-l="${li}"]`), list = (c.byLine[li] || []).filter(n => n.data.text);
+      if(ln && list.length) ln.insertAdjacentHTML('afterend', `<div class="inline-notes">${list.map(c.html).join('')}</div>`);
+    });
+    return;
+  }
+  let bottom = 0;
+  Object.keys(c.byLine).map(Number).sort((a, b) => a - b).forEach(li => {
+    const ln = el.querySelector(`.ln[data-l="${li}"]`); if(!ln) return;
+    c.byLine[li].filter(n => n.data.text).forEach(n => {
+      rail.insertAdjacentHTML('beforeend', c.html(n));
+      const card = rail.lastElementChild, top = Math.max(ln.offsetTop, bottom);
+      card.style.top = top + 'px'; bottom = top + card.offsetHeight + 6;
+    });
+  });
+  rail.style.minHeight = bottom + 'px';
+}
+const yNoteVisible = n => n.data.visibility === 'all' || n.authorId === Y.me.id || (n.data.visibility === 'to' && (n.data.to || []).includes(Y.me.id));
+function yNotesFor(songId){
+  const f = Y.noteF || 'all';
+  return yAll('ynote').filter(n => n.data.songId === songId && yNoteVisible(n)).filter(n =>
+    f === 'all' || (f === 'mine' ? n.authorId === Y.me.id : f === 'pub' ? n.data.visibility === 'all' : (n.data.visibility === 'to' && (n.data.to || []).includes(Y.me.id))))
+    .sort((a, b) => String(a.data.createdAt || '').localeCompare(String(b.data.createdAt || '')));
+}
+function yVisLabel(n){
+  if(n.data.visibility === 'all') return '';
+  if(n.data.visibility === 'to') return `<span class="lock">אל: ${esc((n.data.to || []).map(yName).join(', '))}</span>`;
+  return '<span class="lock">פרטית</span>';
+}
+function yNoteHTML(n){
+  const mine = n.authorId === Y.me.id, col = n.data.color || 'yellow', canDel = mine || yStaff();
+  return `<div class="ncard c-${col}" data-nid="${esc(n.id)}" data-line="${n._at ?? -1}">
+    <div class="ncard-h"><b>${esc(yName(n.authorId))}</b>${yVisLabel(n)}${canDel ? `<span class="ncard-acts">${mine ? `<button type="button" data-act="edit-ynote" data-id="${esc(n.id)}">עריכה</button>` : ''}<button type="button" class="del" data-act="del-ynote" data-id="${esc(n.id)}">מחיקה</button></span>` : ''}</div>
+    ${n.data.lineText && (n.data.orphan || n._at === undefined || n._at < 0) && n.data.line >= 0 ? `<div class="ncard-q">“${esc(n.data.lineText)}”</div>` : ''}
+    <div class="ncard-t">${esc(n.data.text)}</div></div>`;
+}
+function yRenderNotes(s){
+  const d = s.data, notes = yNotesFor(s.id), lines = String(d.sheet || '').split('\n'), el = $('#yo-sheet');
+  notes.forEach(n => {
+    n.data.orphan = false;
+    if(n.data.line === undefined || n.data.line < 0){ n._at = -1; return; }
+    if(plainLine(lines[n.data.line]) === n.data.lineText) n._at = n.data.line;
+    else { const j = lines.findIndex(l => plainLine(l) === n.data.lineText); n._at = j; if(j < 0) n.data.orphan = true; }
+  });
+  Y.byLine = {};
+  if(el){
+    notes.filter(n => n._at >= 0).forEach(n => { (Y.byLine[n._at] = Y.byLine[n._at] || []).push(n); });
+    Object.keys(Y.byLine).forEach(li => {
+      const ln = el.querySelector(`.ln[data-l="${li}"]`); if(!ln) return;
+      const list = Y.byLine[li], col = (list.find(n => n.data.color) || {data:{}}).data.color || 'yellow';
+      ln.classList.add('mk', 'mk-' + col);
+      const withText = list.filter(n => n.data.text);
+      if(withText.length) ln.insertAdjacentHTML('beforeend', `<button type="button" class="nbadge" data-act="toggle-ynotes" data-line="${li}" aria-label="${withText.length} הערות">${withText.length}</button>`);
+    });
+    yLayoutNotes();
+  }
+  const general = notes.filter(n => n._at < 0);
+  $('#yo-song-notes').innerHTML = general.length ? general.map(yNoteHTML).join('') : '<p class="muted">אין הערות כלליות לשיר.</p>';
+}
+function yLayoutNotes(){ layoutNotesIn({wrap:'#yo-wrap', sheet:'#yo-sheet', rail:'#yo-rail', byLine:Y.byLine, openLines:Y.openLines, html:yNoteHTML}); }
+window.addEventListener('resize', () => { clearTimeout(yLayoutNotes.t); yLayoutNotes.t = setTimeout(() => { if(currentView === 'youth' && Y.songId) yLayoutNotes(); }, 150); });
+
+/* דיאלוג ההערה: משותף ללהקה ולהרכבים */
+let NOTE_CTX = 'band';
+function setNoteCtx(ctx){
+  NOTE_CTX = ctx;
+  $('#nt-vis-to').hidden = ctx !== 'youth';
+  $('#nt-vis-all').textContent = ctx === 'youth' ? 'כל ההרכב' : 'כל הלהקה';
+}
+function syncNoteTo(){
+  const to = ($('#nt-vis button[aria-pressed="true"]') || {}).dataset.v === 'to';
+  $('#nt-to-wrap').hidden = !to;
+}
+function openYNoteDlg(n, line, lineText){
+  setNoteCtx('youth');
+  openNoteDlg(n, line, lineText);
+  const sel = new Set(n ? n.data.to || [] : []);
+  $('#nt-to').innerHTML = Y.people.filter(p => p.id !== Y.me.id && (p.staff || p.groupId === Y.gid)).map(p => `<label><input type="checkbox" value="${esc(p.id)}" ${sel.has(p.id) ? 'checked' : ''}> ${esc(p.name)}${p.staff ? ' (מנחה)' : ''}</label>`).join('') || '<span class="muted">אין עוד חברים בהרכב.</span>';
+  syncNoteTo();
+}
+async function saveYNote(text, color, vis){
+  const ed = B.editNote, to = vis === 'to' ? $$('#nt-to input:checked').map(b => b.value) : [];
+  if(vis === 'to' && !to.length){ $('#nt-err').textContent = 'בחרו למי ההערה.'; return; }
+  const data = Object.assign({}, ed.item ? ed.item.data : {createdAt:new Date().toISOString()}, {songId:Y.songId, line:ed.line, lineText:ed.lineText, text, color, visibility:vis, to});
+  delete data.orphan;
+  try{ await ySave([{id:ed.item ? ed.item.id : '', kind:'ynote', groupId:Y.gid, data}], $('#nt-err')); $('#dlg-note').close(); }catch(err){}
+}
+
 /* ================== ניווט ================== */
-const VIEWS = ['metronome','tuner','chords','fretboard','theory','songs','student','teacher','velvet','youth'];
-let currentView = 'metronome';
+function renderHomeState(){
+  const st = {teacher:typeof T !== 'undefined' && T.data ? 'מחובר' : '', student:typeof S !== 'undefined' && S.student ? 'מחובר/ת: ' + S.student.name : '', velvet:typeof B !== 'undefined' && B.member ? 'מחובר/ת: ' + B.member.name : '', youth:typeof Y !== 'undefined' && Y.me ? 'מחובר/ת: ' + Y.me.name : ''};
+  $$('.hc-state').forEach(el => { el.textContent = st[el.dataset.state] || ''; el.hidden = !st[el.dataset.state]; });
+}
+const VIEWS = ['home','metronome','tuner','chords','fretboard','theory','songs','student','teacher','velvet','youth'];
+let currentView = 'home';
 function showView(v){
-  if(!VIEWS.includes(v)) v = 'metronome';
+  if(!VIEWS.includes(v)) v = 'home';
+  if(v === 'home') renderHomeState();
   currentView = v;
   $$('.view').forEach(el => el.classList.toggle('active', el.id === 'v-' + v));
   $$('.tab').forEach(b => b.setAttribute('aria-current', b.dataset.view === v ? 'page' : 'false'));
@@ -5062,7 +5207,7 @@ function init(){
     if(e.target.id === 'cd-role'){ B.candRole = e.target.value; renderCandList(); }
   });
   $('#fn').addEventListener('submit', saveNote);
-  $('#nt-vis').addEventListener('click', e => { const b = e.target.closest('button'); if(b) $$('#nt-vis button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+  $('#nt-vis').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ $$('#nt-vis button').forEach(x => x.setAttribute('aria-pressed', x === b)); syncNoteTo(); } });
   $('#fbs').addEventListener('submit', saveBandSong);
   $('#bsg-dir').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ B.editSong.dir = b.dataset.v; syncBandSheetDir(); } });
   $('#bsg-sheet').addEventListener('input', syncBandSheetDir);
@@ -5074,7 +5219,10 @@ function init(){
   document.addEventListener('click', e => { const m = e.target.closest('.media-link'); if(m){ e.preventDefault(); e.stopPropagation(); openMedia(m.dataset.url, m.dataset.label); } }, true);
   $('#dlg-media').addEventListener('close', () => { $('#md-body').innerHTML = ''; });
   $('#nt-color').addEventListener('click', e => { const b = e.target.closest('.mk-sw'); if(b) $$('#nt-color .mk-sw').forEach(x => x.setAttribute('aria-pressed', x === b)); });
-  $('#nt-del').addEventListener('click', async () => { const n = B.editNote && B.editNote.item; if(!n || !confirm('למחוק את ההערה?')) return; try{ await bCall('bandDelete', {id:n.id}, $('#nt-err')); B.items = B.items.filter(x => x.id !== n.id); $('#dlg-note').close(); renderBand(); }catch(err){} });
+  $('#dlg-note').addEventListener('close', () => { NOTE_CTX = 'band'; });
+  $('#nt-del').addEventListener('click', async () => { const n = B.editNote && B.editNote.item; if(!n || !confirm('למחוק את ההערה?')) return;
+    if(NOTE_CTX === 'youth'){ try{ await yDel(n.id, $('#nt-err')); $('#dlg-note').close(); renderYouth(); }catch(err){} return; }
+    try{ await bCall('bandDelete', {id:n.id}, $('#nt-err')); B.items = B.items.filter(x => x.id !== n.id); $('#dlg-note').close(); renderBand(); }catch(err){} });
   $('#fcd').addEventListener('submit', saveCand);
   $('#cdf-del').addEventListener('click', deleteCand);
   $('#role-list').innerHTML = ROLE_SUGGEST.map(r => `<option value="${r}">`).join('');
@@ -5099,9 +5247,14 @@ function init(){
   let tpw = store.get('pritah.tpw'); if(!tpw){ try{ tpw = sessionStorage.getItem('pritah.tpw'); }catch(e){} }
   if(tpw) teacherLogin(tpw, true);
   renderStudent(); renderTeacher();
+  $('#v-home').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if(b) showView(b.dataset.go); });
+  const goHome = () => showView('home');
+  $('#brand-home').addEventListener('click', goHome);
+  $('#brand-home').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goHome(); } });
   showView((location.hash || '').slice(1));
 }
 init();
 </script>
 </body>
 </html>
+המערכת מציגה את index.html.
