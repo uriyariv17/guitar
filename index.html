@@ -762,7 +762,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
     <section class="panel" id="sg-table" hidden></section>
     <div class="songs-grid">
       <aside class="panel stack">
-        <h3>השירים של המורה</h3>
+        <h3 id="sg-list-title">השירים שלי</h3>
         <div class="song-list" id="sg-list"></div>
         <label class="field">או הדביקו קישור ליוטיוב<input id="sg-url" dir="ltr" placeholder="https://youtu.be/..."></label>
         <button class="btn" id="sg-open">פתיחת הסרטון</button>
@@ -897,6 +897,10 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
         <section>
           <div class="sec-title"><h3>שיעורי הבית שלי</h3></div>
           <div class="tasks" id="stu-tasks"></div>
+          <div id="stu-songs-wrap" hidden>
+            <div class="sec-title" style="margin-top:22px"><h3>השירים שלי</h3></div>
+            <div class="chips" id="stu-songs" style="gap:8px"></div>
+          </div>
           <div id="stu-lessons-wrap" hidden>
             <div class="sec-title" style="margin-top:22px"><h3>מה עשינו בשיעור</h3></div>
             <div class="lessons" id="stu-lessons"></div>
@@ -1030,7 +1034,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
       <div class="spread"><span>למי לתת</span><button type="button" class="btn ghost small" id="ft-all">כולם</button></div>
       <div class="assign" id="ft-assign"></div>
     </div>
-    <details class="field" id="ft-att"><summary id="ft-att-sum">צירוף אקורדים, צורות ושירים</summary><div class="assign" id="ft-att-list" style="margin-top:8px;max-height:240px"></div></details>
+    <details class="field" id="ft-att"><summary id="ft-att-sum">צירוף אקורדים, צורות ושירים</summary><div class="assign" id="ft-att-list" style="margin-top:8px;max-height:240px"></div><button type="button" class="btn small" id="ft-new-song" style="margin-top:8px;justify-self:start">שיר חדש לספרייה</button></details>
     <label class="row" id="ft-reset-wrap" style="gap:8px;font-weight:600"><input type="checkbox" id="ft-reset"> אפס את מונה הביצועים</label>
     <p class="err" id="ft-err"></p>
     <div class="row"><button class="btn primary" type="submit" id="ft-submit">שמור משימה</button><button class="btn ghost" type="button" data-close>ביטול</button></div>
@@ -2047,7 +2051,7 @@ function serverHandle(req, store, teacherPassword){
   const bool = v => v === true || v === 'true' || v === 'TRUE';
   const now = () => new Date().toISOString();
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  const nStudent = s => ({id:String(s.id), name:String(s.name || ''), pin:String(s.pin || ''), createdAt:String(s.createdAt || ''), phone:String(s.phone || ''), email:String(s.email || ''), weeklyGoal:num(s.weeklyGoal), remind:bool(s.remind)});
+  const nStudent = s => ({id:String(s.id), name:String(s.name || ''), pin:String(s.pin || ''), createdAt:String(s.createdAt || ''), phone:String(s.phone || ''), email:String(s.email || ''), weeklyGoal:num(s.weeklyGoal), remind:bool(s.remind), songs:String(s.songs || '').split(',').filter(Boolean)});
   const nLesson = l => ({id:String(l.id), studentId:String(l.studentId), date:String(l.date || ''), text:String(l.text || ''), createdAt:String(l.createdAt || '')});
   const settingsObj = () => { const o = {}; (store.all('Settings') || []).forEach(r => { o[String(r.key)] = String(r.value); }); return o; };
   const mail = (to, subject, body) => { if(to && typeof MailApp !== 'undefined'){ try{ MailApp.sendEmail(String(to), subject, body); }catch(e){} } };
@@ -2057,7 +2061,7 @@ function serverHandle(req, store, teacherPassword){
 
   const nMember = m => ({id:String(m.id), name:String(m.name || ''), role:String(m.role || ''), pin:String(m.pin || ''), createdAt:String(m.createdAt || '')});
   const nBand = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
-  if(a === 'publicContent') return {items:store.all('Content').map(nContent)};
+  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => c.kind !== 'song')};
   if(a === 'publicApplyForm' || a === 'publicApplySubmit'){
     const f = store.all('Band').map(nBand).find(x => x.kind === 'form');
     const d = f ? f.data : null;
@@ -2087,8 +2091,10 @@ function serverHandle(req, store, teacherPassword){
     });
     if(!cand.name) cand.name = 'מועמד/ת מהטופס';
     store.insert('Band', {id:newId(), kind:'candidate', data:JSON.stringify(cand), authorId:'form', updatedAt:now()});
-    if(d.notifyEmail && typeof MailApp !== 'undefined'){
-      try{ MailApp.sendEmail(String(d.notifyEmail), 'מועמדות חדשה ל־VELVET: ' + cand.name, cand.answers.map(x => x.label + ': ' + x.value).join('\n')); }catch(e){}
+    const to = String(d.notifyEmail || '').split(/[\s,;]+/).filter(x => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)).slice(0, 20).join(',');
+    if(to && typeof MailApp !== 'undefined'){
+      const site = String(settingsObj().siteUrl || '');
+      try{ MailApp.sendEmail(to, 'מועמדות חדשה ל־VELVET: ' + cand.name, 'הגיעה מועמדות חדשה דרך הטופס.\n\n' + cand.answers.map(x => x.label + ': ' + (x.value || '-')).join('\n') + (site ? '\n\nלצפייה ברשימת המועמדים: ' + site + '#velvet' : '')); }catch(e){}
     }
     return {done:true, message:String(d.success || 'תודה! קיבלנו את הפרטים.')};
   }
@@ -2171,6 +2177,12 @@ function serverHandle(req, store, teacherPassword){
       return {};
     }
   }
+  const syncBandSong = (bid, bd) => {
+    const fields = {name:String(bd.name || ''), url:String(bd.url || ''), bpm:num(bd.bpm), sheet:String(bd.sheet || ''), dir:String(bd.dir || ''), key:String(bd.key || ''), fromBand:bid};
+    const raw = store.all('Content').find(x => String(x.kind) === 'song' && nContent(x).data.fromBand === bid);
+    if(raw){ raw.data = JSON.stringify(Object.assign(nContent(raw).data, fields)); raw.updatedAt = now(); store.update('Content', raw); }
+    else store.insert('Content', {id:newId(), kind:'song', data:JSON.stringify(Object.assign({note:bd.artist ? 'אמן: ' + bd.artist : '', loops:[], order:Date.now()}, fields)), updatedAt:now()});
+  };
   if(a.indexOf('band') === 0){
     const pin = String(req.pin || '').trim();
     const me = pin ? store.all('Members').map(nMember).find(m => m.pin === pin) : null;
@@ -2191,11 +2203,14 @@ function serverHandle(req, store, teacherPassword){
         if(raw){
           if(String(raw.kind) !== it.kind) throw new Error('סוג פריט לא תואם.');
           if(it.kind === 'note' && String(raw.authorId) !== me.id) throw new Error('אפשר לערוך רק הערות שכתבת.');
-          raw.data = data; raw.updatedAt = now(); store.update('Band', raw); out.push(nBand(raw)); return;
+          raw.data = data; raw.updatedAt = now(); store.update('Band', raw); out.push(nBand(raw));
+          if(it.kind === 'bsong') syncBandSong(String(raw.id), it.data || {});
+          return;
         }
         const id = /^[A-Za-z0-9_]{4,40}$/.test(String(it.id || '')) ? String(it.id) : newId();
         const row = {id, kind:it.kind, data, authorId:me.id, updatedAt:now()};
         store.insert('Band', row); out.push(nBand(row));
+        if(it.kind === 'bsong') syncBandSong(id, it.data || {});
       });
       return {items:out};
     }
@@ -2213,7 +2228,10 @@ function serverHandle(req, store, teacherPassword){
     const st = pin ? store.all('Students').map(nStudent).find(s => s.pin === pin) : null;
     if(!st) throw new Error('הקוד לא נמצא. בדקו אותו מול המורה.');
     if(a === 'studentLogin'){
-      return {student:{id:st.id, name:st.name, weeklyGoal:st.weeklyGoal}, tasks:store.all('Tasks').filter(t => String(t.studentId) === st.id).map(nTask), logs:store.all('Logs').filter(l => String(l.studentId) === st.id).map(nLog), lessons:store.all('Lessons').filter(l => String(l.studentId) === st.id).map(nLesson)};
+      const myTasks = store.all('Tasks').filter(t => String(t.studentId) === st.id).map(nTask);
+      const songIds = new Set(st.songs);
+      myTasks.forEach(t => String(t.attachments || '').split(',').forEach(k => { if(k.indexOf('v:') === 0) songIds.add(k.slice(2)); }));
+      return {songs:store.all('Content').map(nContent).filter(c => c.kind === 'song' && songIds.has(c.id)), student:{id:st.id, name:st.name, weeklyGoal:st.weeklyGoal}, tasks:myTasks, logs:store.all('Logs').filter(l => String(l.studentId) === st.id).map(nLog), lessons:store.all('Lessons').filter(l => String(l.studentId) === st.id).map(nLesson)};
     }
     if(a === 'studentUpdateTask'){
       const raw = store.all('Tasks').find(t => String(t.id) === String(req.taskId) && String(t.studentId) === st.id);
@@ -2237,7 +2255,7 @@ function serverHandle(req, store, teacherPassword){
   if(a.indexOf('teacher') === 0){
     if(!teacherPassword || String(req.password || '') !== String(teacherPassword)) throw new Error('הסיסמה שגויה.');
     if(a === 'teacherLoad'){
-      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
+      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
     }
     if(a === 'teacherSaveSettings'){
       const KEYS = ['teacherEmail','notifyDone','notifyPractice','remindHour','remindDays','siteUrl'], inp = req.settings || {}, rows = store.all('Settings');
@@ -2265,6 +2283,17 @@ function serverHandle(req, store, teacherPassword){
       store.insert('YouthPeople', np); return {person:nPerson(np)};
     }
     if(a === 'teacherDeleteYouthStaff'){ store.remove('YouthPeople', x => String(x.id) === String(req.id) && bool(x.staff)); return {}; }
+    if(a === 'teacherSetStudentSongs'){
+      const raw = store.all('Students').find(x => String(x.id) === String(req.id));
+      if(!raw) throw new Error('התלמיד לא נמצא.');
+      raw.songs = (req.songs || []).map(String).filter(x => /^[A-Za-z0-9_]{1,60}$/.test(x)).slice(0, 200).join(',');
+      store.update('Students', raw);
+      return {student:nStudent(raw)};
+    }
+    if(a === 'teacherSyncBandSongs'){
+      store.all('Band').map(nBand).filter(x => x.kind === 'bsong').forEach(b => syncBandSong(b.id, b.data));
+      return {items:store.all('Content').map(nContent)};
+    }
     if(a === 'teacherSaveMember'){
       const m = req.member || {}, name = String(m.name || '').trim(), pin = String(m.pin || '').trim(), role = String(m.role || '').trim().slice(0, 40);
       if(!name) throw new Error('צריך לכתוב שם.');
@@ -2420,7 +2449,8 @@ async function studentLogin(pin, silent){
   $('#stu-go').disabled = true;
   try{
     const r = await api('studentLogin', {pin});
-    S.pin = pin; S.student = r.student; S.tasks = r.tasks; S.logs = r.logs; S.lessons = r.lessons || [];
+    S.pin = pin; S.student = r.student; S.tasks = r.tasks; S.logs = r.logs; S.lessons = r.lessons || []; S.songs = r.songs || [];
+    dropPrivateSongs();
     store.set('pritah.pin', pin);
     renderStudent();
     if(currentView === 'student') mountMetro($('#stu-metro-slot'));
@@ -2430,7 +2460,8 @@ async function studentLogin(pin, silent){
   }finally{ $('#stu-go').disabled = false; }
 }
 function studentLogout(){
-  S.pin = null; S.student = null; S.tasks = []; S.logs = [];
+  S.pin = null; S.student = null; S.tasks = []; S.logs = []; S.songs = [];
+  setTimeout(dropPrivateSongs, 0);
   store.del('pritah.pin');
   if(MetroUI.el.parentElement === $('#stu-metro-slot')){ Metro.stop(); mountMetro($('#metro-slot')); }
   timerReset();
@@ -2451,6 +2482,9 @@ function renderStudent(){
   $('#stu-due').className = 'due-banner' + (late.length ? ' late' : '');
   $('#stu-due').textContent = late.length ? `${late.length === 1 ? 'תאריך היעד של משימה אחת עבר' : `תאריך היעד של ${late.length} משימות עבר`}: ${late.map(t => t.title).join(', ')}.` : soon.length ? `צריך לסיים בקרוב: ${soon.map(t => `${t.title} (${dueInfo(t).text})`).join(', ')}.` : '';
   $('#stu-goal').innerHTML = goalHTML(S.logs, Number(S.student.weeklyGoal) || 0);
+  const mySongs = (S.songs || []).map(i => songModel(Object.assign({}, i.data, {id:i.id})));
+  $('#stu-songs-wrap').hidden = !mySongs.length;
+  $('#stu-songs').innerHTML = mySongs.map(x => `<button class="btn small" data-act="open-my-song" data-sid="${esc(x.id)}">${esc(x.name)}</button>`).join('');
   const ls = (S.lessons || []).slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   $('#stu-lessons-wrap').hidden = !ls.length;
   $('#stu-lessons').innerHTML = ls.map(l => `<article class="lesson"><div class="lesson-d">${fmtDate(l.date)}</div><p>${esc(l.text)}</p></article>`).join('');
@@ -2558,6 +2592,7 @@ async function teacherLogin(pw, silent){
   $('#t-err2').textContent = ''; $('#t-go').disabled = true;
   try{
     T.data = await api('teacherLoad', {password:pw});
+    dropPrivateSongs();
     T.pw = pw;
     try{ sessionStorage.setItem('pritah.tpw', pw); }catch(e){}
     if(!silent || store.get('pritah.tpw')){ if($('#t-remember').checked) store.set('pritah.tpw', pw); else store.del('pritah.tpw'); }
@@ -2567,7 +2602,7 @@ async function teacherLogin(pw, silent){
     else if(/סיסמה/.test(e.message)) store.del('pritah.tpw');
   }finally{ $('#t-go').disabled = false; }
 }
-function teacherLogout(){ T.pw = null; T.data = null; T.sel = null; store.del('pritah.tpw'); try{ sessionStorage.removeItem('pritah.tpw'); }catch(e){} $('#t-pw').value = ''; renderTeacher(); }
+function teacherLogout(){ T.pw = null; T.data = null; T.sel = null; setTimeout(dropPrivateSongs, 0); store.del('pritah.tpw'); try{ sessionStorage.removeItem('pritah.tpw'); }catch(e){} $('#t-pw').value = ''; renderTeacher(); }
 function sStats(sid){
   const tasks = T.data.tasks.filter(t => t.studentId === sid), logs = T.data.logs.filter(l => l.studentId === sid);
   const last = logs.reduce((m, l) => l.date > m ? l.date : m, '');
@@ -2625,6 +2660,8 @@ function renderTeacherDetail(){
         <p style="margin:6px 0 16px">${st.open} משימות פתוחות${st.late ? `, <b class="late-t">${st.late} באיחור</b>` : ''}, ${st.done} הושלמו.</p>
         <div class="spread" style="margin-bottom:4px"><h3>משימות</h3><button class="btn primary" data-act="new-task">משימה חדשה</button></div>
         ${tasks.length ? `<div>${tasks.map(teacherTaskHTML).join('')}</div>` : `<p class="empty">אין עדיין משימות. משימה שתוסיפו תופיע אצל ${esc(s.name)} מיד בכניסה הבאה.</p>`}
+        <div class="spread" style="margin:22px 0 6px"><h3>השירים של ${esc(s.name)}</h3></div>
+        ${studentSongsHTML(s)}
         <div class="spread" style="margin:22px 0 6px"><h3>סיכומי שיעורים</h3><button class="btn small" data-act="new-lesson">סיכום שיעור</button></div>
         ${lessons.length ? `<div class="lessons">${lessons.map(l => `<article class="lesson" data-lid="${esc(l.id)}"><div class="spread"><div class="lesson-d">${fmtDate(l.date)}</div><button class="btn ghost small" data-act="edit-lesson" data-lid="${esc(l.id)}">עריכה</button></div><p>${esc(l.text)}</p></article>`).join('')}</div>` : `<p class="muted">עוד אין סיכומים. מה שתכתוב כאן יופיע אצל ${esc(s.name)} תחת "מה עשינו בשיעור".</p>`}
       </div>
@@ -2696,6 +2733,20 @@ async function tCall(action, payload, errEl){
   try{ return await api(action, Object.assign({password:T.pw}, payload)); }
   catch(e){ if(errEl) errEl.textContent = e.message; else alert(e.message); throw e; }
 }
+function studentSongIds(s){
+  const fromTasks = new Set(); T.data.tasks.filter(t => t.studentId === s.id).forEach(t => String(t.attachments || '').split(',').forEach(k => { if(k.indexOf('v:') === 0) fromTasks.add(k.slice(2)); }));
+  return {direct:new Set(s.songs || []), fromTasks};
+}
+function studentSongsHTML(s){
+  const {direct, fromTasks} = studentSongIds(s), lib = allSongs();
+  const mine = lib.filter(x => direct.has(x.id) || fromTasks.has(x.id)), rest = lib.filter(x => !direct.has(x.id) && !fromTasks.has(x.id));
+  return `<div class="chips" style="gap:6px">${mine.length ? mine.map(x => `<span class="chip">${esc(x.name)}${direct.has(x.id) ? ` <button class="btn ghost small danger" data-act="unassign-song" data-song="${esc(x.id)}" aria-label="הסרה" style="min-height:0;padding:0 4px">✕</button>` : ' <small class="muted">מהמשימות</small>'}</span>`).join('') : '<span class="muted">עוד אין שירים. רק שירים שמופיעים כאן יוצגו לתלמיד.</span>'}</div>
+    ${rest.length ? `<div class="row" style="margin-top:8px"><select id="t-add-song" style="max-width:280px" aria-label="הוספת שיר לתלמיד"><option value="">הוספת שיר מהספרייה…</option>${rest.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')}</select></div>` : ''}`;
+}
+async function setStudentSongs(s, ids){
+  const r = await tCall('teacherSetStudentSongs', {id:s.id, songs:[...ids]});
+  const i = T.data.students.findIndex(x => x.id === s.id); T.data.students[i] = r.student; renderTeacher();
+}
 async function onTeacherMain(e){
   const row = e.target.closest('tr[data-sid], .feed li[data-sid]');
   if(row && !e.target.closest('[data-act]')){ T.sel = row.dataset.sid; renderTeacher(); return; }
@@ -2717,6 +2768,7 @@ async function onTeacherMain(e){
   if(act === 'edit-task') openTaskDlg(task);
   if(act === 'dup-task'){ openTaskDlg(null, []); $('#ft-title').textContent = 'שכפול משימה'; $('#ft-name').value = task.title; $('#ft-desc').value = task.description; $('#ft-reps').value = task.targetReps || ''; $('#ft-bpm').value = task.targetBpm || ''; $$('#ft-att-list input').forEach(b => { b.checked = (task.attachments || '').split(',').includes(b.value); }); updateAttSum(); }
   if(act === 'new-lesson') openLessonDlg(null);
+  if(act === 'unassign-song'){ const st = T.data.students.find(x => x.id === T.sel), ids = new Set(st.songs || []); ids.delete(btn.dataset.song); setStudentSongs(st, ids); }
   if(act === 'edit-lesson') openLessonDlg((T.data.lessons || []).find(l => l.id === btn.dataset.lid));
   if(act === 'feed-seen'){ store.set('pritah.tSeen', new Date().toISOString()); renderTeacher(); }
   if(act === 'open-student'){ T.sel = btn.dataset.sid; renderTeacher(); }
@@ -2775,15 +2827,22 @@ function groupByCats(cats, list){
 }
 async function loadLibrary(){
   try{ const r = await api('publicContent'); LIB.items = r.items || []; }catch(e){}
+  privateSongs().forEach(it => mergeItems([it]));
   refreshLib();
 }
+function privateSongs(){ return (T.data && T.data.songs ? T.data.songs : []).concat(S.student && S.songs ? S.songs : []); }
+function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => i.kind !== 'song'); privateSongs().forEach(it => mergeItems([it])); refreshLib(); }
 function refreshLib(){
   renderChords(); renderShapesPanel(); renderTheory(); applySongView();
   if(T.data) renderTeacher();
   if(S.student) renderStudent();
 }
 function mergeItems(list){ list.forEach(it => { const i = LIB.items.findIndex(x => x.id === it.id); if(i >= 0) LIB.items[i] = it; else LIB.items.push(it); }); }
-async function saveItems(items, errEl){ const r = await tCall('teacherSaveContent', {items}, errEl); mergeItems(r.items); refreshLib(); return r.items; }
+async function saveItems(items, errEl){
+  const r = await tCall('teacherSaveContent', {items}, errEl); mergeItems(r.items);
+  if(T.data){ T.data.songs = T.data.songs || []; r.items.filter(i => i.kind === 'song').forEach(it => { const k = T.data.songs.findIndex(x => x.id === it.id); if(k >= 0) T.data.songs[k] = it; else T.data.songs.push(it); }); }
+  refreshLib(); return r.items;
+}
 
 /* צורות מהמורה בצד הציבורי */
 const SP = {cat:'all', id:null};
@@ -3087,7 +3146,7 @@ async function deleteShape(){
 
 /* ================== שירים מ־YouTube ================== */
 const SG = {player:null, ready:false, song:null, orig:0, target:0, rate:1, sync:true, loop:{a:null, b:null, on:false}, poll:null, alignPending:false, taps:[], loading:null};
-function songModel(d){ return {id:d.id || '', name:d.name || '', url:d.url || '', bpm:Number(d.bpm) || 0, note:d.note || '', sheet:d.sheet || '', dir:d.dir || '', key:d.key || '', shape:d.shape || '', mode:d.mode || 'maj', genreId:d.genreId || '', loops:(d.loops || []).map(l => ({name:String(l.name || ''), a:Number(l.a) || 0, b:Number(l.b) || 0}))}; }
+function songModel(d){ return {fromBand:d.fromBand || '', id:d.id || '', name:d.name || '', url:d.url || '', bpm:Number(d.bpm) || 0, note:d.note || '', sheet:d.sheet || '', dir:d.dir || '', key:d.key || '', shape:d.shape || '', mode:d.mode || 'maj', genreId:d.genreId || '', loops:(d.loops || []).map(l => ({name:String(l.name || ''), a:Number(l.a) || 0, b:Number(l.b) || 0}))}; }
 function allSongs(){ return libOf('song').map(i => songModel(Object.assign({}, i.data, {id:i.id}))); }
 function findSong(id){ return allSongs().find(s => s.id === id) || null; }
 function parseYouTube(u){
@@ -3253,7 +3312,7 @@ function renderSongList(){
   const all = allSongs(), songs = all.filter(songMatches);
   $('#sg-list').innerHTML = songs.length
     ? songs.map(s => `<button class="song-item" data-id="${esc(s.id)}" aria-pressed="${SG.song && SG.song.id === s.id}"><span><b>${esc(s.name)}</b>${s.shape || genreName(s.genreId) ? `<span class="chips" style="margin-top:3px">${songTagChips(s)}</span>` : ''}</span>${s.bpm ? `<small>${s.bpm} BPM</small>` : ''}</button>`).join('')
-    : `<p class="muted">${all.length ? 'אין שירים שמתאימים לחיפוש.' : 'המורה עוד לא הוסיף שירים. אפשר להדביק כאן למטה קישור לכל סרטון.'}</p>`;
+    : `<p class="muted">${all.length ? 'אין שירים שמתאימים לחיפוש.' : T.data ? 'עוד אין שירים בספרייה.' : S.student ? 'המורה עוד לא נתן לך שירים. אפשר להדביק כאן למטה קישור לכל סרטון.' : 'כדי לראות את השירים שלך, היכנסו קודם ל"האזור שלי". אפשר גם להדביק כאן למטה קישור לכל סרטון.'}</p>`;
 }
 async function saveCurrentLoop(){
   const s = SG.song, item = LIB.items.find(i => i.id === s.id); if(!item) return;
@@ -3267,16 +3326,16 @@ function playSongFromTask(id, bpm){ const s = findSong(id); if(!s) return; showV
 /* ניהול שירים אצל המורה */
 function renderTeacherSongs(){
   const songs = allSongs();
-  let h = `<div class="spread"><h2>שירים</h2><button class="btn primary" data-act="new-song">שיר חדש</button></div>
+  let h = `<div class="spread"><h2>שירים</h2><div class="row"><button class="btn" data-act="sync-band">העתקת שירי VELVET לספרייה</button><button class="btn primary" data-act="new-song">שיר חדש</button></div></div>
     <p class="muted" style="margin-top:6px;max-width:62ch">השירים מופיעים לכולם בלשונית "שירים", ואפשר לצרף אותם למשימות. לכל שיר אפשר להוסיף סרטון, מילים ואקורדים, או את שניהם. קטעים ללולאה שומרים מתוך הנגן: מסמנים התחלה וסוף ולוחצים "שמור את הקטע לשיר".</p>`;
   h += songTagsAdminHTML();
-  h += songs.length ? `<div style="margin-top:12px">${songs.map(s => `<div class="t-task"><div><b>${esc(s.name)}</b>${s.shape || genreName(s.genreId) ? `<div class="chips" style="margin:3px 0">${songTagChips(s)}</div>` : ''}<div class="muted" style="font-size:.94rem">${[s.url ? (s.bpm ? s.bpm + ' BPM' : 'סרטון') : '', s.sheet ? 'מילים ואקורדים' : '', s.loops.length ? s.loops.length + ' קטעים שמורים' : ''].filter(Boolean).join(', ')}</div></div><div class="acts"><button class="btn ghost small" data-act="play-song" data-id="${esc(s.id)}">פתח בנגן</button><button class="btn ghost small" data-act="edit-song" data-id="${esc(s.id)}">עריכה</button></div></div>`).join('')}</div>`
+  h += songs.length ? `<div style="margin-top:12px">${songs.map(s => `<div class="t-task"><div><b>${esc(s.name)}</b>${s.shape || genreName(s.genreId) || s.fromBand ? `<div class="chips" style="margin:3px 0">${songTagChips(s)}${s.fromBand ? '<span class="chip">מ־VELVET</span>' : ''}</div>` : ''}<div class="muted" style="font-size:.94rem">${[s.url ? (s.bpm ? s.bpm + ' BPM' : 'סרטון') : '', s.sheet ? 'מילים ואקורדים' : '', s.loops.length ? s.loops.length + ' קטעים שמורים' : ''].filter(Boolean).join(', ')}</div></div><div class="acts"><button class="btn ghost small" data-act="play-song" data-id="${esc(s.id)}">פתח בנגן</button><button class="btn ghost small" data-act="edit-song" data-id="${esc(s.id)}">עריכה</button></div></div>`).join('')}</div>`
     : `<p class="empty" style="margin-top:16px">עוד אין שירים. לחץ על "שיר חדש" והדבק קישור ליוטיוב.</p>`;
   $('#t-songs').innerHTML = h;
 }
 let editSong = null;
 let resetSongPdf = () => {};
-function openSongDlg(item){
+function openSongDlg(item, attachToTask){
   editSong = item ? {item, loops:(item.data.loops || []).slice()} : {item:null, loops:[]};
   const d = item ? item.data : {};
   $('#fso-title').textContent = item ? 'עריכת שיר' : 'שיר חדש';
@@ -3288,6 +3347,7 @@ function openSongDlg(item){
   syncSongTags();
   syncSheetDir();
   $('#fso-del').hidden = !item; $('#fso-err').textContent = '';
+  editSong.attachToTask = !!attachToTask;
   renderSongDlgLoops();
   $('#dlg-song').showModal(); $('#fso-name').focus();
 }
@@ -3313,12 +3373,23 @@ async function saveSongDlg(e){
   if(url && !parseYouTube(url)){ $('#fso-err').textContent = 'זה לא נראה כמו קישור ליוטיוב.'; return; }
   if(!url && !sheet.trim()){ $('#fso-err').textContent = 'צריך קישור ליוטיוב, מילים ואקורדים, או את שניהם.'; return; }
   const it = editSong.item;
-  const data = {name, url, bpm:Math.max(0, Math.round(Number($('#fso-bpm').value) || 0)), note:$('#fso-note').value.trim(), sheet, dir:editSong.dir || '', key:$('#fso-key').value, shape:editSong.shape || '', mode:editSong.mode || 'maj', genreId:$('#fso-genre').value, loops:editSong.loops, order:it ? it.data.order : Date.now()};
-  try{ await saveItems([{id:it ? it.id : '', kind:'song', data}], $('#fso-err')); $('#dlg-song').close(); }catch(err){}
+  const data = Object.assign({}, it ? it.data : {}, {name, url, bpm:Math.max(0, Math.round(Number($('#fso-bpm').value) || 0)), note:$('#fso-note').value.trim(), sheet, dir:editSong.dir || '', key:$('#fso-key').value, shape:editSong.shape || '', mode:editSong.mode || 'maj', genreId:$('#fso-genre').value, loops:editSong.loops, order:it ? it.data.order : Date.now()});
+  try{
+    const saved = await saveItems([{id:it ? it.id : '', kind:'song', data}], $('#fso-err')); $('#dlg-song').close();
+    if(!it && editSong.attachToTask && $('#dlg-task').open){
+      const box = $('#ft-att-list'), v = 'v:' + saved[0].id;
+      const old = new Set($$('#ft-att-list input:checked').map(b => b.value)); old.add(v);
+      const shapes = libOf('shape'), chords = currentChords();
+      box.innerHTML = (libOf('song').length ? '<b>שירים</b>' + libOf('song').map(i => `<label><input type="checkbox" value="v:${esc(i.id)}" ${old.has('v:' + i.id) ? 'checked' : ''}> ${esc(i.data.name)}</label>`).join('') : '') +
+        (shapes.length ? '<b>צורות על הצוואר</b>' + shapes.map(i => `<label><input type="checkbox" value="s:${esc(i.id)}" ${old.has('s:' + i.id) ? 'checked' : ''}> ${esc(i.data.name)}</label>`).join('') : '') +
+        '<b>אקורדים</b>' + chords.map(c => { const k = 'c:' + chordKey(c); return `<label><input type="checkbox" value="${esc(k)}" ${old.has(k) ? 'checked' : ''}> <span style="direction:ltr">${esc(c.name)}</span></label>`; }).join('');
+      $('#ft-att').open = true; updateAttSum(); toast('השיר נוסף לספרייה וצורף למשימה');
+    }
+  }catch(err){}
 }
 async function deleteSongDlg(){
   const it = editSong.item; if(!it || !confirm(`למחוק את השיר "${it.data.name}"?`)) return;
-  try{ const r = await tCall('teacherDeleteContent', {id:it.id}, $('#fso-err')); LIB.items = r.items; refreshLib(); $('#dlg-song').close(); }catch(err){}
+  try{ const r = await tCall('teacherDeleteContent', {id:it.id}, $('#fso-err')); LIB.items = r.items; if(T.data) T.data.songs = (T.data.songs || []).filter(x => x.id !== it.id); refreshLib(); $('#dlg-song').close(); }catch(err){}
 }
 
 /* ================== מילים ואקורדים + טרנספוזיציה ================== */
@@ -4062,6 +4133,7 @@ async function saveBandSong(e){
   const data = Object.assign({}, it ? it.data : {shift:0}, {recordings, name, artist:$('#bsg-artist').value.trim(), bpm:Math.max(0, Math.round(Number($('#bsg-bpm').value) || 0)), duration, url, sheet:$('#bsg-sheet').value.replace(/\s+$/, ''), dir:B.editSong.dir || '', key:$('#bsg-key').value});
   try{
     const saved = await bSave([{id:it ? it.id : '', kind:'bsong', data}], $('#bsg-err'));
+    loadLibrary();
     if(!it && $('#bsg-set').checked) await saveSetlist(setlistOrder().concat([saved[0].id]));
     $('#dlg-bsong').close();
     if(!it) openBandSong(saved[0].id);
@@ -4253,7 +4325,8 @@ function renderFormBuilder(){
       <label class="field">כותרת<input data-s="title" maxlength="80" value="${esc(d.title)}"></label>
       <label class="field">פתיח <small>(מופיע מעל השאלות)</small><textarea data-s="intro" maxlength="1500">${esc(d.intro)}</textarea></label>
       <label class="field">הודעה אחרי שליחה<input data-s="success" maxlength="300" value="${esc(d.success)}"></label>
-      <label class="field">מייל לקבלת התראה על כל מועמדות חדשה <small>(לא חובה)</small><input data-s="notifyEmail" type="email" dir="ltr" maxlength="120" value="${esc(d.notifyEmail || '')}"></label>
+      <label class="field">מיילים לקבלת התראה על כל מועמדות חדשה <small>(לא חובה. אפשר כמה כתובות, עם פסיק ביניהן)</small><input data-s="notifyEmail" type="text" inputmode="email" dir="ltr" maxlength="600" placeholder="me@gmail.com, singer@gmail.com" value="${esc(d.notifyEmail || '')}"></label>
+      <p class="hint" id="fm-mail-hint"></p>
     </div>
     <div class="sub-panel">
       <div class="spread"><h3>שאלות</h3><button class="btn small" data-act="fm-add">הוספת שאלה</button></div>
@@ -4299,6 +4372,9 @@ async function onFormAct(act, btn){
     const fewOpts = d.questions.find(q => (q.type === 'single' || q.type === 'multi') && (q.options || []).length < 2);
     const msg = $('#fm-dirty');
     if(!d.questions.length){ msg.textContent = 'צריך לפחות שאלה אחת.'; return; }
+    const mails = String(d.notifyEmail || '').split(/[\s,;]+/).filter(Boolean), badMail = mails.find(x => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+    if(badMail){ msg.textContent = `הכתובת "${badMail}" לא נראית כמו מייל תקין.`; return; }
+    d.notifyEmail = mails.join(', ');
     if(bad){ msg.textContent = 'יש שאלה בלי נוסח.'; return; }
     if(fewOpts){ msg.textContent = `בשאלה "${fewOpts.label}" צריך לפחות שתי אפשרויות.`; return; }
     if(!d.questions.some(q => q.map === 'name') && !confirm('אין שאלה שמשויכת ל"שם". המועמדים יופיעו בלי שם ברשימה. לשמור בכל זאת?')) return;
@@ -5236,6 +5312,7 @@ function init(){
   $('#stu-logout').addEventListener('click', studentLogout);
   $('#stu-refresh').addEventListener('click', () => studentLogin(S.pin));
   $('#stu-tasks').addEventListener('click', onStudentTask);
+  $('#stu-songs').addEventListener('click', e => { const b = e.target.closest('[data-act=open-my-song]'); if(b){ showView('songs'); SGF.view = 'list'; applySongView(); openSong(findSong(b.dataset.sid)); renderSongList(); } });
   $('#stu-done').addEventListener('click', onStudentTask);
   $('#tm-toggle').addEventListener('click', timerToggle);
   $('#tm-save').addEventListener('click', () => openLogForm(true));
@@ -5252,6 +5329,7 @@ function init(){
   $('#t-new-student').addEventListener('click', () => openStudentDlg(null));
   $('#t-slist').addEventListener('click', e => { const b = e.target.closest('button[data-sid]'); if(b){ T.sel = b.dataset.sid || null; renderTeacher(); } });
   $('#t-main').addEventListener('click', onTeacherMain);
+  $('#t-main').addEventListener('change', e => { if(e.target.id === 't-add-song' && e.target.value){ const st = T.data.students.find(x => x.id === T.sel), ids = new Set(st.songs || []); ids.add(e.target.value); setStudentSongs(st, ids); } });
   $('#t-main').addEventListener('keydown', e => { const r = e.target.closest('tr[data-sid]'); if(r && e.key === 'Enter'){ T.sel = r.dataset.sid; renderTeacher(); } });
   $$('dialog [data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
   $('#fs-gen').addEventListener('click', () => { $('#fs-pin').value = genPin(); });
@@ -5336,8 +5414,10 @@ function init(){
     if(b.dataset.act === 'edit-song') openSongDlg(item);
     if(b.dataset.act === 'play-song'){ showView('songs'); SGF.view = 'list'; applySongView(); openSong(findSong(item.id)); renderSongList(); }
     if(/genre|minor/.test(b.dataset.act)) onSongTagsAdmin(b);
+    if(b.dataset.act === 'sync-band'){ b.disabled = true; tCall('teacherSyncBandSongs', {}).then(r => { LIB.items = r.items; T.data.songs = r.items.filter(i => i.kind === 'song'); refreshLib(); toast('שירי VELVET נמצאים עכשיו בספרייה'); }).catch(() => {}).finally(() => { b.disabled = false; }); }
   });
   $('#fso').addEventListener('submit', saveSongDlg);
+  $('#ft-new-song').addEventListener('click', () => openSongDlg(null, true));
   $('#fso-shape').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ editSong.shape = b.dataset.v; syncSongTags(); } });
   $('#fso-mode').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ editSong.mode = b.dataset.v; syncSongTags(); } });
   $('#sg-q').addEventListener('input', e => { SGF.q = e.target.value; SGF.view === 'table' ? renderShapeTable() : renderSongList(); });
