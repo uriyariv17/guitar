@@ -1,6 +1,3 @@
-
-index.html
-100%
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -555,6 +552,16 @@ a.btn.wa{ background:#1F9D55; border-color:#1F9D55; color:#fff; }
 .fbtn.shake{ animation:fshake .5s; }
 @keyframes fshake{ 0%,100%{ transform:rotate(-3deg); } 20%{ transform:rotate(6deg) scale(1.12); } 40%{ transform:rotate(-9deg) scale(1.15); } 60%{ transform:rotate(5deg) scale(1.1); } 80%{ transform:rotate(-5deg); } }
 
+/* מניעת חריגה מהעמודה */
+.stack > *, .sub-panel > *, .songs-grid > *, .dash-grid > *, .t-grid > *, .y-home > *, .y-card > *, .t-detail-grid > *, .panel{ min-width:0; }
+#sg-note, #sg-title, .muted, .desc, .ncard-t, .lesson p, .y-post p, .bnote-t, details.ans dd, .t-task b, .task h4{ overflow-wrap:anywhere; }
+.sheet{ max-width:100%; }
+
+.sync-btn{ display:inline-flex; align-items:center; gap:8px; }
+.sync-dot{ width:12px; height:12px; border-radius:50%; background:var(--line); box-shadow:inset 0 0 0 2px var(--ink-2); }
+.sync-btn[aria-pressed="true"]{ background:color-mix(in srgb, var(--green) 14%, var(--surface)); border-color:var(--green); }
+.sync-btn[aria-pressed="true"] .sync-dot{ background:var(--green); box-shadow:0 0 0 3px color-mix(in srgb, var(--green) 30%, transparent); }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -797,10 +804,10 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
           </div>
           <div class="sub-panel">
             <div class="row">
-              <label class="row" style="gap:8px;font-weight:600"><input type="checkbox" id="sg-sync"> מטרונום עם השיר</label>
+              <button type="button" class="btn sync-btn" id="sg-sync" aria-pressed="false"><span class="sync-dot"></span><span id="sg-sync-txt">מטרונום: כבוי</span></button>
               <button class="btn" id="sg-align">יישור לפעמה</button>
             </div>
-            <p class="hint">המטרונום מתחיל ונעצר יחד עם הסרטון. אם הקליקים לא נופלים על הפעמות, לחצו על "יישור לפעמה" בדיוק על פעמה של השיר.</p>
+            <p class="hint">כשהמטרונום פועל, הוא מתחיל ונעצר יחד עם הסרטון. אם הקליקים לא נופלים על הפעמות, לחצו על "יישור לפעמה" בדיוק על פעמה של השיר.</p>
           </div>
           <div class="sub-panel">
             <div class="spread"><h4>קטע בלולאה</h4><span class="muted">עכשיו: <span id="sg-time">0:00.0</span></span></div>
@@ -3145,7 +3152,7 @@ async function deleteShape(){
 }
 
 /* ================== שירים מ־YouTube ================== */
-const SG = {player:null, ready:false, song:null, orig:0, target:0, rate:1, sync:true, loop:{a:null, b:null, on:false}, poll:null, alignPending:false, taps:[], loading:null};
+const SG = {player:null, ready:false, song:null, orig:0, target:0, rate:1, sync:store.get('pritah.songSync') === '1', loop:{a:null, b:null, on:false}, poll:null, alignPending:false, taps:[], loading:null};
 function songModel(d){ return {fromBand:d.fromBand || '', id:d.id || '', name:d.name || '', url:d.url || '', bpm:Number(d.bpm) || 0, note:d.note || '', sheet:d.sheet || '', dir:d.dir || '', key:d.key || '', shape:d.shape || '', mode:d.mode || 'maj', genreId:d.genreId || '', loops:(d.loops || []).map(l => ({name:String(l.name || ''), a:Number(l.a) || 0, b:Number(l.b) || 0}))}; }
 function allSongs(){ return libOf('song').map(i => songModel(Object.assign({}, i.data, {id:i.id}))); }
 function findSong(id){ return allSongs().find(s => s.id === id) || null; }
@@ -3223,6 +3230,7 @@ function applyRate(){
     SG.rate = actual; onRateKnown();
   }, 300);
 }
+function syncBtn(){ const b = $('#sg-sync'); b.setAttribute('aria-pressed', SG.sync); $('#sg-sync-txt').textContent = SG.sync ? 'מטרונום: פועל' : 'מטרונום: כבוי'; }
 function songBpm(){ return SG.orig ? SG.orig * SG.rate : 0; }
 function onRateKnown(){
   renderSongStatus();
@@ -3276,7 +3284,7 @@ function renderSongUI(){
   $('#sg-title').textContent = s.name || 'סרטון מקישור';
   $('#sg-note').textContent = s.note || '';
   $('#sg-orig').value = SG.orig || '';
-  $('#sg-sync').checked = SG.sync;
+  syncBtn();
   renderSongStatus(); renderLoop();
 }
 function renderSongStatus(){
@@ -5394,9 +5402,10 @@ function init(){
   $('#sg-tap').addEventListener('click', songTap);
   $$('[data-sd]').forEach(b => b.addEventListener('click', () => { if(SG.orig) setTarget(SG.target + Number(b.dataset.sd)); }));
   $('#sg-quick').addEventListener('click', e => { const b = e.target.closest('button'); if(b && SG.orig) setTarget(SG.orig * Number(b.dataset.p)); });
-  $('#sg-sync').addEventListener('change', e => {
-    SG.sync = e.target.checked;
+  $('#sg-sync').addEventListener('click', () => {
+    SG.sync = !SG.sync; store.set('pritah.songSync', SG.sync ? '1' : '0'); syncBtn();
     if(SG.sync && SG.ready && SG.orig && SG.player.getPlayerState() === 1){ Metro.setBpm(songBpm(), true); if(!Metro.playing) Metro.start(); }
+    if(SG.sync && !SG.orig) $('#sg-status').textContent = 'כדי שהמטרונום יעבוד עם השיר, כתבו את הקצב המקורי או הקישו אותו עם השיר.';
     if(!SG.sync && Metro.playing) Metro.stop();
   });
   $('#sg-align').addEventListener('click', () => { if(!SG.orig){ $('#sg-status').textContent = 'קודם צריך קצב מקורי לשיר.'; return; } Metro.setBpm(songBpm(), true); Metro.align(); });
@@ -5544,4 +5553,3 @@ init();
 </script>
 </body>
 </html>
-המערכת מציגה את index.html.
