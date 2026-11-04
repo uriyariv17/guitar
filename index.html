@@ -600,6 +600,28 @@ a.btn.wa{ background:#1F9D55; border-color:#1F9D55; color:#fff; }
   #print-area .ln.mk{ background:none !important; }
 }
 
+/* Piano */
+.piano-head{ background:#2B2D42; }
+.hc-piano{ --hc:#2B2D42; }
+.pn-kb{ overflow-x:auto; padding-bottom:4px; direction:ltr; }
+svg.piano{ display:block; height:auto; max-width:none; }
+.pk.w{ fill:#FFFFFF; stroke:#9AA3B5; stroke-width:1; }
+.pk.b{ fill:#1E2330; stroke:#1E2330; }
+.pk.w.on{ fill:#9CC2FF; } .pk.b.on{ fill:#3D6FE0; }
+.pk.w.root{ fill:#FFC933; } .pk.b.root{ fill:#E0A400; }
+.pn-click .pk, #pn-main .pk{ cursor:pointer; }
+.pk-l{ fill:#15203A; font:700 11px 'Assistant',Arial,sans-serif; pointer-events:none; }
+.pk-lb{ fill:#fff; font-size:9px; }
+.pk-lb.root{ fill:#2A1E00; }
+.pk-c{ fill:#9AA3B5; font:600 9px 'Assistant',Arial,sans-serif; pointer-events:none; }
+.pn-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(360px, 1fr)); gap:14px; }
+.pn-mini{ border:1px solid var(--line); border-radius:12px; padding:10px 12px; display:grid; gap:6px; }
+.pn-mini svg.piano, .pn-card svg.piano{ width:100%; }
+.pn-cards{ display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:14px; }
+.pn-card{ border:1px solid var(--line); border-radius:14px; padding:12px 14px; display:grid; gap:8px; background:var(--surface); }
+.pn-card.custom{ border-color:color-mix(in srgb, var(--blue) 45%, var(--line)); }
+.pn-edit{ border:2px solid var(--blue); border-radius:14px; padding:14px; display:grid; gap:10px; background:color-mix(in srgb, var(--blue) 4%, var(--surface)); }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -639,6 +661,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
       <button class="tab" data-view="teacher">מורה</button>
       <button class="tab" data-view="velvet" id="tab-velvet" hidden>VELVET</button>
       <button class="tab" data-view="youth" id="tab-youth" hidden>הרכבים צעירים</button>
+      <button class="tab" data-view="piano" id="tab-piano" hidden>פסנתר</button>
     </nav>
     <button class="mini" id="metro-mini" hidden>עצור מטרונום</button>
   </div>
@@ -658,6 +681,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
       <button class="home-card hc-student" data-go="student"><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5Z"/></svg></span><span class="hc-text"><b>תלמיד</b><small>שיעורי הבית שלי, מטרונום ומעקב תרגול</small></span><span class="hc-state" data-state="student"></span></button>
       <button class="home-card hc-velvet" data-go="velvet"><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v10.6A4 4 0 1 0 16 17V7h4V3h-6Z"/></svg></span><span class="hc-text"><b dir="ltr">VELVET</b><small>האזור של הלהקה: שירים, סטליסט ומועמדים</small></span><span class="hc-state" data-state="velvet"></span></button>
       <button class="home-card hc-youth" data-go="youth"><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8 13c-3.3 0-6 1.7-6 4v2h12v-2c0-2.3-2.7-4-6-4Zm8 .5c-.8 0-1.6.1-2.3.4 1.4.9 2.3 2.1 2.3 3.6V19h6v-1.8c0-2.1-2.7-3.7-6-3.7Z"/></svg></span><span class="hc-text"><b>הרכבים צעירים</b><small>שירים, חזרות, תפקידים ומשימות להרכב</small></span><span class="hc-state" data-state="youth"></span></button>
+      <button class="home-card hc-piano" data-go="piano" hidden><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3V4Zm2 2v12h2.5v-5H9V6H5Zm5.5 0v7H12v5h-1.5v-5H9.5V6h1Zm3 0v7h1.5v5H17.5v-5H19V6h-1.5v7H16V6h-2.5Z"/></svg></span><span class="hc-text"><b>פסנתר</b><small>אזור פרטי: סולמות וצורות אקורדים על הקלידים</small></span><span class="hc-state" data-state="piano"></span></button>
     </div>
     <div class="home-tools"><span class="muted">כלים פתוחים לכולם:</span>
       <button class="chip" data-go="metronome">מטרונום</button><button class="chip" data-go="tuner">טיונר</button><button class="chip" data-go="chords">אקורדים</button><button class="chip" data-go="fretboard">צוואר וסולמות</button><button class="chip" data-go="theory">תיאוריה</button><button class="chip" data-go="songs">שירים</button>
@@ -881,6 +905,16 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
           </div>
         </div>
       </section>
+    </div>
+  </section>
+
+  <!-- פסנתר -->
+  <section class="view" id="v-piano">
+    <div class="velvet-head piano-head"><div><span class="yh-brand">פסנתר</span><span class="yh-group">אזור פרטי, רק לך</span></div></div>
+    <div class="login panel" id="pn-locked"><h2>אזור פרטי</h2><p class="muted">האזור הזה פתוח רק למורה.</p><button class="btn primary big" data-go-view="teacher">כניסת מורה</button></div>
+    <div id="pn-dash" hidden>
+      <div class="seg" id="pn-tabs" style="margin-bottom:14px"><button data-v="scales">סולמות</button><button data-v="chords">אקורדים והרמוניות</button></div>
+      <section class="panel" id="pn-main"></section>
     </div>
   </section>
 
@@ -2110,7 +2144,7 @@ function serverHandle(req, store, teacherPassword){
 
   const nMember = m => ({id:String(m.id), name:String(m.name || ''), role:String(m.role || ''), pin:String(m.pin || ''), createdAt:String(m.createdAt || '')});
   const nBand = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
-  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => c.kind !== 'song')};
+  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => c.kind !== 'song' && c.kind !== 'pvoice')};
   if(a === 'publicApplyForm' || a === 'publicApplySubmit'){
     const f = store.all('Band').map(nBand).find(x => x.kind === 'form');
     const d = f ? f.data : null;
@@ -2304,7 +2338,7 @@ function serverHandle(req, store, teacherPassword){
   if(a.indexOf('teacher') === 0){
     if(!teacherPassword || String(req.password || '') !== String(teacherPassword)) throw new Error('הסיסמה שגויה.');
     if(a === 'teacherLoad'){
-      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
+      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => c.kind === 'pvoice'), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
     }
     if(a === 'teacherSaveSettings'){
       const KEYS = ['teacherEmail','notifyDone','notifyPractice','remindHour','remindDays','siteUrl'], inp = req.settings || {}, rows = store.all('Settings');
@@ -2415,7 +2449,7 @@ function serverHandle(req, store, teacherPassword){
       return {};
     }
     if(a === 'teacherSaveContent'){
-      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg'], list = req.items || [];
+      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice'], list = req.items || [];
       if(!list.length) throw new Error('אין מה לשמור.');
       const all = store.all('Content'), fresh = [], out = [];
       list.forEach(it => {
@@ -2661,6 +2695,7 @@ function sStats(sid){
 let tMode = 'students';
 function renderTeacher(){
   const logged = !!T.data;
+  if(typeof updatePianoTab === 'function') updatePianoTab();
   if(typeof updateBandTab === 'function') updateBandTab();
   if(typeof updateYouthTab === 'function') updateYouthTab();
   $('#t-login').hidden = logged; $('#t-dash').hidden = !logged;
@@ -2879,8 +2914,8 @@ async function loadLibrary(){
   privateSongs().forEach(it => mergeItems([it]));
   refreshLib();
 }
-function privateSongs(){ return (T.data && T.data.songs ? T.data.songs : []).concat(S.student && S.songs ? S.songs : []); }
-function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => i.kind !== 'song'); privateSongs().forEach(it => mergeItems([it])); refreshLib(); }
+function privateSongs(){ return (T.data && T.data.songs ? T.data.songs : []).concat(T.data && T.data.pvoices ? T.data.pvoices : [], S.student && S.songs ? S.songs : []); }
+function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => i.kind !== 'song' && i.kind !== 'pvoice'); privateSongs().forEach(it => mergeItems([it])); refreshLib(); if(typeof updatePianoTab === 'function'){ updatePianoTab(); if(currentView === 'piano') renderPiano(); } }
 function refreshLib(){
   renderChords(); renderShapesPanel(); renderTheory(); applySongView();
   if(T.data) renderTeacher();
@@ -2889,7 +2924,7 @@ function refreshLib(){
 function mergeItems(list){ list.forEach(it => { const i = LIB.items.findIndex(x => x.id === it.id); if(i >= 0) LIB.items[i] = it; else LIB.items.push(it); }); }
 async function saveItems(items, errEl){
   const r = await tCall('teacherSaveContent', {items}, errEl); mergeItems(r.items);
-  if(T.data){ T.data.songs = T.data.songs || []; r.items.filter(i => i.kind === 'song').forEach(it => { const k = T.data.songs.findIndex(x => x.id === it.id); if(k >= 0) T.data.songs[k] = it; else T.data.songs.push(it); }); }
+  if(T.data){ ['songs:song', 'pvoices:pvoice'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; r.items.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); }
   refreshLib(); return r.items;
 }
 
@@ -5395,16 +5430,185 @@ function printSheet(btn){
   window.print();
 }
 
+/* ================== פסנתר (אזור פרטי למורה) ================== */
+const PN = {tab:'scales', root:0, scale:'major', all:false, qual:'maj', edit:null};
+const P_QUALS = [
+  {id:'maj', sym:'', label:'מז׳ור', iv:[0,4,7]}, {id:'min', sym:'m', label:'מינור', iv:[0,3,7]},
+  {id:'dim', sym:'dim', label:'דימיניש', iv:[0,3,6]}, {id:'aug', sym:'aug', label:'אוגמנט', iv:[0,4,8]},
+  {id:'sus2', sym:'sus2', label:'sus2', iv:[0,2,7]}, {id:'sus4', sym:'sus4', label:'sus4', iv:[0,5,7]},
+  {id:'7', sym:'7', label:'7', iv:[0,4,7,10]}, {id:'maj7', sym:'maj7', label:'maj7', iv:[0,4,7,11]},
+  {id:'m7', sym:'m7', label:'m7', iv:[0,3,7,10]}, {id:'m7b5', sym:'m7b5', label:'m7b5', iv:[0,3,6,10]},
+  {id:'dim7', sym:'dim7', label:'dim7', iv:[0,3,6,9]}, {id:'6', sym:'6', label:'6', iv:[0,4,7,9]},
+  {id:'m6', sym:'m6', label:'m6', iv:[0,3,7,9]}, {id:'add9', sym:'add9', label:'add9', iv:[0,4,7,14]},
+  {id:'9', sym:'9', label:'9', iv:[0,4,7,10,14]}, {id:'maj9', sym:'maj9', label:'maj9', iv:[0,4,7,11,14]},
+  {id:'m9', sym:'m9', label:'m9', iv:[0,3,7,10,14]}
+];
+const P_SCALES = SCALES.concat([{id:'mmin', label:'מינור מלודי', iv:[0,2,3,5,7,9,11]}, {id:'lyd', label:'לידי', iv:[0,2,4,6,7,9,11]}, {id:'phr', label:'פריגי', iv:[0,1,3,5,7,8,10]}]);
+const pIsBlack = m => [1,3,6,8,10].includes(((m % 12) + 12) % 12);
+const pName = (m, flats) => (flats ? NOTES_FLAT : NOTES)[((m % 12) + 12) % 12];
+const pFlats = (root, minor) => spellForKey({pc:root, minor}, 0) === SPELL_FLAT || [5,10,3,8,1].includes(root) && !minor;
+function pianoSVG(o){
+  const from = o.from, to = o.to, W = o.w || 26, H = o.h || 120, BW = Math.round(W * .62), BH = Math.round(H * .62);
+  const whites = [], blacks = []; let x = 0;
+  for(let m = from; m <= to; m++){ if(!pIsBlack(m)){ whites.push({m, x}); x += W; } }
+  for(let m = from; m <= to; m++){ if(pIsBlack(m)){ const prev = whites.filter(w => w.m < m).pop(); if(prev) blacks.push({m, x:prev.x + W - BW / 2}); } }
+  const on = o.on || {}, cls = m => on[m] ? ' ' + on[m] : '';
+  let s = `<svg class="piano" viewBox="0 0 ${x + 1} ${H + 2}" width="${x + 1}" role="img" aria-label="${esc(o.label || 'קלידים')}" dir="ltr">`;
+  whites.forEach(w => {
+    s += `<rect class="pk w${cls(w.m)}" data-m="${w.m}" x="${w.x + .5}" y=".5" width="${W - 1}" height="${H}" rx="3"/>`;
+    if(on[w.m] && o.names) s += `<text class="pk-l${cls(w.m)}" x="${w.x + W / 2}" y="${H - 9}" text-anchor="middle">${esc(o.names(w.m))}</text>`;
+    else if(w.m % 12 === 0) s += `<text class="pk-c" x="${w.x + W / 2}" y="${H - 9}" text-anchor="middle">C${Math.floor(w.m / 12) - 1}</text>`;
+  });
+  blacks.forEach(b => {
+    s += `<rect class="pk b${cls(b.m)}" data-m="${b.m}" x="${b.x}" y=".5" width="${BW}" height="${BH}" rx="2"/>`;
+    if(on[b.m] && o.names) s += `<text class="pk-l pk-lb${cls(b.m)}" x="${b.x + BW / 2}" y="${BH - 8}" text-anchor="middle">${esc(o.names(b.m))}</text>`;
+  });
+  return s + '</svg>';
+}
+function pianoTone(m, t, dur, g){
+  const ctx = ac(), f = midiFreq(m), o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), o3 = ctx.createOscillator();
+  const gn = ctx.createGain(), g2 = ctx.createGain(), g3 = ctx.createGain(), lp = ctx.createBiquadFilter();
+  o1.type = 'triangle'; o2.type = 'sine'; o3.type = 'sine'; o1.frequency.value = f; o2.frequency.value = f * 2; o3.frequency.value = f * 3.01;
+  g2.gain.value = .3; g3.gain.value = .08;
+  lp.type = 'lowpass'; lp.frequency.setValueAtTime(Math.min(9000, f * 8), t); lp.frequency.exponentialRampToValueAtTime(Math.min(4000, f * 3), t + dur);
+  o1.connect(gn); o2.connect(g2); g2.connect(gn); o3.connect(g3); g3.connect(gn); gn.connect(lp); lp.connect(ctx.destination);
+  gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(g, t + 0.008); gn.gain.exponentialRampToValueAtTime(g * .35, t + .35); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  [o1, o2, o3].forEach(o => { o.start(t); o.stop(t + dur + .05); });
+}
+function pianoPlay(ms, arp){ const t0 = ac().currentTime + .03; ms.slice().sort((a, b) => a - b).forEach((m, i) => pianoTone(m, t0 + (arp ? i * .22 : i * .012), arp ? 1.1 : 2.2, arp ? .22 : .16)); }
+function rangeFor(ms){ const lo = Math.min(...ms), hi = Math.max(...ms); let from = Math.floor(lo / 12) * 12, to = Math.ceil((hi + 1) / 12) * 12 - 1; if(to - from < 23) to = from + 23; return {from, to}; }
+const rootMidi = r => 48 + r;
+
+function renderPiano(){
+  const ok = !!T.data;
+  $('#pn-locked').hidden = ok; $('#pn-dash').hidden = !ok;
+  if(!ok) return;
+  $$('#pn-tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === PN.tab));
+  PN.tab === 'scales' ? pnScales() : pnChords();
+}
+const rootSeg = id => `<div class="seg" id="${id}" style="direction:ltr">${NOTES.map((n, i) => `<button data-v="${i}" aria-pressed="${PN.root === i}">${[1,3,6,8,10].includes(i) ? n + '/' + NOTES_FLAT[i] : n}</button>`).join('')}</div>`;
+function pnScales(){
+  const sc = P_SCALES.find(x => x.id === PN.scale) || P_SCALES[0], minor = sc.iv.includes(3) && !sc.iv.includes(4);
+  const one = r => {
+    const flats = pFlats(r, minor), notes = sc.iv.map(v => rootMidi(r) + v).concat([rootMidi(r) + 12]);
+    const on = {}; [0, 12].forEach(o => sc.iv.forEach(v => { on[rootMidi(r) + v + o] = v === 0 ? 'root' : 'on'; })); on[rootMidi(r) + 24] = 'root';
+    return {notes, svg:pianoSVG({from:Math.floor(rootMidi(r) / 12) * 12, to:Math.floor(rootMidi(r) / 12) * 12 + 35, on, names:m => pName(m, flats), label:`${pName(r, flats)} ${sc.label}`}), name:`${pName(r, flats)} ${sc.label}`, flats};
+  };
+  let h = `<div class="stack">
+    <div class="row" style="align-items:end"><div class="opt"><span class="opt-l">טוניקה</span>${rootSeg('pn-root')}</div></div>
+    <div class="row" style="align-items:end">
+      <label class="field" style="min-width:220px">סולם<select id="pn-scale">${P_SCALES.map(x => `<option value="${x.id}" ${x.id === sc.id ? 'selected' : ''}>${x.label}</option>`).join('')}</select></label>
+      <label class="row" style="gap:8px;font-weight:600;min-height:42px"><input type="checkbox" id="pn-all" ${PN.all ? 'checked' : ''}> להציג את הסולם בכל 12 הטוניקות</label>
+    </div>`;
+  if(!PN.all){
+    const o = one(PN.root);
+    h += `<div class="spread"><h3>${esc(o.name)}</h3><div class="row"><button class="btn small" data-pn="play-scale">נגן עולה</button><button class="btn small" data-pn="play-chord-scale">נגן יחד</button></div></div>
+      <div class="note-row" style="justify-content:flex-start">${sc.iv.map(v => `<div class="note-pill ${v === 0 ? 'root' : ''}"><b>${pName(PN.root + v, o.flats)}</b><small>${INTERVALS[v]}</small></div>`).join('')}</div>
+      <div class="pn-kb">${o.svg}</div>`;
+  } else {
+    h += `<div class="pn-grid">${[...Array(12).keys()].map(r => { const o = one(r); return `<div class="pn-mini"><div class="spread"><b>${esc(o.name)}</b><button class="btn ghost small" data-pn="play-root" data-r="${r}">נגן</button></div><div class="pn-kb">${o.svg}</div></div>`; }).join('')}</div>`;
+  }
+  $('#pn-main').innerHTML = h + '</div>';
+}
+function builtinVoicings(q){
+  const iv = q.iv, n = iv.length, out = [];
+  if(n <= 4){
+    const names = ['מצב יסודי', 'היפוך ראשון', 'היפוך שני', 'היפוך שלישי'];
+    for(let k = 0; k < n; k++){ const offs = iv.slice(k).concat(iv.slice(0, k).map(v => v + 12)); out.push({name:names[k], offsets:offs, hand:'R', builtin:true}); }
+    out.push({name:'שתי ידיים: שורש ביד שמאל', offsets:[-12].concat(iv.slice(1).map(v => v).concat([12])), hand:'B', builtin:true});
+  } else {
+    out.push({name:'מצב יסודי', offsets:iv, hand:'R', builtin:true});
+    out.push({name:'שתי ידיים: שורש וספטימה ביד שמאל', offsets:[-12, iv[3] - 12].concat([iv[1], iv[2], iv[4]]).sort((a, b) => a - b), hand:'B', builtin:true});
+    out.push({name:'בלי קווינטה (ג׳אז)', offsets:[0, iv[1], iv[3], iv[4]], hand:'R', builtin:true});
+  }
+  return out;
+}
+const pnCustom = () => LIB.items.filter(i => i.kind === 'pvoice');
+function pnChords(){
+  const q = P_QUALS.find(x => x.id === PN.qual) || P_QUALS[0], minor = q.iv.includes(3) && !q.iv.includes(4), flats = pFlats(PN.root, minor);
+  const sym = pName(PN.root, flats) + q.sym, rm = rootMidi(PN.root);
+  const customs = pnCustom().filter(i => i.data.quality === q.id && (i.data.all || Number(i.data.root) === PN.root)).sort((a, b) => (a.data.order || 0) - (b.data.order || 0));
+  const list = builtinVoicings(q).concat(customs.map(i => ({name:i.data.name, offsets:i.data.offsets, hand:i.data.hand, note:i.data.note, id:i.id, all:i.data.all})));
+  const card = v => {
+    const ms = v.offsets.map(o => rm + o), rg = rangeFor(ms), on = {}; ms.forEach(m => { on[m] = (m - rm) % 12 === 0 ? 'root' : 'on'; });
+    return `<article class="pn-card${v.id ? ' custom' : ''}">
+      <div class="spread"><div><b>${esc(v.name)}</b><div class="muted" style="font-size:.85rem">${v.hand === 'L' ? 'יד שמאל' : v.hand === 'B' ? 'שתי ידיים' : 'יד ימין'}${v.builtin ? ', מובנה' : v.all ? ', לכל הטוניקות' : ''}</div></div>
+        <div class="row" style="gap:2px"><button class="btn ghost small" data-pn="play" data-ms="${ms.join(',')}">נגן</button><button class="btn ghost small" data-pn="arp" data-ms="${ms.join(',')}">ארפג׳ו</button>${v.id ? `<button class="btn ghost small" data-pn="edit" data-id="${esc(v.id)}">עריכה</button>` : `<button class="btn ghost small" data-pn="copy" data-ms="${ms.join(',')}" data-name="${esc(v.name)}" data-hand="${v.hand}">שכפול לעריכה</button>`}</div></div>
+      <div class="pn-kb">${pianoSVG({from:rg.from, to:rg.to, on, names:m => pName(m, flats), w:22, h:100, label:sym + ' ' + v.name})}</div>
+      <div class="muted" dir="ltr" style="font-size:.88rem;text-align:right">${ms.slice().sort((a, b) => a - b).map(m => pName(m, flats)).join(' – ')}</div>
+      ${v.note ? `<p class="muted" style="white-space:pre-line">${esc(v.note)}</p>` : ''}
+    </article>`;
+  };
+  let h = `<div class="stack">
+    <div class="opt"><span class="opt-l">טוניקה</span>${rootSeg('pn-root')}</div>
+    <div class="opt"><span class="opt-l">הרמוניה</span><div class="seg" id="pn-qual" style="direction:ltr">${P_QUALS.map(x => `<button data-v="${x.id}" aria-pressed="${x.id === q.id}">${x.label}</button>`).join('')}</div></div>
+    <div class="spread"><h3 dir="ltr" style="text-align:right">${esc(sym)} <small class="muted" style="font-family:'Assistant',Arial,sans-serif;font-size:.9rem">${q.iv.map(v => pName(PN.root + v, flats)).join(' ')}</small></h3><button class="btn primary small" data-pn="new">צורה חדשה</button></div>
+    ${PN.edit ? pnEditorHTML(sym, flats) : ''}
+    <div class="pn-cards">${list.map(card).join('')}</div>
+  </div>`;
+  $('#pn-main').innerHTML = h;
+}
+function pnEditorHTML(sym, flats){
+  const e = PN.edit, rm = rootMidi(PN.root), on = {};
+  e.ms.forEach(m => { on[m] = (m - rm) % 12 === 0 ? 'root' : 'on'; });
+  return `<div class="pn-edit">
+    <div class="spread"><h3>${e.id ? 'עריכת צורה' : 'צורה חדשה'} ל־<span dir="ltr">${esc(sym)}</span></h3><div class="row"><button class="btn small" data-pn="ed-play">נגן</button><button class="btn small primary" data-pn="ed-save">שמירה</button>${e.id ? '<button class="btn small danger" data-pn="ed-del">מחיקה</button>' : ''}<button class="btn ghost small" data-pn="ed-cancel">ביטול</button></div></div>
+    <div class="row" style="align-items:end">
+      <label class="field" style="min-width:220px">שם הצורה<input id="pn-ed-name" maxlength="60" value="${esc(e.name)}" placeholder="למשל: מצב פתוח, ליווי בלדה"></label>
+      <div class="opt"><span class="opt-l">יד</span><div class="seg" id="pn-ed-hand"><button type="button" data-v="R" aria-pressed="${e.hand === 'R'}">ימין</button><button type="button" data-v="L" aria-pressed="${e.hand === 'L'}">שמאל</button><button type="button" data-v="B" aria-pressed="${e.hand === 'B'}">שתי ידיים</button></div></div>
+      <label class="row" style="gap:8px;font-weight:600;min-height:42px"><input type="checkbox" id="pn-ed-all" ${e.all ? 'checked' : ''}> אותה צורה לכל 12 הטוניקות</label>
+    </div>
+    <p class="hint">לוחצים על הקלידים כדי לבחור את התווים. לחיצה נוספת מורידה תו. הקליד הצהוב הוא הטוניקה.</p>
+    <div class="pn-kb pn-click">${pianoSVG({from:36, to:83, on, names:m => pName(m, flats), w:24, h:120, label:'בחירת תווים'})}</div>
+    <label class="field">הערה <small>(לא חובה)</small><input id="pn-ed-note" maxlength="300" value="${esc(e.note || '')}" placeholder="למשל: אצבוע 1-2-4"></label>
+    <p class="err" id="pn-ed-err"></p>
+  </div>`;
+}
+async function onPiano(e){
+  const k = e.target.closest('.pn-click .pk');
+  if(k && PN.edit){ const m = Number(k.dataset.m), i = PN.edit.ms.indexOf(m); if(i >= 0) PN.edit.ms.splice(i, 1); else { PN.edit.ms.push(m); pianoTone(m, ac().currentTime + .02, 1, .2); } pnKeepFields(); renderPiano(); return; }
+  const pk = !PN.edit && e.target.closest('#pn-main .pk'); if(pk){ pianoTone(Number(pk.dataset.m), ac().currentTime + .02, 1.2, .2); return; }
+  const seg = e.target.closest('#pn-root button, #pn-qual button, #pn-ed-hand button');
+  if(seg){
+    if(seg.closest('#pn-ed-hand')){ PN.edit.hand = seg.dataset.v; pnKeepFields(); return renderPiano(); }
+    if(PN.edit && !confirm('לצאת מהעריכה בלי לשמור?')) return;
+    PN.edit = null; if(seg.closest('#pn-root')) PN.root = Number(seg.dataset.v); else PN.qual = seg.dataset.v; return renderPiano();
+  }
+  const b = e.target.closest('[data-pn]'); if(!b) return;
+  const act = b.dataset.pn, ms = b.dataset.ms ? b.dataset.ms.split(',').map(Number) : [];
+  if(act === 'play') return pianoPlay(ms, false);
+  if(act === 'arp') return pianoPlay(ms, true);
+  if(act === 'play-scale' || act === 'play-root'){ const r = act === 'play-root' ? Number(b.dataset.r) : PN.root, sc = P_SCALES.find(x => x.id === PN.scale); return pianoPlay(sc.iv.concat([12]).map(v => rootMidi(r) + v), true); }
+  if(act === 'play-chord-scale'){ const sc = P_SCALES.find(x => x.id === PN.scale); return pianoPlay(sc.iv.map(v => rootMidi(PN.root) + v), false); }
+  if(act === 'new'){ PN.edit = {id:'', ms:P_QUALS.find(x => x.id === PN.qual).iv.map(v => rootMidi(PN.root) + v), name:'', hand:'R', all:false, note:''}; return renderPiano(); }
+  if(act === 'copy'){ PN.edit = {id:'', ms, name:b.dataset.name + ' (עותק)', hand:b.dataset.hand, all:false, note:''}; renderPiano(); return $('.pn-edit').scrollIntoView({block:'center'}); }
+  if(act === 'edit'){ const it = LIB.items.find(i => i.id === b.dataset.id); PN.edit = {id:it.id, ms:it.data.offsets.map(o => rootMidi(PN.root) + o), name:it.data.name, hand:it.data.hand || 'R', all:!!it.data.all, note:it.data.note || '', order:it.data.order}; renderPiano(); return $('.pn-edit').scrollIntoView({block:'center'}); }
+  if(act === 'ed-cancel'){ PN.edit = null; return renderPiano(); }
+  if(act === 'ed-play'){ pnKeepFields(); return pianoPlay(PN.edit.ms, false); }
+  if(act === 'ed-del'){ if(!confirm('למחוק את הצורה?')) return; const r = await tCall('teacherDeleteContent', {id:PN.edit.id}); LIB.items = r.items; T.data.pvoices = r.items.filter(i => i.kind === 'pvoice'); PN.edit = null; return renderPiano(); }
+  if(act === 'ed-save'){
+    pnKeepFields(); const ed = PN.edit;
+    if(!ed.ms.length){ $('#pn-ed-err').textContent = 'בחרו לפחות תו אחד.'; return; }
+    if(!ed.name.trim()){ $('#pn-ed-err').textContent = 'תנו לצורה שם.'; return; }
+    const rm = rootMidi(PN.root);
+    const data = {quality:PN.qual, root:PN.root, all:ed.all, offsets:ed.ms.slice().sort((a, b) => a - b).map(m => m - rm), name:ed.name.trim(), hand:ed.hand, note:ed.note.trim(), order:ed.order || Date.now()};
+    try{ await saveItems([{id:ed.id || '', kind:'pvoice', data}], $('#pn-ed-err')); PN.edit = null; toast('הצורה נשמרה'); renderPiano(); }catch(err){}
+  }
+}
+function pnKeepFields(){ if(!PN.edit) return; const n = $('#pn-ed-name'), a = $('#pn-ed-all'), nt = $('#pn-ed-note'); if(n) PN.edit.name = n.value; if(a) PN.edit.all = a.checked; if(nt) PN.edit.note = nt.value; }
+function updatePianoTab(){ $('#tab-piano').hidden = !T.data; const c = $('.home-card[data-go="piano"]'); if(c) c.hidden = !T.data; }
+
 /* ================== ניווט ================== */
 function renderHomeState(){
   const st = {teacher:typeof T !== 'undefined' && T.data ? 'מחובר' : '', student:typeof S !== 'undefined' && S.student ? 'מחובר/ת: ' + S.student.name : '', velvet:typeof B !== 'undefined' && B.member ? 'מחובר/ת: ' + B.member.name : '', youth:typeof Y !== 'undefined' && Y.me ? 'מחובר/ת: ' + Y.me.name : ''};
   $$('.hc-state').forEach(el => { el.textContent = st[el.dataset.state] || ''; el.hidden = !st[el.dataset.state]; });
 }
-const VIEWS = ['home','metronome','tuner','chords','fretboard','theory','songs','student','teacher','velvet','youth'];
+const VIEWS = ['piano','home','metronome','tuner','chords','fretboard','theory','songs','student','teacher','velvet','youth'];
 let currentView = 'home';
 function showView(v){
   if(!VIEWS.includes(v)) v = 'home';
   if(v === 'home') renderHomeState();
+  if(v === 'piano') renderPiano();
   currentView = v;
   $$('.view').forEach(el => el.classList.toggle('active', el.id === 'v-' + v));
   $$('.tab').forEach(b => b.setAttribute('aria-current', b.dataset.view === v ? 'page' : 'false'));
@@ -5704,6 +5908,16 @@ function init(){
   $('#as-faster').addEventListener('click', () => asSpeed(1));
   $('#as-stop').addEventListener('click', asStop);
   $('#as-top').addEventListener('click', () => { if(AS.sheet){ const r = AS.sheet.getBoundingClientRect(); window.scrollTo({top:window.scrollY + r.top - 80}); } if(AS.paused) asPlay(); });
+  // פסנתר
+  $('#pn-main').addEventListener('click', onPiano);
+  $('#pn-main').addEventListener('change', e => {
+    if(e.target.id === 'pn-scale'){ PN.scale = e.target.value; renderPiano(); }
+    if(e.target.id === 'pn-all'){ PN.all = e.target.checked; renderPiano(); }
+    if(e.target.id === 'pn-ed-all') pnKeepFields();
+  });
+  $('#pn-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; if(PN.edit && !confirm('לצאת מהעריכה בלי לשמור?')) return; PN.edit = null; PN.tab = b.dataset.v; renderPiano(); });
+  $('#pn-locked').addEventListener('click', e => { if(e.target.closest('[data-go-view]')) showView('teacher'); });
+  updatePianoTab();
   // כניסה אוטומטית
   const savedPin = store.get('pritah.pin');
   if(savedPin) studentLogin(savedPin, true);
