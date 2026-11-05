@@ -627,7 +627,7 @@ svg.piano{ display:block; height:auto; max-width:none; }
 /* Teacher songs table */
 .teacher-table td.tt-cell{ position:relative; padding:6px 6px 26px; height:auto; min-height:44px; vertical-align:top; transition:background .12s; }
 .teacher-table td.tt-cell.drop-on{ background:color-mix(in srgb, var(--blue) 14%, var(--surface)); outline:2px dashed var(--blue); outline-offset:-3px; }
-.tt-song{ appearance:none; display:flex; align-items:center; justify-content:center; gap:5px; width:100%; border:0; background:none; color:var(--blue); font:600 .92rem 'Assistant',Arial,sans-serif; padding:3px 4px; border-radius:6px; cursor:pointer; text-align:center; line-height:1.3; }
+.tt-song{ user-select:none; -webkit-user-drag:element; appearance:none; display:flex; align-items:center; justify-content:center; gap:5px; width:100%; border:0; background:none; color:var(--blue); font:600 .92rem 'Assistant',Arial,sans-serif; padding:3px 4px; border-radius:6px; cursor:pointer; text-align:center; line-height:1.3; }
 .tt-song:hover{ background:var(--surface-2); text-decoration:underline; }
 .tt-song.dragging{ opacity:.4; }
 .tt-dot{ width:6px; height:6px; border-radius:50%; background:var(--green); flex:none; }
@@ -5720,7 +5720,7 @@ function teacherSongsTableHTML(songs){
   const ml = minorLabels(), gs = genres().map(g => ({id:g.id, name:g.data.name}));
   const ids = gs.map(g => g.id);
   if(songs.some(s => s.shape && !ids.includes(s.genreId))) gs.push({id:'', name:'ללא ז׳אנר'});
-  const chip = s => `<button type="button" class="tt-song" draggable="true" data-song="${esc(s.id)}" title="לחיצה לעריכה, גרירה להעברה">${esc(s.name)}${s.sheet ? '<span class="tt-dot" title="יש מילים ואקורדים"></span>' : ''}</button>`;
+  const chip = s => `<span role="button" tabindex="0" class="tt-song" draggable="true" data-song="${esc(s.id)}" title="לחיצה לעריכה, גרירה להעברה">${esc(s.name)}${s.sheet ? '<span class="tt-dot" title="יש מילים ואקורדים"></span>' : ''}</span>`;
   const cell = (g, sh, mode) => {
     const list = songs.filter(s => (s.genreId || '') === g.id && s.shape === sh && (s.mode || 'maj') === mode).sort((a, b) => (a.order || 0) - (b.order || 0) || a.name.localeCompare(b.name, 'he'));
     return `<td class="tt-cell" data-g="${esc(g.id)}" data-sh="${sh}" data-mode="${mode}">${list.map(chip).join('')}<button type="button" class="tt-add" data-act="tt-add" aria-label="הוספת שיר לתא">+</button></td>`;
@@ -5760,6 +5760,7 @@ function wireTeacherTable(){
     const c = e.target.closest('.tt-song'); if(c){ openSongDlg(LIB.items.find(i => i.id === c.dataset.song)); return; }
     const a = e.target.closest('[data-act="tt-add"]'); if(a){ const td = a.closest('.tt-cell'); openSongDlg(null, false, {genreId:td.dataset.g, shape:td.dataset.sh, mode:td.dataset.mode}); }
   });
+  root.addEventListener('keydown', e => { const c = e.target.closest('.tt-song'); if(c && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openSongDlg(LIB.items.find(i => i.id === c.dataset.song)); } });
   root.addEventListener('input', e => {
     if(e.target.id !== 'tt-q') return;
     const q = e.target.value.trim().toLowerCase();
