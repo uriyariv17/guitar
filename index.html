@@ -624,6 +624,21 @@ svg.piano{ display:block; height:auto; max-width:none; }
 
 .bulk-h{ font-weight:700; background:var(--surface-2); border-radius:6px; padding:2px 6px; }
 
+/* Teacher songs table */
+.teacher-table td.tt-cell{ position:relative; padding:6px 6px 26px; height:auto; min-height:44px; vertical-align:top; transition:background .12s; }
+.teacher-table td.tt-cell.drop-on{ background:color-mix(in srgb, var(--blue) 14%, var(--surface)); outline:2px dashed var(--blue); outline-offset:-3px; }
+.tt-song{ appearance:none; display:flex; align-items:center; justify-content:center; gap:5px; width:100%; border:0; background:none; color:var(--blue); font:600 .92rem 'Assistant',Arial,sans-serif; padding:3px 4px; border-radius:6px; cursor:pointer; text-align:center; line-height:1.3; }
+.tt-song:hover{ background:var(--surface-2); text-decoration:underline; }
+.tt-song.dragging{ opacity:.4; }
+.tt-dot{ width:6px; height:6px; border-radius:50%; background:var(--green); flex:none; }
+.tt-add{ position:absolute; bottom:3px; left:50%; transform:translateX(-50%); appearance:none; border:1px dashed var(--line); background:var(--surface); color:var(--ink-2); width:24px; height:20px; border-radius:6px; cursor:pointer; font:700 .9rem 'Assistant',Arial,sans-serif; line-height:1; opacity:0; transition:opacity .12s; }
+.tt-cell:hover .tt-add, .tt-add:focus-visible{ opacity:1; }
+@media (hover: none){ .tt-add{ opacity:.7; } }
+.tt-loose{ margin-top:18px; border:1px dashed var(--line); border-radius:14px; padding:12px 14px; }
+.tt-loose.drop-on{ background:color-mix(in srgb, var(--blue) 8%, var(--surface)); border-color:var(--blue); }
+.tt-loose-list{ display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:8px; }
+.tt-loose-list .tt-song{ width:auto; background:var(--surface-2); padding:3px 10px; }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -1151,7 +1166,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
     <details class="field" id="fso-prev-wrap"><summary>תצוגה מקדימה, כך התלמידים יראו את השיר</summary><div class="sheet prev-sheet" id="fso-prev"></div></details>
     <div id="fso-loops-wrap" class="field"><span>קטעים שמורים</span><div id="fso-loops" class="chips"></div></div>
     <p class="err" id="fso-err"></p>
-    <div class="row"><button class="btn primary" type="submit">שמור שיר</button><button class="btn ghost" type="button" data-close>ביטול</button><button class="btn danger" type="button" id="fso-del" style="margin-inline-start:auto">מחיקת השיר</button></div>
+    <div class="row"><button class="btn primary" type="submit">שמור שיר</button><button class="btn" type="button" id="fso-play">פתיחה בנגן</button><button class="btn ghost" type="button" data-close>ביטול</button><button class="btn danger" type="button" id="fso-del" style="margin-inline-start:auto">מחיקת השיר</button></div>
   </form>
 </dialog>
 
@@ -3258,7 +3273,7 @@ async function openSong(song, targetBpm){
   if(INL.ctx === 'lib' && !(song && song.id === INL.id)){ if(INL.dirty && !confirm('לצאת בלי לשמור את המילים והאקורדים?')) return; INL.ctx = ''; }
   $('#sg-err').textContent = ''; $('#yt-err').textContent = '';
   const vid = parseYouTube(song.url);
-  if(!vid && !(song.sheet && song.sheet.trim())){ $('#sg-err').textContent = 'זה לא נראה כמו קישור ליוטיוב. העתיקו את הקישור מכפתור השיתוף של הסרטון.'; return; }
+  if(!vid && !(song.sheet && song.sheet.trim()) && !song.id){ $('#sg-err').textContent = 'זה לא נראה כמו קישור ליוטיוב. העתיקו את הקישור מכפתור השיתוף של הסרטון.'; return; }
   SG.song = song; SG.loop = {a:null, b:null, on:false}; SG.taps = [];
   SG.orig = song.bpm || 0;
   SG.target = targetBpm || SG.orig;
@@ -3418,15 +3433,16 @@ function renderTeacherSongs(){
     <p class="muted" style="margin-top:6px;max-width:62ch">הספרייה גלויה רק לך. תלמיד רואה רק שירים שצירפת אליו. השירים מסודרים לפי ז׳אנר, ובתוך כל ז׳אנר לפי צורת הנגינה C, A, G, E, D. לכל שיר אפשר להוסיף סרטון, מילים ואקורדים, או את שניהם. קטעים ללולאה שומרים מתוך הנגן: מסמנים התחלה וסוף ולוחצים "שמור את הקטע לשיר".</p>`;
   if(BULK.open) h += bulkHTML();
   h += songTagsAdminHTML();
-  h += songs.length ? teacherSongsGroupedHTML(songs)
+  h += songs.length || genres().length ? teacherSongsTableHTML(songs)
     : `<p class="empty" style="margin-top:16px">עוד אין שירים. לחץ על "שיר חדש" והדבק קישור ליוטיוב.</p>`;
   $('#t-songs').innerHTML = h;
+  wireTeacherTable();
 }
 let editSong = null;
 let resetSongPdf = () => {};
-function openSongDlg(item, attachToTask){
+function openSongDlg(item, attachToTask, preset){
   editSong = item ? {item, loops:(item.data.loops || []).slice()} : {item:null, loops:[]};
-  const d = item ? item.data : {};
+  const d = item ? item.data : (preset || {});
   $('#fso-title').textContent = item ? 'עריכת שיר' : 'שיר חדש';
   $('#fso-name').value = d.name || ''; $('#fso-url').value = d.url || ''; $('#fso-bpm').value = d.bpm || ''; $('#fso-note').value = d.note || '';
   $('#fso-sheet').value = d.sheet || ''; editSong.dir = d.dir || ''; resetSongPdf();
@@ -3436,6 +3452,7 @@ function openSongDlg(item, attachToTask){
   syncSongTags();
   syncSheetDir();
   $('#fso-del').hidden = !item; $('#fso-err').textContent = '';
+  $('#fso-play').hidden = !item;
   editSong.attachToTask = !!attachToTask;
   renderSongDlgLoops();
   $('#dlg-song').showModal(); $('#fso-name').focus();
@@ -3460,7 +3477,6 @@ async function saveSongDlg(e){
   if(!name){ $('#fso-err').textContent = 'צריך לתת לשיר שם.'; return; }
   const sheet = $('#fso-sheet').value.replace(/\s+$/, '');
   if(url && !parseYouTube(url)){ $('#fso-err').textContent = 'זה לא נראה כמו קישור ליוטיוב.'; return; }
-  if(!url && !sheet.trim()){ $('#fso-err').textContent = 'צריך קישור ליוטיוב, מילים ואקורדים, או את שניהם.'; return; }
   const it = editSong.item;
   const data = Object.assign({}, it ? it.data : {}, {name, url, bpm:Math.max(0, Math.round(Number($('#fso-bpm').value) || 0)), note:$('#fso-note').value.trim(), sheet, dir:editSong.dir || '', key:$('#fso-key').value, shape:editSong.shape || '', mode:editSong.mode || 'maj', genreId:$('#fso-genre').value, loops:editSong.loops, order:it ? it.data.order : Date.now()});
   try{
@@ -5699,6 +5715,58 @@ function teacherSongsGroupedHTML(songs){
   return groups.map(g => `<section class="lib-group"><h3>${esc(g.name)} <small class="muted">${g.list.length}</small></h3>${g.list.map(row).join('')}</section>`).join('');
 }
 
+/* טבלת השירים במסך המורה (עם גרירה ושיבוץ) */
+function teacherSongsTableHTML(songs){
+  const ml = minorLabels(), gs = genres().map(g => ({id:g.id, name:g.data.name}));
+  const ids = gs.map(g => g.id);
+  if(songs.some(s => s.shape && !ids.includes(s.genreId))) gs.push({id:'', name:'ללא ז׳אנר'});
+  const chip = s => `<button type="button" class="tt-song" draggable="true" data-song="${esc(s.id)}" title="לחיצה לעריכה, גרירה להעברה">${esc(s.name)}${s.sheet ? '<span class="tt-dot" title="יש מילים ואקורדים"></span>' : ''}</button>`;
+  const cell = (g, sh, mode) => {
+    const list = songs.filter(s => (s.genreId || '') === g.id && s.shape === sh && (s.mode || 'maj') === mode).sort((a, b) => (a.order || 0) - (b.order || 0) || a.name.localeCompare(b.name, 'he'));
+    return `<td class="tt-cell" data-g="${esc(g.id)}" data-sh="${sh}" data-mode="${mode}">${list.map(chip).join('')}<button type="button" class="tt-add" data-act="tt-add" aria-label="הוספת שיר לתא">+</button></td>`;
+  };
+  const table = gs.length ? `<div class="scroll-x"><table class="shape-table teacher-table">${gs.map(g => `
+    <tbody>
+      <tr class="sh-maj"><th rowspan="4" class="g-name">${esc(g.name)}</th>${SONG_SHAPES.map(sh => `<th>${sh}</th>`).join('')}</tr>
+      <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'maj')).join('')}</tr>
+      <tr class="sh-min">${SONG_SHAPES.map(sh => `<th dir="ltr">${esc(ml[sh])}</th>`).join('')}</tr>
+      <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'min')).join('')}</tr>
+    </tbody>`).join('')}</table></div>` : '<p class="empty">עוד אין ז׳אנרים. הוסף ז׳אנר כדי לבנות את הטבלה.</p>';
+  const loose = songs.filter(s => !s.shape).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+  return `<p class="hint" style="margin:12px 0 8px">לחיצה על שיר פותחת אותו לעריכה. במחשב אפשר לגרור שיר לתא אחר בטבלה כדי לשנות ז׳אנר או צורה. ה־+ בכל תא מוסיף שיר ישר אליו.</p>
+    ${table}
+    <div class="tt-loose" data-loose="1">
+      <div class="spread"><h3>שירים שעוד לא שובצו בטבלה <small class="muted">${loose.length}</small></h3><input type="search" id="tt-q" placeholder="חיפוש" style="max-width:200px" aria-label="חיפוש בשירים שלא שובצו"></div>
+      <div class="tt-loose-list" id="tt-loose-list">${loose.length ? loose.map(chip).join('') : '<span class="muted">כל השירים משובצים. גרירת שיר לכאן מוציאה אותו מהטבלה.</span>'}</div>
+    </div>`;
+}
+async function ttAssign(id, genreId, shape, mode){
+  const it = LIB.items.find(i => i.id === id); if(!it) return;
+  if((it.data.genreId || '') === genreId && (it.data.shape || '') === shape && (it.data.mode || 'maj') === mode) return;
+  await saveItems([{id, kind:'song', data:Object.assign({}, it.data, {genreId:shape ? genreId : (it.data.genreId || ''), shape, mode})}]);
+  renderTeacher();
+}
+function wireTeacherTable(){
+  const root = $('#t-songs'); if(root.dataset.ttWired) return; root.dataset.ttWired = '1';
+  root.addEventListener('dragstart', e => { const c = e.target.closest('.tt-song'); if(!c) return; e.dataTransfer.setData('text/plain', c.dataset.song); e.dataTransfer.effectAllowed = 'move'; c.classList.add('dragging'); });
+  root.addEventListener('dragend', e => { $$('.tt-song.dragging, .drop-on').forEach(x => x.classList.remove('dragging', 'drop-on')); });
+  root.addEventListener('dragover', e => { const t = e.target.closest('.tt-cell, [data-loose]'); if(!t) return; e.preventDefault(); $$('.drop-on').forEach(x => x !== t && x.classList.remove('drop-on')); t.classList.add('drop-on'); });
+  root.addEventListener('drop', e => {
+    const t = e.target.closest('.tt-cell, [data-loose]'); if(!t) return; e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain'); t.classList.remove('drop-on');
+    if(t.dataset.loose) ttAssign(id, '', '', 'maj'); else ttAssign(id, t.dataset.g, t.dataset.sh, t.dataset.mode);
+  });
+  root.addEventListener('click', e => {
+    const c = e.target.closest('.tt-song'); if(c){ openSongDlg(LIB.items.find(i => i.id === c.dataset.song)); return; }
+    const a = e.target.closest('[data-act="tt-add"]'); if(a){ const td = a.closest('.tt-cell'); openSongDlg(null, false, {genreId:td.dataset.g, shape:td.dataset.sh, mode:td.dataset.mode}); }
+  });
+  root.addEventListener('input', e => {
+    if(e.target.id !== 'tt-q') return;
+    const q = e.target.value.trim().toLowerCase();
+    $$('#tt-loose-list .tt-song').forEach(b => { b.hidden = q && !b.textContent.toLowerCase().includes(q); });
+  });
+}
+
 /* ================== ניווט ================== */
 function renderHomeState(){
   const st = {teacher:typeof T !== 'undefined' && T.data ? 'מחובר' : '', student:typeof S !== 'undefined' && S.student ? 'מחובר/ת: ' + S.student.name : '', velvet:typeof B !== 'undefined' && B.member ? 'מחובר/ת: ' + B.member.name : '', youth:typeof Y !== 'undefined' && Y.me ? 'מחובר/ת: ' + Y.me.name : ''};
@@ -5901,6 +5969,7 @@ function init(){
     if(b.dataset.act === 'sync-band'){ b.disabled = true; tCall('teacherSyncBandSongs', {}).then(r => { LIB.items = r.items; T.data.songs = r.items.filter(i => i.kind === 'song'); refreshLib(); toast('שירי VELVET נמצאים עכשיו בספרייה'); }).catch(() => {}).finally(() => { b.disabled = false; }); }
   });
   $('#fso').addEventListener('submit', saveSongDlg);
+  $('#fso-play').addEventListener('click', () => { const it = editSong && editSong.item; if(!it) return; $('#dlg-song').close(); showView('songs'); SGF.view = 'list'; applySongView(); openSong(findSong(it.id)); renderSongList(); });
   $('#t-songs').addEventListener('change', e => {
     const c = e.target.closest('[data-bulk]'); if(c){ BULK.rows[Number(c.dataset.bulk)].on = c.checked; const n = BULK.rows.filter(r => r.on).length, ab = $('[data-act=bulk-add]'); ab.textContent = `הוספה לספרייה (${n})`; ab.disabled = !n; }
     if(e.target.id === 'bulk-genre'){ BULK.genre = e.target.value; BULK.text = $('#bulk-text').value; $('#bulk-newg-wrap').hidden = BULK.genre !== '__new'; }
