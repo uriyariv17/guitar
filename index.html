@@ -639,6 +639,13 @@ svg.piano{ display:block; height:auto; max-width:none; }
 .tt-loose-list{ display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:8px; }
 .tt-loose-list .tt-song{ width:auto; background:var(--surface-2); padding:3px 10px; }
 
+.student-table td{ padding:5px; }
+.st-chip{ display:block; margin:2px 0; padding:3px 6px; border-radius:7px; font:600 .88rem 'Assistant',Arial,sans-serif; color:var(--ink-2); cursor:pointer; border:1px dashed transparent; user-select:none; }
+.st-chip:hover{ border-color:var(--line); color:var(--ink); }
+.st-chip.on{ background:color-mix(in srgb, var(--green) 18%, var(--surface)); color:var(--ink); border:1px solid color-mix(in srgb, var(--green) 45%, transparent); }
+.st-chip.on::before{ content:'✓ '; color:var(--green); }
+.st-chip.task{ background:color-mix(in srgb, var(--blue) 12%, var(--surface)); border-color:color-mix(in srgb, var(--blue) 35%, transparent); }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -2762,7 +2769,8 @@ function renderTeacherDetail(){
         <div class="spread" style="margin-bottom:4px"><h3>משימות</h3><button class="btn primary" data-act="new-task">משימה חדשה</button></div>
         ${tasks.length ? `<div>${tasks.map(teacherTaskHTML).join('')}</div>` : `<p class="empty">אין עדיין משימות. משימה שתוסיפו תופיע אצל ${esc(s.name)} מיד בכניסה הבאה.</p>`}
         <div class="spread" style="margin:22px 0 6px"><h3>השירים של ${esc(s.name)}</h3></div>
-        ${studentSongsHTML(s)}
+        ${studentTableHTML(s)}
+        <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">רשימה, ושירים שלא משובצים בטבלה</summary>${studentSongsHTML(s)}</details>
         <div class="spread" style="margin:22px 0 6px"><h3>סיכומי שיעורים</h3><button class="btn small" data-act="new-lesson">סיכום שיעור</button></div>
         ${lessons.length ? `<div class="lessons">${lessons.map(l => `<article class="lesson" data-lid="${esc(l.id)}"><div class="spread"><div class="lesson-d">${fmtDate(l.date)}</div><button class="btn ghost small" data-act="edit-lesson" data-lid="${esc(l.id)}">עריכה</button></div><p>${esc(l.text)}</p></article>`).join('')}</div>` : `<p class="muted">עוד אין סיכומים. מה שתכתוב כאן יופיע אצל ${esc(s.name)} תחת "מה עשינו בשיעור".</p>`}
       </div>
@@ -2849,6 +2857,13 @@ async function setStudentSongs(s, ids){
   const i = T.data.students.findIndex(x => x.id === s.id); T.data.students[i] = r.student; renderTeacher();
 }
 async function onTeacherMain(e){
+  const asg = e.target.closest('[data-assign]');
+  if(asg){
+    const st = T.data.students.find(x => x.id === T.sel), {direct, fromTasks} = studentSongIds(st), id = asg.dataset.assign;
+    if(fromTasks.has(id) && !direct.has(id)){ toast('השיר מצורף דרך משימה. כדי להוציא אותו, ערכו את המשימה.'); return; }
+    const ids = new Set(st.songs || []); ids.has(id) ? ids.delete(id) : ids.add(id);
+    return setStudentSongs(st, ids);
+  }
   const row = e.target.closest('tr[data-sid], .feed li[data-sid]');
   if(row && !e.target.closest('[data-act]')){ T.sel = row.dataset.sid; renderTeacher(); return; }
   const btn = e.target.closest('[data-act]'); if(!btn) return;
@@ -3429,7 +3444,7 @@ function playSongFromTask(id, bpm){ const s = findSong(id); if(!s) return; showV
 /* ניהול שירים אצל המורה */
 function renderTeacherSongs(){
   const songs = allSongs();
-  let h = `<div class="spread"><h2>שירים</h2><div class="row"><button class="btn" data-act="my-table">סידור לפי הטבלה שלי</button><button class="btn" data-act="bulk-open">ייבוא רשימת שירים</button><button class="btn" data-act="sync-band">העתקת שירי VELVET לספרייה</button><button class="btn primary" data-act="new-song">שיר חדש</button></div></div>
+  let h = `<div class="spread"><h2>שירים</h2><div class="row">${claptonImported() ? '' : '<button class="btn" data-act="clapton">הוספת רשימת Clapton</button>'}<button class="btn" data-act="my-table">סידור לפי הטבלה שלי</button><button class="btn" data-act="bulk-open">ייבוא רשימת שירים</button><button class="btn" data-act="sync-band">העתקת שירי VELVET לספרייה</button><button class="btn primary" data-act="new-song">שיר חדש</button></div></div>
     <p class="muted" style="margin-top:6px;max-width:62ch">הספרייה גלויה רק לך. תלמיד רואה רק שירים שצירפת אליו. השירים מסודרים לפי ז׳אנר, ובתוך כל ז׳אנר לפי צורת הנגינה C, A, G, E, D. לכל שיר אפשר להוסיף סרטון, מילים ואקורדים, או את שניהם. קטעים ללולאה שומרים מתוך הנגן: מסמנים התחלה וסוף ולוחצים "שמור את הקטע לשיר".</p>`;
   if(BULK.open) h += bulkHTML();
   h += songTagsAdminHTML();
@@ -5768,6 +5783,36 @@ function wireTeacherTable(){
   });
 }
 
+/* טבלת השירים של תלמיד: המורה משבץ שירים מהספרייה */
+function studentTableHTML(s){
+  const {direct, fromTasks} = studentSongIds(s), ml = minorLabels(), lib = allSongs();
+  const gs = genres().map(g => ({id:g.id, name:g.data.name}));
+  const placed = lib.filter(x => x.shape), ids = gs.map(g => g.id);
+  if(placed.some(x => !ids.includes(x.genreId))) gs.push({id:'', name:'ללא ז׳אנר'});
+  const mine = x => direct.has(x.id) || fromTasks.has(x.id);
+  const chip = x => `<span role="button" tabindex="0" class="st-chip ${mine(x) ? 'on' : ''} ${fromTasks.has(x.id) && !direct.has(x.id) ? 'task' : ''}" data-assign="${esc(x.id)}" title="${fromTasks.has(x.id) && !direct.has(x.id) ? 'מצורף דרך משימה' : mine(x) ? 'לחיצה מוציאה מהתלמיד' : 'לחיצה משבצת לתלמיד'}">${esc(x.name)}</span>`;
+  const cell = (g, sh, mode) => `<td>${placed.filter(x => (x.genreId || '') === g.id && x.shape === sh && (x.mode || 'maj') === mode).map(chip).join('')}</td>`;
+  const count = lib.filter(mine).length;
+  return `<p class="hint" style="margin:0 0 8px">${count ? `משובצים ${count} שירים.` : 'עוד לא שובצו שירים.'} לחיצה על שיר בטבלה משבצת אותו ל${esc(s.name)} או מוציאה אותו. השירים המודגשים הם מה שהתלמיד רואה, בטבלה משלו.</p>
+    ${gs.length ? `<div class="scroll-x"><table class="shape-table student-table">${gs.map(g => `<tbody>
+      <tr class="sh-maj"><th rowspan="4" class="g-name">${esc(g.name)}</th>${SONG_SHAPES.map(sh => `<th>${sh}</th>`).join('')}</tr>
+      <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'maj')).join('')}</tr>
+      <tr class="sh-min">${SONG_SHAPES.map(sh => `<th dir="ltr">${esc(ml[sh])}</th>`).join('')}</tr>
+      <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'min')).join('')}</tr></tbody>`).join('')}</table></div>` : '<p class="muted">עוד אין ז׳אנרים בספרייה.</p>'}`;
+}
+const CLAPTON_LIST = 'Clapton\nTHE YARDBIRDS - LOUISE ( JULY \'64 ) G\ngood morning little school girl \nSunshine of your love original \nSunshine of your love alan cambell show \nCREAM - SUNSHINE OF YOUR LOVE - LOS ANGELES 17.5.1968\nSunshine of your love at the Revolution club \nCrossroads Wheels of fire\nits too late\ncrossroads 1993 \nlayla 1999 MSG \ndon’t thing twice it’s all right \nFinale Performance of "Sweet Home Chicago" at the 2000 Rock & Roll Hall of Fame Induction Ceremony \nEric Clapton performs "Further On Up the Road" 2000 Rock & Roll Hall of Fame Induction Ceremony\nlayla japan 2001 \nconcert for george\n‘while my guitar gently weeps 2001 \n2003\nTalk to your daughter liverpool 2003 \nI’m tore down (John Mayall 70th birthday) \nhideaway - john mayall 70th birthday\nhave you heard - john mayall 70th birthday\n2004\ni shot the sheriff 2004\ncocaine crossroads 2004 \nrock me baby crossroads 2004 \nlayla crossroads 2004 \nzucherro hey man\ncream reunion / 2005\ncrossroads cream 2005\nstormy monday 2005\nsleepy time time 2005 \nsleepy time time alternate take 2005 \npolitician 2005 \nwhite room 2005 \nbadge 2005 \nI\'m So Glad (Royal Albert Hall 2005) (1 of 22)\nsunshine of your love 2005 \nSunshine of your love 2005 alternate \nspoonful 2005 \noutside woman blues 2005 \nborn under bad sign 2005 \nsitting on top of the world 2005 \ncrossroads 2005 \nCream - Sweet Wine (Royal Albert Hall 2005) (9 of 22)\nEric Clapton & Band Du Lac - Stormy Monday\nEric Clapton & Band du Lac - I Can\'t Dance \n2009\nLayla 2009 japan \ncrossroads 2010\nshake your money maker crossroads 2010\nthe thrill is gone crossroads 2010 \n2011\ni shot the sheriff crossroads 2004\ni shot the sheriff crossroads 2010\ni shot the sheriff 17/5/11\ni shot the sheriff 21/5/11\ni shot the sheriff belfast\nold love 17/5/11\nold love 21/5/11\nwith Wynton Marsalis\nforty four \ncareless love \nkidman blues';
+function claptonImported(){ return allSongs().some(x => /^Clapton/.test(x.note || '')); }
+async function importClapton(btn){
+  const rows = bulkParse(CLAPTON_LIST).filter(r => !r.header && r.on && r.name.toLowerCase() !== 'concert for george');
+  if(!rows.length){ toast('כל השירים מהרשימה כבר בספרייה'); return; }
+  if(!confirm(`להוסיף ${rows.length} שירים מרשימת Clapton? הם ייכנסו לאזור "שירים שעוד לא שובצו", ומשם גוררים כל שיר לתא בטבלה.`)) return;
+  btn.disabled = true;
+  const t0 = Date.now();
+  const items = rows.map((r, i) => ({id:'', kind:'song', data:{name:r.name, note:r.group || 'Clapton', genreId:'', url:'', bpm:0, sheet:'', dir:'', key:'', shape:'', mode:'maj', loops:[], order:t0 + i}}));
+  try{ for(let i = 0; i < items.length; i += 40) await saveItems(items.slice(i, i + 40)); toast(`נוספו ${items.length} שירים. הם מחכים מתחת לטבלה.`); renderTeacher(); setTimeout(() => { const l = $('.tt-loose'); if(l) l.scrollIntoView({block:'start'}); }, 50); }
+  catch(e){ btn.disabled = false; alert(e.message); }
+}
+
 /* ================== ניווט ================== */
 function renderHomeState(){
   const st = {teacher:typeof T !== 'undefined' && T.data ? 'מחובר' : '', student:typeof S !== 'undefined' && S.student ? 'מחובר/ת: ' + S.student.name : '', velvet:typeof B !== 'undefined' && B.member ? 'מחובר/ת: ' + B.member.name : '', youth:typeof Y !== 'undefined' && Y.me ? 'מחובר/ת: ' + Y.me.name : ''};
@@ -5779,7 +5824,7 @@ function showView(v){
   if(!VIEWS.includes(v)) v = 'home';
   if(v === 'home') renderHomeState();
   if(v === 'piano') renderPiano();
-  if(v === 'songs' && T.data && !SGF.userPicked && !SG.song){ SGF.view = 'table'; applySongView(); }
+  if(v === 'songs' && (T.data || S.student) && !SGF.userPicked && !SG.song){ SGF.view = 'table'; applySongView(); }
   currentView = v;
   $$('.view').forEach(el => el.classList.toggle('active', el.id === 'v-' + v));
   $$('.tab').forEach(b => b.setAttribute('aria-current', b.dataset.view === v ? 'page' : 'false'));
@@ -5963,6 +6008,7 @@ function init(){
     if(b.dataset.act === 'play-song'){ showView('songs'); SGF.view = 'list'; applySongView(); openSong(findSong(item.id)); renderSongList(); }
     if(/genre|minor/.test(b.dataset.act)) onSongTagsAdmin(b);
     if(b.dataset.act === 'my-table') applyMyTable(b);
+    if(b.dataset.act === 'clapton') importClapton(b);
     if(b.dataset.act === 'bulk-open'){ BULK.open = true; renderTeacher(); setTimeout(() => $('#bulk-text').focus(), 0); }
     if(b.dataset.act === 'bulk-close'){ BULK.open = false; renderTeacher(); }
     if(b.dataset.act === 'bulk-preview'){ BULK.text = $('#bulk-text').value; BULK.newGenre = ($('#bulk-newg') || {}).value || ''; BULK.rows = bulkParse(BULK.text); renderTeacher(); }
