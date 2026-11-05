@@ -622,6 +622,8 @@ svg.piano{ display:block; height:auto; max-width:none; }
 .pn-card.custom{ border-color:color-mix(in srgb, var(--blue) 45%, var(--line)); }
 .pn-edit{ border:2px solid var(--blue); border-radius:14px; padding:14px; display:grid; gap:10px; background:color-mix(in srgb, var(--blue) 4%, var(--surface)); }
 
+.bulk-h{ font-weight:700; background:var(--surface-2); border-radius:6px; padding:2px 6px; }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -3412,10 +3414,11 @@ function playSongFromTask(id, bpm){ const s = findSong(id); if(!s) return; showV
 /* ניהול שירים אצל המורה */
 function renderTeacherSongs(){
   const songs = allSongs();
-  let h = `<div class="spread"><h2>שירים</h2><div class="row"><button class="btn" data-act="sync-band">העתקת שירי VELVET לספרייה</button><button class="btn primary" data-act="new-song">שיר חדש</button></div></div>
-    <p class="muted" style="margin-top:6px;max-width:62ch">השירים מופיעים לכולם בלשונית "שירים", ואפשר לצרף אותם למשימות. לכל שיר אפשר להוסיף סרטון, מילים ואקורדים, או את שניהם. קטעים ללולאה שומרים מתוך הנגן: מסמנים התחלה וסוף ולוחצים "שמור את הקטע לשיר".</p>`;
+  let h = `<div class="spread"><h2>שירים</h2><div class="row"><button class="btn" data-act="my-table">סידור לפי הטבלה שלי</button><button class="btn" data-act="bulk-open">ייבוא רשימת שירים</button><button class="btn" data-act="sync-band">העתקת שירי VELVET לספרייה</button><button class="btn primary" data-act="new-song">שיר חדש</button></div></div>
+    <p class="muted" style="margin-top:6px;max-width:62ch">הספרייה גלויה רק לך. תלמיד רואה רק שירים שצירפת אליו. השירים מסודרים לפי ז׳אנר, ובתוך כל ז׳אנר לפי צורת הנגינה C, A, G, E, D. לכל שיר אפשר להוסיף סרטון, מילים ואקורדים, או את שניהם. קטעים ללולאה שומרים מתוך הנגן: מסמנים התחלה וסוף ולוחצים "שמור את הקטע לשיר".</p>`;
+  if(BULK.open) h += bulkHTML();
   h += songTagsAdminHTML();
-  h += songs.length ? `<div style="margin-top:12px">${songs.map(s => `<div class="t-task"><div><b>${esc(s.name)}</b>${s.shape || genreName(s.genreId) || s.fromBand ? `<div class="chips" style="margin:3px 0">${songTagChips(s)}${s.fromBand ? '<span class="chip">מ־VELVET</span>' : ''}</div>` : ''}<div class="muted" style="font-size:.94rem">${[s.url ? (s.bpm ? s.bpm + ' BPM' : 'סרטון') : '', s.sheet ? 'מילים ואקורדים' : '', s.loops.length ? s.loops.length + ' קטעים שמורים' : ''].filter(Boolean).join(', ')}</div></div><div class="acts"><button class="btn ghost small" data-act="play-song" data-id="${esc(s.id)}">פתח בנגן</button><button class="btn ghost small" data-act="edit-song" data-id="${esc(s.id)}">עריכה</button></div></div>`).join('')}</div>`
+  h += songs.length ? teacherSongsGroupedHTML(songs)
     : `<p class="empty" style="margin-top:16px">עוד אין שירים. לחץ על "שיר חדש" והדבק קישור ליוטיוב.</p>`;
   $('#t-songs').innerHTML = h;
 }
@@ -5598,6 +5601,104 @@ async function onPiano(e){
 function pnKeepFields(){ if(!PN.edit) return; const n = $('#pn-ed-name'), a = $('#pn-ed-all'), nt = $('#pn-ed-note'); if(n) PN.edit.name = n.value; if(a) PN.edit.all = a.checked; if(nt) PN.edit.note = nt.value; }
 function updatePianoTab(){ $('#tab-piano').hidden = !T.data; const c = $('.home-card[data-go="piano"]'); if(c) c.hidden = !T.data; }
 
+/* ================== ייבוא רשימת שירים ================== */
+const BULK = {open:false, text:'', rows:null, genre:'', newGenre:''};
+function bulkParse(text){
+  const lines = String(text || '').replace(/\r/g, '').split('\n').map(l => l.replace(/^[\s‘’'"“”•\-–*]+|[\s‘’'"“”]+$/g, '').replace(/\s+/g, ' ')).filter(Boolean);
+  const existing = new Set(allSongs().map(s => s.name.trim().toLowerCase()));
+  let group = '', top = '';
+  return lines.map((l, i) => {
+    const isYear = /^(19|20)\d{2}$/.test(l), isWith = /^with\s/i.test(l), isSlashYear = /\/\s*(19|20)\d{2}$/.test(l) && l.split(' ').length <= 4;
+    const isFirstName = i === 0 && l.split(' ').length <= 2 && !/\d/.test(l);
+    const header = isYear || isWith || isSlashYear || isFirstName;
+    if(header){ if(isFirstName) top = l; group = isFirstName ? '' : l; return {name:l, header:true, on:false}; }
+    const dup = existing.has(l.toLowerCase());
+    return {name:l, header:false, on:!dup, dup, group:[top, group].filter(Boolean).join(' – ')};
+  });
+}
+function bulkHTML(){
+  const gs = genres();
+  let h = `<div class="pn-edit" id="bulk" style="margin-top:14px">
+    <div class="spread"><h3>ייבוא רשימת שירים</h3><button class="btn ghost small" data-act="bulk-close">סגירה</button></div>
+    <p class="muted">מדביקים רשימה, שורה לכל שיר. שורות שנראות כמו כותרות (שנה לבד, "with...", או שם האמן בשורה הראשונה) לא ייכנסו כשירים, אלא יירשמו כהערה לשירים שאחריהן. אפשר לסמן ולבטל כל שורה לפני ההוספה.</p>
+    <textarea id="bulk-text" style="min-height:180px" dir="auto" placeholder="Clapton&#10;layla 1999 MSG&#10;2004&#10;i shot the sheriff 2004">${esc(BULK.text)}</textarea>
+    <div class="row" style="align-items:end">
+      <label class="field" style="min-width:180px">ז׳אנר לכל השירים<select id="bulk-genre"><option value="">ללא ז׳אנר</option>${gs.map(g => `<option value="${esc(g.id)}" ${g.id === BULK.genre ? 'selected' : ''}>${esc(g.data.name)}</option>`).join('')}<option value="__new" ${BULK.genre === '__new' ? 'selected' : ''}>ז׳אנר חדש…</option></select></label>
+      <label class="field" style="min-width:180px" ${BULK.genre === '__new' ? '' : 'hidden'} id="bulk-newg-wrap">שם הז׳אנר החדש<input id="bulk-newg" maxlength="60" value="${esc(BULK.newGenre)}" placeholder="למשל: Clapton"></label>
+      <button class="btn" data-act="bulk-preview">תצוגה מקדימה</button>
+    </div>`;
+  if(BULK.rows){
+    const n = BULK.rows.filter(r => r.on).length;
+    h += `<div class="assign" style="max-height:380px">${BULK.rows.map((r, i) => `<label class="${r.header ? 'bulk-h' : ''}"><input type="checkbox" data-bulk="${i}" ${r.on ? 'checked' : ''}> <span dir="auto">${esc(r.name)}</span>${r.header ? ' <small class="muted">כותרת</small>' : r.dup ? ' <small class="muted">כבר קיים בספרייה</small>' : r.group ? ` <small class="muted">${esc(r.group)}</small>` : ''}</label>`).join('')}</div>
+      <div class="row"><button class="btn primary" data-act="bulk-add" ${n ? '' : 'disabled'}>הוספה לספרייה (${n})</button><span class="muted" id="bulk-msg"></span></div>`;
+  }
+  return h + '</div>';
+}
+async function bulkAdd(btn){
+  const rows = BULK.rows.filter(r => r.on); if(!rows.length) return;
+  btn.disabled = true; $('#bulk-msg').textContent = 'מוסיף…';
+  try{
+    let genreId = BULK.genre;
+    if(genreId === '__new'){
+      const name = ($('#bulk-newg').value || '').trim(); if(!name){ $('#bulk-msg').textContent = 'כתבו שם לז׳אנר החדש.'; btn.disabled = false; return; }
+      const g = await saveItems([{id:'', kind:'genre', data:{name, order:Date.now()}}]); genreId = g[0].id;
+    }
+    const t0 = Date.now();
+    const items = rows.map((r, i) => ({id:'', kind:'song', data:{name:r.name, note:r.group || '', genreId, url:'', bpm:0, sheet:'', dir:'', key:'', shape:'', mode:'maj', loops:[], order:t0 + i}}));
+    for(let i = 0; i < items.length; i += 40) await saveItems(items.slice(i, i + 40));
+    toast(`נוספו ${items.length} שירים לספרייה`);
+    Object.assign(BULK, {open:false, text:'', rows:null, genre:'', newGenre:''});
+    renderTeacher();
+  }catch(e){ btn.disabled = false; $('#bulk-msg').textContent = e.message; }
+}
+
+/* ================== הטבלה של המורה: ז׳אנרים × צורות ================== */
+const MY_TABLE = [
+  {g:'רוק', maj:{C:['סאן חוזה','גשם חזק'], A:['שנים חסומות','Adventure Of A Lifetime','Coldplay - In My Place','ללכת ערומים','רמקולים'], G:['wake me up when september ends'], E:['the scientist'], D:['כל החברה','מכה אפורה']},
+        min:{C:['השמלה ממדריד'], A:['I shot the sheriff',"I'll take care of you"], E:['איך לאהוב אותך - יזהר אשדות'], D:['Coldplay - Paradise']}},
+  {g:'בלוז אקוסטי', maj:{E:['Got You On My Mind']}, min:{}},
+  {g:'בלוז חשמלי', maj:{E:['עוד יהיה לי']}, min:{C:['sleepy time time','crossroads']}},
+  {g:"ג'אז", maj:{E:["I'm Gonna Find Another You",'ISNT SHE LOVELY','fouty four'], A:['L.O.V.E','Autumn Leaves'], C:['Somewhere over the rainbow velvet']}, min:{}},
+  {g:'בלאדות', maj:{D:['פצעים ונשיקות'], E:['I guess i just feel like (B Mixolydian)','WONDERFUL TONIGHT','Gravity','Belief','change the world','slow danincing in a burning room','מספיק בן אדם','gotten'], C:['ובניהם 11.5','בדרך אלייך מוניקה סקס']},
+        min:{C:['אם זאת מלחמה',"goin' down slow",'לאט לאט','so easy','Old love']}},
+  {g:'בוסה נובה', maj:{}, min:{}},
+  {g:'פאנק', maj:{}, min:{}}
+];
+async function applyMyTable(btn){
+  const total = MY_TABLE.reduce((a, r) => a + ['maj','min'].reduce((b, m) => b + Object.values(r[m]).reduce((c, l) => c + l.length, 0), 0), 0);
+  if(!confirm(`לסדר את הספרייה לפי הטבלה? ייווצרו 7 ז׳אנרים, ו־${total} שירים יקבלו ז׳אנר וצורת נגינה. שירים שכבר קיימים בספרייה באותו שם יעודכנו, ושאר השירים יתווספו.`)) return;
+  btn.disabled = true; btn.textContent = 'מסדר…';
+  try{
+    const t0 = Date.now(), gItems = [];
+    const genreIdByName = {};
+    MY_TABLE.forEach((r, i) => {
+      const g = genres().find(x => x.data.name.trim() === r.g);
+      if(g){ genreIdByName[r.g] = g.id; gItems.push({id:g.id, kind:'genre', data:Object.assign({}, g.data, {order:i + 1})}); }
+      else { const id = 'g' + Math.random().toString(36).slice(2, 11); genreIdByName[r.g] = id; gItems.push({id, kind:'genre', data:{name:r.g, order:i + 1}}); }
+    });
+    await saveItems(gItems);
+    const byName = new Map(allSongs().map(s => [s.name.trim().toLowerCase(), s]));
+    const items = []; let k = 0;
+    MY_TABLE.forEach(r => ['maj','min'].forEach(mode => SONG_SHAPES.forEach(sh => (r[mode][sh] || []).forEach(name => {
+      const ex = byName.get(name.trim().toLowerCase()), patch = {genreId:genreIdByName[r.g], shape:sh, mode};
+      if(ex){ const it = LIB.items.find(i => i.id === ex.id); items.push({id:ex.id, kind:'song', data:Object.assign({}, it.data, patch)}); }
+      else items.push({id:'', kind:'song', data:Object.assign({name, note:'', url:'', bpm:0, sheet:'', dir:'', key:'', loops:[], order:t0 + k}, patch)});
+      k++;
+    }))));
+    for(let i = 0; i < items.length; i += 40) await saveItems(items.slice(i, i + 40));
+    toast('הספרייה סודרה לפי הטבלה');
+    renderTeacher();
+  }catch(e){ btn.disabled = false; btn.textContent = 'סידור לפי הטבלה שלי'; alert(e.message); }
+}
+function teacherSongsGroupedHTML(songs){
+  const order = sh => { const i = SONG_SHAPES.indexOf(sh); return i < 0 ? 9 : i; };
+  const row = s => `<div class="t-task"><div><b>${esc(s.name)}</b>${s.shape || s.fromBand ? `<div class="chips" style="margin:3px 0">${s.shape ? `<span class="chip shape-chip ${s.mode === 'min' ? 'min' : 'maj'}" dir="ltr">${esc(shapeLabel(s.shape, s.mode))}</span>` : ''}${s.fromBand ? '<span class="chip">מ־VELVET</span>' : ''}</div>` : ''}<div class="muted" style="font-size:.94rem">${[s.note, s.url ? (s.bpm ? s.bpm + ' BPM' : 'סרטון') : '', s.sheet ? 'מילים ואקורדים' : ''].filter(Boolean).map(esc).join(', ')}</div></div><div class="acts"><button class="btn ghost small" data-act="play-song" data-id="${esc(s.id)}">פתח בנגן</button><button class="btn ghost small" data-act="edit-song" data-id="${esc(s.id)}">עריכה</button></div></div>`;
+  const sortIn = l => l.sort((a, b) => order(a.shape) - order(b.shape) || ((a.mode === 'min') - (b.mode === 'min')) || a.name.localeCompare(b.name, 'he'));
+  const ids = genres().map(g => g.id);
+  const groups = genres().map(g => ({name:g.data.name, list:sortIn(songs.filter(s => s.genreId === g.id))})).concat([{name:'ללא ז׳אנר', list:sortIn(songs.filter(s => !ids.includes(s.genreId)))}]).filter(g => g.list.length);
+  return groups.map(g => `<section class="lib-group"><h3>${esc(g.name)} <small class="muted">${g.list.length}</small></h3>${g.list.map(row).join('')}</section>`).join('');
+}
+
 /* ================== ניווט ================== */
 function renderHomeState(){
   const st = {teacher:typeof T !== 'undefined' && T.data ? 'מחובר' : '', student:typeof S !== 'undefined' && S.student ? 'מחובר/ת: ' + S.student.name : '', velvet:typeof B !== 'undefined' && B.member ? 'מחובר/ת: ' + B.member.name : '', youth:typeof Y !== 'undefined' && Y.me ? 'מחובר/ת: ' + Y.me.name : ''};
@@ -5609,6 +5710,7 @@ function showView(v){
   if(!VIEWS.includes(v)) v = 'home';
   if(v === 'home') renderHomeState();
   if(v === 'piano') renderPiano();
+  if(v === 'songs' && T.data && !SGF.userPicked && !SG.song){ SGF.view = 'table'; applySongView(); }
   currentView = v;
   $$('.view').forEach(el => el.classList.toggle('active', el.id === 'v-' + v));
   $$('.tab').forEach(b => b.setAttribute('aria-current', b.dataset.view === v ? 'page' : 'false'));
@@ -5791,9 +5893,19 @@ function init(){
     if(b.dataset.act === 'edit-song') openSongDlg(item);
     if(b.dataset.act === 'play-song'){ showView('songs'); SGF.view = 'list'; applySongView(); openSong(findSong(item.id)); renderSongList(); }
     if(/genre|minor/.test(b.dataset.act)) onSongTagsAdmin(b);
+    if(b.dataset.act === 'my-table') applyMyTable(b);
+    if(b.dataset.act === 'bulk-open'){ BULK.open = true; renderTeacher(); setTimeout(() => $('#bulk-text').focus(), 0); }
+    if(b.dataset.act === 'bulk-close'){ BULK.open = false; renderTeacher(); }
+    if(b.dataset.act === 'bulk-preview'){ BULK.text = $('#bulk-text').value; BULK.newGenre = ($('#bulk-newg') || {}).value || ''; BULK.rows = bulkParse(BULK.text); renderTeacher(); }
+    if(b.dataset.act === 'bulk-add') bulkAdd(b);
     if(b.dataset.act === 'sync-band'){ b.disabled = true; tCall('teacherSyncBandSongs', {}).then(r => { LIB.items = r.items; T.data.songs = r.items.filter(i => i.kind === 'song'); refreshLib(); toast('שירי VELVET נמצאים עכשיו בספרייה'); }).catch(() => {}).finally(() => { b.disabled = false; }); }
   });
   $('#fso').addEventListener('submit', saveSongDlg);
+  $('#t-songs').addEventListener('change', e => {
+    const c = e.target.closest('[data-bulk]'); if(c){ BULK.rows[Number(c.dataset.bulk)].on = c.checked; const n = BULK.rows.filter(r => r.on).length, ab = $('[data-act=bulk-add]'); ab.textContent = `הוספה לספרייה (${n})`; ab.disabled = !n; }
+    if(e.target.id === 'bulk-genre'){ BULK.genre = e.target.value; BULK.text = $('#bulk-text').value; $('#bulk-newg-wrap').hidden = BULK.genre !== '__new'; }
+  });
+  $('#t-songs').addEventListener('input', e => { if(e.target.id === 'bulk-text') BULK.text = e.target.value; if(e.target.id === 'bulk-newg') BULK.newGenre = e.target.value; });
   $('#ft-new-song').addEventListener('click', () => openSongDlg(null, true));
   $('#fso-shape').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ editSong.shape = b.dataset.v; syncSongTags(); } });
   $('#fso-mode').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ editSong.mode = b.dataset.v; syncSongTags(); } });
@@ -5801,7 +5913,7 @@ function init(){
   $('#sg-g').addEventListener('change', e => { SGF.genre = e.target.value; applySongView(); });
   $('#sg-sh').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ SGF.shape = b.dataset.v; applySongView(); } });
   $('#sg-md').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ SGF.mode = b.dataset.v; applySongView(); } });
-  $('#sg-view').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ SGF.view = b.dataset.v; applySongView(); } });
+  $('#sg-view').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ SGF.view = b.dataset.v; SGF.userPicked = true; applySongView(); } });
   $('#sg-table').addEventListener('click', e => { const b = e.target.closest('.st-song'); if(b){ SGF.view = 'list'; applySongView(); openSong(findSong(b.dataset.id)); renderSongList(); window.scrollTo(0, 0); } });
   $('#fso-del').addEventListener('click', deleteSongDlg);
   $('#fso-loops').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if(b){ editSong.loops.splice(Number(b.dataset.i), 1); renderSongDlgLoops(); } });
