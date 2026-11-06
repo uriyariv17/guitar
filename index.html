@@ -651,10 +651,20 @@ svg.piano{ display:block; height:auto; max-width:none; }
 .st-chip.on::before{ content:'✓ '; color:var(--green); }
 .st-chip.task{ background:color-mix(in srgb, var(--blue) 12%, var(--surface)); border-color:color-mix(in srgb, var(--blue) 35%, transparent); }
 
-.pg-table{ min-width:760px; }
+.pg-table{ min-width:1400px; table-layout:fixed; }
+.pg-table th.g-name{ position:sticky; right:0; z-index:2; width:120px; box-shadow:-2px 0 0 var(--line); }
+.pg-scroll{ border-radius:12px; }
 .pg-table td{ padding:0; vertical-align:top; }
-.pg-cell{ min-height:64px; padding:6px 8px; font-size:.92rem; white-space:pre-wrap; outline:none; text-align:center; }
-.pg-cell:focus{ background:color-mix(in srgb, var(--amber) 12%, var(--surface)); box-shadow:inset 0 0 0 2px var(--amber); }
+.pg-table td.pg-cell{ position:relative; padding:6px 6px 26px; min-height:64px; vertical-align:top; }
+.pg-table td.pg-cell.drop-on{ background:color-mix(in srgb, var(--blue) 14%, var(--surface)); outline:2px dashed var(--blue); outline-offset:-3px; }
+.pg-old{ font-size:.8rem; color:var(--ink-2); white-space:pre-wrap; text-align:center; border-top:1px dashed var(--line); margin-top:4px; padding-top:2px; }
+.pg-new{ width:100%; min-height:30px; padding:3px 6px; font-size:.88rem; }
+.pg-cell:hover .tt-add{ opacity:1; }
+.pchords{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+.pchord{ appearance:none; border:1px solid var(--line); background:var(--surface); border-radius:10px; padding:6px 8px 4px; cursor:pointer; display:grid; gap:3px; justify-items:center; }
+.pchord b{ font-family:'Secular One',Arial,sans-serif; font-weight:400; font-size:1.05rem; color:var(--ink); }
+.pchord svg.piano{ width:130px; height:auto; }
+.pchord.playing, .pchord:hover{ border-color:var(--amber); }
 .pg-h{ appearance:none; border:0; background:none; font:inherit; font-weight:700; color:inherit; cursor:pointer; padding:2px 8px; border-radius:6px; direction:ltr; unicode-bidi:isolate; }
 .pg-h:hover{ background:rgba(255,255,255,.4); text-decoration:underline; }
 
@@ -2180,7 +2190,7 @@ function serverHandle(req, store, teacherPassword){
 
   const nMember = m => ({id:String(m.id), name:String(m.name || ''), role:String(m.role || ''), pin:String(m.pin || ''), createdAt:String(m.createdAt || '')});
   const nBand = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
-  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => c.kind !== 'song' && c.kind !== 'pvoice' && c.kind !== 'pgrid')};
+  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => ['song','pvoice','pgrid','psong'].indexOf(c.kind) < 0)};
   if(a === 'publicApplyForm' || a === 'publicApplySubmit'){
     const f = store.all('Band').map(nBand).find(x => x.kind === 'form');
     const d = f ? f.data : null;
@@ -2374,7 +2384,7 @@ function serverHandle(req, store, teacherPassword){
   if(a.indexOf('teacher') === 0){
     if(!teacherPassword || String(req.password || '') !== String(teacherPassword)) throw new Error('הסיסמה שגויה.');
     if(a === 'teacherLoad'){
-      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => c.kind === 'pvoice' || c.kind === 'pgrid'), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
+      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => c.kind === 'pvoice' || c.kind === 'pgrid' || c.kind === 'psong'), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
     }
     if(a === 'teacherSaveSettings'){
       const KEYS = ['teacherEmail','notifyDone','notifyPractice','remindHour','remindDays','siteUrl'], inp = req.settings || {}, rows = store.all('Settings');
@@ -2485,7 +2495,7 @@ function serverHandle(req, store, teacherPassword){
       return {};
     }
     if(a === 'teacherSaveContent'){
-      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice','pgrid'], list = req.items || [];
+      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice','pgrid','psong'], list = req.items || [];
       if(!list.length) throw new Error('אין מה לשמור.');
       const all = store.all('Content'), fresh = [], out = [];
       list.forEach(it => {
@@ -2959,7 +2969,7 @@ async function loadLibrary(){
   refreshLib();
 }
 function privateSongs(){ return (T.data && T.data.songs ? T.data.songs : []).concat(T.data && T.data.pvoices ? T.data.pvoices : [], S.student && S.songs ? S.songs : []); }
-function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => i.kind !== 'song' && i.kind !== 'pvoice' && i.kind !== 'pgrid'); privateSongs().forEach(it => mergeItems([it])); refreshLib(); if(typeof updatePianoTab === 'function'){ updatePianoTab(); if(currentView === 'piano') renderPiano(); } }
+function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => !['song','pvoice','pgrid','psong'].includes(i.kind)); privateSongs().forEach(it => mergeItems([it])); refreshLib(); if(typeof updatePianoTab === 'function'){ updatePianoTab(); if(currentView === 'piano') renderPiano(); } }
 function refreshLib(){
   renderChords(); renderShapesPanel(); renderTheory(); applySongView();
   if(T.data) renderTeacher();
@@ -2968,7 +2978,7 @@ function refreshLib(){
 function mergeItems(list){ list.forEach(it => { const i = LIB.items.findIndex(x => x.id === it.id); if(i >= 0) LIB.items[i] = it; else LIB.items.push(it); }); }
 async function saveItems(items, errEl){
   const r = await tCall('teacherSaveContent', {items}, errEl); mergeItems(r.items);
-  if(T.data){ ['songs:song', 'pvoices:pvoice', 'pvoices:pgrid'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; r.items.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); }
+  if(T.data){ ['songs:song', 'pvoices:pvoice', 'pvoices:pgrid', 'pvoices:psong'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; r.items.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); }
   refreshLib(); return r.items;
 }
 
@@ -5469,7 +5479,7 @@ window.addEventListener('beforeunload', e => { if(INL.ctx && INL.dirty){ e.preve
 /* הדפסה */
 function printSheet(btn){
   const panel = btn.closest('.sub-panel'), sheet = panel && panel.querySelector('.sheet:not(.ied-prev)'); if(!sheet) return;
-  const view = btn.closest('.view'), title = (view.querySelector('#sg-title, #vb-main h2, #yo-main h2') || {}).textContent || '';
+  const view = btn.closest('.view'), title = (view.querySelector('#sg-title, #vb-main h2, #yo-main h2, #pn-main h2') || {}).textContent || '';
   let area = $('#print-area'); if(!area){ area = document.createElement('div'); area.id = 'print-area'; document.body.appendChild(area); }
   const clone = sheet.cloneNode(true); clone.removeAttribute('id'); clone.querySelectorAll('.nbadge, .inline-notes, .media-link').forEach(x => x.remove()); clone.style.fontSize = '';
   area.innerHTML = `<h1>${esc(title)}</h1>`; area.appendChild(clone);
@@ -5477,7 +5487,7 @@ function printSheet(btn){
 }
 
 /* ================== פסנתר (אזור פרטי למורה) ================== */
-const PN = {tab:'scales', root:0, scale:'major', all:false, qual:'maj', edit:null};
+const PN = {tab:'scales', root:0, scale:'major', all:false, qual:'maj', edit:null, songId:null, shift:0};
 const P_QUALS = [
   {id:'maj', sym:'', label:'מז׳ור', iv:[0,4,7]}, {id:'min', sym:'m', label:'מינור', iv:[0,3,7]},
   {id:'dim', sym:'dim', label:'דימיניש', iv:[0,3,6]}, {id:'aug', sym:'aug', label:'אוגמנט', iv:[0,4,8]},
@@ -5530,7 +5540,7 @@ function renderPiano(){
   $('#pn-locked').hidden = ok; $('#pn-dash').hidden = !ok;
   if(!ok) return;
   $$('#pn-tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === PN.tab));
-  PN.tab === 'scales' ? pnScales() : PN.tab === 'grid' ? pnGrid() : pnChords();
+  PN.tab === 'scales' ? pnScales() : PN.tab === 'grid' ? (PN.songId ? psView() : pnGrid()) : pnChords();
 }
 const rootSeg = id => `<div class="seg" id="${id}" style="direction:ltr">${NOTES.map((n, i) => `<button data-v="${i}" aria-pressed="${PN.root === i}">${[1,3,6,8,10].includes(i) ? n + '/' + NOTES_FLAT[i] : n}</button>`).join('')}</div>`;
 function pnScales(){
@@ -5842,16 +5852,20 @@ const majName = pc => ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'][pc]
 const minName = pc => ['Cm','C#m','Dm','Ebm','Em','Fm','F#m','Gm','G#m','Am','Bbm','Bm'][pc];
 function pnGridData(){ const it = LIB.items.find(i => i.kind === 'pgrid'); return it ? it.data.cells || {} : {}; }
 function pnGrid(){
-  const cells = pnGridData();
-  const half = arr => `<tbody>
-      <tr class="sh-maj"><th rowspan="4" class="g-name">טוניקות</th>${arr.map(pc => `<th><button class="pg-h" data-pg-root="${pc}" data-pg-q="maj" title="לאקורדים של ${majName(pc)}">${majName(pc)}</button></th>`).join('')}</tr>
-      <tr>${arr.map(pc => `<td><div class="pg-cell" contenteditable="true" data-cell="M${pc}" dir="auto">${esc(cells['M' + pc] || '')}</div></td>`).join('')}</tr>
-      <tr class="sh-min">${arr.map(pc => `<th><button class="pg-h" data-pg-root="${(pc + 9) % 12}" data-pg-q="min" title="לאקורדים של ${minName((pc + 9) % 12)}">${minName((pc + 9) % 12)}</button></th>`).join('')}</tr>
-      <tr>${arr.map(pc => `<td><div class="pg-cell" contenteditable="true" data-cell="m${(pc + 9) % 12}" dir="auto">${esc(cells['m' + ((pc + 9) % 12)] || '')}</div></td>`).join('')}</tr>
+  const cells = pnGridData(), gs = genres().map(g => ({id:g.id, name:g.data.name}));
+  if(!gs.length) gs.push({id:'', name:'כללי'});
+  const first = gs[0].id;
+  const val = (gid, k) => cells[gid + '|' + k] ?? (gid === first ? cells[k] : '') ?? '';
+  const ALL = [0,1,2,3,4,5,6,7,8,9,10,11];
+  const block = g => `<tbody>
+      <tr class="sh-maj"><th rowspan="4" class="g-name">${esc(g.name)}</th>${ALL.map(pc => `<th><button class="pg-h" data-pg-root="${pc}" data-pg-q="maj" title="לאקורדים של ${majName(pc)}">${majName(pc)}</button></th>`).join('')}</tr>
+      <tr>${ALL.map(pc => `<td class="pg-cell" data-cell="${esc(g.id)}|M${pc}">${psCellHTML(g.id, 'maj', pc)}${val(g.id, 'M' + pc) ? `<div class="pg-old">${esc(val(g.id, 'M' + pc))}</div>` : ''}<button type="button" class="tt-add" data-pg-add="1" aria-label="הוספת שיר">+</button></td>`).join('')}</tr>
+      <tr class="sh-min">${ALL.map(pc => { const m = (pc + 9) % 12; return `<th><button class="pg-h" data-pg-root="${m}" data-pg-q="min" title="לאקורדים של ${minName(m)}">${minName(m)}</button></th>`; }).join('')}</tr>
+      <tr>${ALL.map(pc => { const m = (pc + 9) % 12; return `<td class="pg-cell" data-cell="${esc(g.id)}|m${m}">${psCellHTML(g.id, 'min', m)}${val(g.id, 'm' + m) ? `<div class="pg-old">${esc(val(g.id, 'm' + m))}</div>` : ''}<button type="button" class="tt-add" data-pg-add="1" aria-label="הוספת שיר">+</button></td>`; }).join('')}</tr>
     </tbody>`;
   $('#pn-main').innerHTML = `<div class="spread" style="margin-bottom:8px"><h3>טבלת טוניקות</h3><span class="muted" id="pg-msg"></span></div>
-    <p class="hint" style="margin-bottom:10px">בשורה הירוקה הטוניקות המז׳וריות, ובשורה האדומה מתחת לכל אחת המינור המקביל שלה. אפשר לכתוב בכל תא, והכתוב נשמר אוטומטית. לחיצה על שם של טוניקה פותחת את האקורדים שלה.</p>
-    <div class="scroll-x"><table class="shape-table pg-table">${half([0,1,2,3,4,5])}${half([6,7,8,9,10,11])}</table></div>`;
+    <p class="hint" style="margin-bottom:10px">הז׳אנרים הם אותם ז׳אנרים של טבלת השירים בגיטרה. גוללים ימינה ושמאלה בין 12 הטוניקות. ה־+ בכל תא מוסיף שיר, לחיצה על שיר פותחת את דף האקורדים שלו לפסנתר, ובמחשב אפשר לגרור שיר לתא אחר. לחיצה על שם של טוניקה פותחת את האקורדים שלה.</p>
+    <div class="scroll-x pg-scroll"><table class="shape-table pg-table">${gs.map(block).join('')}</table></div>`;
 }
 let pgT = null;
 function pnGridSave(){
@@ -5862,6 +5876,95 @@ function pnGridSave(){
     try{ await saveItems([{id:'pgrid', kind:'pgrid', data:{cells}}]); if($('#pg-msg')) $('#pg-msg').textContent = 'נשמר'; }
     catch(e){ if($('#pg-msg')) $('#pg-msg').textContent = 'לא נשמר: ' + e.message; }
   }, 700);
+}
+
+/* ================== שירים לפסנתר ================== */
+const SUF_QUAL = {'':'maj', m:'min', min:'min', dim:'dim', '°':'dim', aug:'aug', '+':'aug', sus2:'sus2', sus4:'sus4', sus:'sus4', '7':'7', maj7:'maj7', M7:'maj7', 'Δ7':'maj7', m7:'m7', min7:'m7', m7b5:'m7b5', 'ø':'m7b5', dim7:'dim7', '°7':'dim7', '6':'6', m6:'m6', add9:'add9', '9':'9', maj9:'maj9', m9:'m9'};
+const pSongs = () => LIB.items.filter(i => i.kind === 'psong');
+function pianoVoicingFor(name){
+  const p = parseChord(name); if(!p) return null;
+  const root = NOTE_IDX[p.root], qid = SUF_QUAL[p.suf] || (chordQuality(p.suf) === 'm' ? 'min' : chordQuality(p.suf) === 'dim' ? 'dim' : 'maj');
+  const q = P_QUALS.find(x => x.id === qid);
+  const custom = pnCustom().filter(i => i.data.quality === qid && (i.data.all || Number(i.data.root) === root)).sort((a, b) => (a.data.order || 0) - (b.data.order || 0))[0];
+  const offs = custom ? custom.data.offsets : q.iv;
+  let ms = offs.map(o => rootMidi(root) + o);
+  if(p.bass){ const b = NOTE_IDX[p.bass]; let bm = 36 + b; while(bm >= Math.min(...ms)) bm -= 12; ms = [bm].concat(ms); }
+  return {ms, root, minor:qid.startsWith('m') && qid !== 'maj7' && qid !== 'maj9'};
+}
+function pianoStripHTML(used){
+  return used.map(name => {
+    const v = pianoVoicingFor(name); if(!v) return '';
+    const rg = rangeFor(v.ms), on = {}; v.ms.forEach(m => { on[m] = ((m - v.root) % 12 + 12) % 12 === 0 ? 'root' : 'on'; });
+    return `<button type="button" class="pchord" data-pms="${v.ms.join(',')}" aria-label="אקורד ${esc(name)}, לחצו לשמיעה"><b dir="ltr">${esc(name)}</b>${pianoSVG({from:rg.from, to:Math.min(rg.to, rg.from + 23), on, w:12, h:54, label:name})}</button>`;
+  }).join('');
+}
+function psCellHTML(gid, mode, pc){
+  const list = pSongs().filter(i => (i.data.genreId || '') === gid && i.data.mode === mode && Number(i.data.tonic) === pc).sort((a, b) => (a.data.order || 0) - (b.data.order || 0));
+  return list.map(i => `<span role="button" tabindex="0" class="tt-song ps-song" draggable="true" data-psong="${esc(i.id)}">${esc(i.data.name)}${i.data.sheet ? '<span class="tt-dot"></span>' : ''}</span>`).join('');
+}
+async function psAdd(cell, name){
+  name = name.trim(); if(!name) return;
+  const [gid, k] = cell.dataset.cell.split('|'), mode = k[0] === 'M' ? 'maj' : 'min', tonic = Number(k.slice(1));
+  await saveItems([{id:'', kind:'psong', data:{name, genreId:gid, mode, tonic, sheet:'', dir:'', key:(mode === 'maj' ? majName(tonic) : minName(tonic)), url:'', note:'', shift:0, order:Date.now()}}]);
+  renderPiano();
+}
+async function psMove(id, cellKey){
+  const it = pSongs().find(i => i.id === id); if(!it) return;
+  const [gid, k] = cellKey.split('|'), mode = k[0] === 'M' ? 'maj' : 'min', tonic = Number(k.slice(1));
+  if((it.data.genreId || '') === gid && it.data.mode === mode && Number(it.data.tonic) === tonic) return;
+  await saveItems([{id, kind:'psong', data:Object.assign({}, it.data, {genreId:gid, mode, tonic, key:(mode === 'maj' ? majName(tonic) : minName(tonic))})}]);
+  renderPiano();
+}
+function psView(){
+  const it = pSongs().find(i => i.id === PN.songId); if(!it){ PN.songId = null; return pnGrid(); }
+  const d = it.data, editing = inlineOn('piano', it.id), has = d.sheet && d.sheet.trim();
+  const tonicLabel = d.mode === 'maj' ? majName(Number(d.tonic)) : minName(Number(d.tonic));
+  const gs = genres();
+  let h = `<button class="btn ghost small" data-ps="back">חזרה לטבלה</button>
+    <div class="spread" style="margin:8px 0"><div><h2>${esc(d.name)}</h2><p class="muted">${esc(gs.find(g => g.id === d.genreId) ? gs.find(g => g.id === d.genreId).data.name : 'ללא ז׳אנר')}, <span dir="ltr">${esc(tonicLabel)}</span></p></div>
+      <div class="row">${d.url ? '<button class="btn small" data-ps="yt">השיר המקורי</button>' : ''}<button class="btn small" data-ps="details">פרטים</button><button class="btn small danger" data-ps="del">מחיקה</button></div></div>
+    <div id="ps-details" class="pn-edit" hidden>
+      <div class="row" style="align-items:end">
+        <label class="field" style="min-width:220px">שם<input id="ps-name" value="${esc(d.name)}" maxlength="100"></label>
+        <label class="field" style="min-width:260px;flex:1">קישור לשיר המקורי<input id="ps-url" dir="ltr" value="${esc(d.url || '')}" placeholder="https://youtu.be/..."></label>
+        <button class="btn primary small" data-ps="save-details">שמירה</button>
+      </div>
+    </div>`;
+  if(editing) h += `<div class="sub-panel" style="margin-top:12px">${inlineEditorHTML()}</div>`;
+  else if(has){
+    h += `<div class="sub-panel" style="margin-top:12px">
+      <div class="spread"><h3>מילים ואקורדים</h3>
+        <div class="row">
+          <div class="tr-ctl"><button class="round" data-ps="tr-down" ${PN.shift <= -11 ? 'disabled' : ''} aria-label="הורדה בחצי טון">▼</button><div class="tr-val"><b>${esc(keyLabel(detectKey(d.sheet, d.key), PN.shift) || '–')}</b><small>${PN.shift ? (PN.shift > 0 ? '+' : '−') + Math.abs(PN.shift) + ' מהמקור' : 'כמו המקור'}</small></div><button class="round" data-ps="tr-up" ${PN.shift >= 11 ? 'disabled' : ''} aria-label="העלאה בחצי טון">▲</button></div>
+          <div class="seg"><button data-ps="fs-down" aria-label="הקטנת טקסט">א−</button><button data-ps="fs-up" aria-label="הגדלת טקסט">א+</button></div>
+          <button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button><button class="btn small" data-print="1" type="button">הדפסה</button><button class="btn small primary" data-ps="edit">עריכה</button>
+        </div></div>
+      <p class="hint">לחיצה על אקורד משמיעה אותו בפסנתר. הצורות מגיעות מהצורות ששמרת ב"אקורדים והרמוניות", ואם אין, מוצג מצב יסודי.</p>
+      <div class="pchords" id="ps-chords"></div>
+      <div class="sheet" id="ps-sheet"></div></div>`;
+  } else h += `<div class="sub-panel" style="margin-top:12px"><div class="spread"><h3>מילים ואקורדים</h3><button class="btn small primary" data-ps="edit">הוספת מילים ואקורדים</button></div><p class="muted">עוד אין מילים ואקורדים לשיר.</p></div>`;
+  $('#pn-main').innerHTML = h;
+  if(editing) wireInline(async f => { const cur = pSongs().find(i => i.id === it.id); await saveItems([{id:it.id, kind:'psong', data:Object.assign({}, cur.data, f)}]); }, () => renderPiano());
+  else if(has){
+    const {html, used} = renderSheetHTML(d.sheet, PN.shift, d.key), el = $('#ps-sheet');
+    el.innerHTML = html; el.dir = d.dir || (hasHebrew(d.sheet) ? 'rtl' : 'ltr'); el.style.fontSize = SH.size + 'px';
+    $('#ps-chords').innerHTML = pianoStripHTML(used);
+  }
+}
+async function onPsong(e){
+  const pc = e.target.closest('.pchord'); if(pc){ pianoPlay(pc.dataset.pms.split(',').map(Number), false); pc.classList.add('playing'); setTimeout(() => pc.classList.remove('playing'), 500); return true; }
+  const ch = e.target.closest('#ps-sheet [data-c]'); if(ch){ const v = pianoVoicingFor(ch.dataset.c); if(v) pianoPlay(v.ms, false); return true; }
+  const b = e.target.closest('[data-ps]'); if(!b) return false;
+  const act = b.dataset.ps, it = pSongs().find(i => i.id === PN.songId);
+  if(act === 'back'){ if(INL.ctx === 'piano' && INL.dirty && !confirm('לצאת בלי לשמור?')) return true; INL.ctx = ''; PN.songId = null; renderPiano(); return true; }
+  if(act === 'edit'){ startInline('piano', it.id, it.data); renderPiano(); return true; }
+  if(act === 'details'){ $('#ps-details').hidden = !$('#ps-details').hidden; return true; }
+  if(act === 'save-details'){ const name = $('#ps-name').value.trim(), url = $('#ps-url').value.trim(); if(!name) return true; if(url && !/^https?:\/\//i.test(url)){ alert('הקישור צריך להתחיל ב־https://'); return true; } await saveItems([{id:it.id, kind:'psong', data:Object.assign({}, it.data, {name, url})}]); renderPiano(); return true; }
+  if(act === 'yt'){ openMedia(it.data.url, it.data.name); return true; }
+  if(act === 'del'){ if(!confirm(`למחוק את "${it.data.name}"?`)) return true; const r = await tCall('teacherDeleteContent', {id:it.id}); LIB.items = r.items; T.data.pvoices = r.items.filter(i => i.kind === 'pvoice' || i.kind === 'pgrid' || i.kind === 'psong'); PN.songId = null; renderPiano(); return true; }
+  if(act === 'tr-up' || act === 'tr-down'){ PN.shift = clamp(PN.shift + (act === 'tr-up' ? 1 : -1), -11, 11); renderPiano(); return true; }
+  if(act === 'fs-up' || act === 'fs-down'){ SH.size = clamp(SH.size + (act === 'fs-up' ? 2 : -2), 13, 32); store.set('pritah.sheetSize', SH.size); renderPiano(); return true; }
+  return true;
 }
 
 /* ================== ניווט ================== */
@@ -6189,7 +6292,26 @@ function init(){
   $('#as-top').addEventListener('click', () => { if(AS.sheet){ const r = AS.sheet.getBoundingClientRect(); window.scrollTo({top:window.scrollY + r.top - 80}); } if(AS.paused) asPlay(); });
   // פסנתר
   $('#pn-main').addEventListener('click', e => { const h = e.target.closest('[data-pg-root]'); if(h){ PN.root = Number(h.dataset.pgRoot); PN.qual = h.dataset.pgQ; PN.tab = 'chords'; renderPiano(); window.scrollTo(0, 0); } });
-  $('#pn-main').addEventListener('input', e => { if(e.target.closest('.pg-cell')) pnGridSave(); });
+  $('#pn-main').addEventListener('click', async e => {
+    if(PN.tab !== 'grid') return;
+    if(PN.songId){ if(await onPsong(e)) e.stopImmediatePropagation(); return; }
+    const sg = e.target.closest('.ps-song'); if(sg){ PN.songId = sg.dataset.psong; PN.shift = 0; renderPiano(); window.scrollTo(0, 0); return; }
+    const add = e.target.closest('[data-pg-add]');
+    if(add){
+      const cell = add.closest('.pg-cell'); add.remove();
+      cell.insertAdjacentHTML('beforeend', '<input class="pg-new" placeholder="שם השיר, ואז Enter" aria-label="שם השיר">');
+      const inp = cell.querySelector('.pg-new'); inp.focus();
+      let done = false;
+      const finish = save => { if(done) return; done = true; if(save && inp.value.trim()) psAdd(cell, inp.value); else renderPiano(); };
+      inp.addEventListener('keydown', ev => { if(ev.key === 'Enter'){ ev.preventDefault(); finish(true); } if(ev.key === 'Escape'){ ev.preventDefault(); finish(false); } });
+      inp.addEventListener('blur', () => setTimeout(() => finish(true), 50));
+    }
+  }, true);
+  $('#pn-main').addEventListener('keydown', e => { const sg = e.target.closest('.ps-song'); if(sg && e.key === 'Enter'){ PN.songId = sg.dataset.psong; renderPiano(); } });
+  $('#pn-main').addEventListener('dragstart', e => { const c = e.target.closest('.ps-song'); if(!c) return; e.dataTransfer.setData('text/plain', c.dataset.psong); c.classList.add('dragging'); });
+  $('#pn-main').addEventListener('dragend', () => $$('#pn-main .dragging, #pn-main .drop-on').forEach(x => x.classList.remove('dragging', 'drop-on')));
+  $('#pn-main').addEventListener('dragover', e => { const t = e.target.closest('.pg-cell'); if(!t) return; e.preventDefault(); $$('#pn-main .drop-on').forEach(x => x !== t && x.classList.remove('drop-on')); t.classList.add('drop-on'); });
+  $('#pn-main').addEventListener('drop', e => { const t = e.target.closest('.pg-cell'); if(!t) return; e.preventDefault(); psMove(e.dataTransfer.getData('text/plain'), t.dataset.cell); });
   $('#pn-main').addEventListener('click', onPiano);
   $('#pn-main').addEventListener('change', e => {
     if(e.target.id === 'pn-scale'){ PN.scale = e.target.value; renderPiano(); }
