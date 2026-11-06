@@ -636,8 +636,13 @@ svg.piano{ display:block; height:auto; max-width:none; }
 @media (hover: none){ .tt-add{ opacity:.7; } }
 .tt-loose{ margin-top:18px; border:1px dashed var(--line); border-radius:14px; padding:12px 14px; }
 .tt-loose.drop-on{ background:color-mix(in srgb, var(--blue) 8%, var(--surface)); border-color:var(--blue); }
-.tt-loose-list{ display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:8px; }
-.tt-loose-list .tt-song{ width:auto; background:var(--surface-2); padding:3px 10px; }
+.tt-loose-list{ margin-top:8px; }
+.ab-list{ column-width:260px; column-gap:28px; }
+.ab-grp{ break-inside:avoid; margin-bottom:10px; }
+.ab-letter{ font-family:'Secular One',Arial,sans-serif; font-size:1.15rem; color:var(--blue); border-bottom:1px solid var(--line); margin-bottom:4px; padding-bottom:2px; }
+.ab-grp ul{ list-style:none; margin:0; padding:0; }
+.ab-list .tt-song{ justify-content:flex-start; text-align:start; width:100%; padding:3px 6px; }
+.ab-list .tt-song:hover{ background:var(--surface-2); }
 
 .student-table td{ padding:5px; }
 .st-chip{ display:block; margin:2px 0; padding:3px 6px; border-radius:7px; font:600 .88rem 'Assistant',Arial,sans-serif; color:var(--ink-2); cursor:pointer; border:1px dashed transparent; user-select:none; }
@@ -645,6 +650,13 @@ svg.piano{ display:block; height:auto; max-width:none; }
 .st-chip.on{ background:color-mix(in srgb, var(--green) 18%, var(--surface)); color:var(--ink); border:1px solid color-mix(in srgb, var(--green) 45%, transparent); }
 .st-chip.on::before{ content:'✓ '; color:var(--green); }
 .st-chip.task{ background:color-mix(in srgb, var(--blue) 12%, var(--surface)); border-color:color-mix(in srgb, var(--blue) 35%, transparent); }
+
+.pg-table{ min-width:760px; }
+.pg-table td{ padding:0; vertical-align:top; }
+.pg-cell{ min-height:64px; padding:6px 8px; font-size:.92rem; white-space:pre-wrap; outline:none; text-align:center; }
+.pg-cell:focus{ background:color-mix(in srgb, var(--amber) 12%, var(--surface)); box-shadow:inset 0 0 0 2px var(--amber); }
+.pg-h{ appearance:none; border:0; background:none; font:inherit; font-weight:700; color:inherit; cursor:pointer; padding:2px 8px; border-radius:6px; direction:ltr; unicode-bidi:isolate; }
+.pg-h:hover{ background:rgba(255,255,255,.4); text-decoration:underline; }
 
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
@@ -937,7 +949,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
     <div class="velvet-head piano-head"><div><span class="yh-brand">פסנתר</span><span class="yh-group">אזור פרטי, רק לך</span></div></div>
     <div class="login panel" id="pn-locked"><h2>אזור פרטי</h2><p class="muted">האזור הזה פתוח רק למורה.</p><button class="btn primary big" data-go-view="teacher">כניסת מורה</button></div>
     <div id="pn-dash" hidden>
-      <div class="seg" id="pn-tabs" style="margin-bottom:14px"><button data-v="scales">סולמות</button><button data-v="chords">אקורדים והרמוניות</button></div>
+      <div class="seg" id="pn-tabs" style="margin-bottom:14px"><button data-v="scales">סולמות</button><button data-v="chords">אקורדים והרמוניות</button><button data-v="grid">טבלת טוניקות</button></div>
       <section class="panel" id="pn-main"></section>
     </div>
   </section>
@@ -2168,7 +2180,7 @@ function serverHandle(req, store, teacherPassword){
 
   const nMember = m => ({id:String(m.id), name:String(m.name || ''), role:String(m.role || ''), pin:String(m.pin || ''), createdAt:String(m.createdAt || '')});
   const nBand = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
-  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => c.kind !== 'song' && c.kind !== 'pvoice')};
+  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => c.kind !== 'song' && c.kind !== 'pvoice' && c.kind !== 'pgrid')};
   if(a === 'publicApplyForm' || a === 'publicApplySubmit'){
     const f = store.all('Band').map(nBand).find(x => x.kind === 'form');
     const d = f ? f.data : null;
@@ -2362,7 +2374,7 @@ function serverHandle(req, store, teacherPassword){
   if(a.indexOf('teacher') === 0){
     if(!teacherPassword || String(req.password || '') !== String(teacherPassword)) throw new Error('הסיסמה שגויה.');
     if(a === 'teacherLoad'){
-      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => c.kind === 'pvoice'), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
+      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => c.kind === 'pvoice' || c.kind === 'pgrid'), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
     }
     if(a === 'teacherSaveSettings'){
       const KEYS = ['teacherEmail','notifyDone','notifyPractice','remindHour','remindDays','siteUrl'], inp = req.settings || {}, rows = store.all('Settings');
@@ -2473,7 +2485,7 @@ function serverHandle(req, store, teacherPassword){
       return {};
     }
     if(a === 'teacherSaveContent'){
-      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice'], list = req.items || [];
+      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice','pgrid'], list = req.items || [];
       if(!list.length) throw new Error('אין מה לשמור.');
       const all = store.all('Content'), fresh = [], out = [];
       list.forEach(it => {
@@ -2947,7 +2959,7 @@ async function loadLibrary(){
   refreshLib();
 }
 function privateSongs(){ return (T.data && T.data.songs ? T.data.songs : []).concat(T.data && T.data.pvoices ? T.data.pvoices : [], S.student && S.songs ? S.songs : []); }
-function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => i.kind !== 'song' && i.kind !== 'pvoice'); privateSongs().forEach(it => mergeItems([it])); refreshLib(); if(typeof updatePianoTab === 'function'){ updatePianoTab(); if(currentView === 'piano') renderPiano(); } }
+function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => i.kind !== 'song' && i.kind !== 'pvoice' && i.kind !== 'pgrid'); privateSongs().forEach(it => mergeItems([it])); refreshLib(); if(typeof updatePianoTab === 'function'){ updatePianoTab(); if(currentView === 'piano') renderPiano(); } }
 function refreshLib(){
   renderChords(); renderShapesPanel(); renderTheory(); applySongView();
   if(T.data) renderTeacher();
@@ -2956,7 +2968,7 @@ function refreshLib(){
 function mergeItems(list){ list.forEach(it => { const i = LIB.items.findIndex(x => x.id === it.id); if(i >= 0) LIB.items[i] = it; else LIB.items.push(it); }); }
 async function saveItems(items, errEl){
   const r = await tCall('teacherSaveContent', {items}, errEl); mergeItems(r.items);
-  if(T.data){ ['songs:song', 'pvoices:pvoice'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; r.items.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); }
+  if(T.data){ ['songs:song', 'pvoices:pvoice', 'pvoices:pgrid'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; r.items.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); }
   refreshLib(); return r.items;
 }
 
@@ -5518,7 +5530,7 @@ function renderPiano(){
   $('#pn-locked').hidden = ok; $('#pn-dash').hidden = !ok;
   if(!ok) return;
   $$('#pn-tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === PN.tab));
-  PN.tab === 'scales' ? pnScales() : pnChords();
+  PN.tab === 'scales' ? pnScales() : PN.tab === 'grid' ? pnGrid() : pnChords();
 }
 const rootSeg = id => `<div class="seg" id="${id}" style="direction:ltr">${NOTES.map((n, i) => `<button data-v="${i}" aria-pressed="${PN.root === i}">${[1,3,6,8,10].includes(i) ? n + '/' + NOTES_FLAT[i] : n}</button>`).join('')}</div>`;
 function pnScales(){
@@ -5752,7 +5764,7 @@ function teacherSongsTableHTML(songs){
     ${table}
     <div class="tt-loose" data-loose="1">
       <div class="spread"><h3>שירים שעוד לא שובצו בטבלה <small class="muted">${loose.length}</small></h3><input type="search" id="tt-q" placeholder="חיפוש" style="max-width:200px" aria-label="חיפוש בשירים שלא שובצו"></div>
-      <div class="tt-loose-list" id="tt-loose-list">${loose.length ? loose.map(chip).join('') : '<span class="muted">כל השירים משובצים. גרירת שיר לכאן מוציאה אותו מהטבלה.</span>'}</div>
+      <div class="tt-loose-list ab-list" id="tt-loose-list">${loose.length ? abListHTML(loose, chip) : '<span class="muted">כל השירים משובצים. גרירת שיר לכאן מוציאה אותו מהטבלה.</span>'}</div>
     </div>`;
 }
 async function ttAssign(id, genreId, shape, mode){
@@ -5779,7 +5791,8 @@ function wireTeacherTable(){
   root.addEventListener('input', e => {
     if(e.target.id !== 'tt-q') return;
     const q = e.target.value.trim().toLowerCase();
-    $$('#tt-loose-list .tt-song').forEach(b => { b.hidden = q && !b.textContent.toLowerCase().includes(q); });
+    $$('#tt-loose-list li').forEach(li => { li.hidden = q && !li.textContent.toLowerCase().includes(q); });
+    $$('#tt-loose-list .ab-grp').forEach(g => { g.hidden = ![...g.querySelectorAll('li')].some(li => !li.hidden); });
   });
 }
 
@@ -5811,6 +5824,44 @@ async function importClapton(btn){
   const items = rows.map((r, i) => ({id:'', kind:'song', data:{name:r.name, note:r.group || 'Clapton', genreId:'', url:'', bpm:0, sheet:'', dir:'', key:'', shape:'', mode:'maj', loops:[], order:t0 + i}}));
   try{ for(let i = 0; i < items.length; i += 40) await saveItems(items.slice(i, i + 40)); toast(`נוספו ${items.length} שירים. הם מחכים מתחת לטבלה.`); renderTeacher(); setTimeout(() => { const l = $('.tt-loose'); if(l) l.scrollIntoView({block:'start'}); }, 50); }
   catch(e){ btn.disabled = false; alert(e.message); }
+}
+
+/* מיון א-ב: עברית קודם, אחר כך אנגלית, ואז השאר */
+const COLL_HE = new Intl.Collator('he', {sensitivity:'base', numeric:true}), COLL_EN = new Intl.Collator('en', {sensitivity:'base', numeric:true});
+function abGroup(name){ const c = String(name || '').trim().replace(/^[^\p{L}\p{N}]+/u, '')[0] || '#'; if(/[\u05D0-\u05EA]/.test(c)) return {k:0, letter:c}; if(/[a-z]/i.test(c)) return {k:1, letter:c.toUpperCase()}; return {k:2, letter:'#'}; }
+function abSort(list){ return list.slice().sort((a, b) => { const ga = abGroup(a.name), gb = abGroup(b.name); if(ga.k !== gb.k) return ga.k - gb.k; return (ga.k === 0 ? COLL_HE : COLL_EN).compare(a.name.trim(), b.name.trim()); }); }
+function abListHTML(list, chip){
+  if(!list.length) return '';
+  let h = '', cur = null;
+  abSort(list).forEach(s => { const g = abGroup(s.name).letter; if(g !== cur){ if(cur !== null) h += '</ul></div>'; cur = g; h += `<div class="ab-grp"><div class="ab-letter">${esc(g)}</div><ul>`; } h += `<li>${chip(s)}</li>`; });
+  return h + '</ul></div>';
+}
+/* טבלת הטוניקות בפסנתר */
+const PG_ROWS = [0,1,2,3,4,5,6,7,8,9,10,11];
+const majName = pc => ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'][pc];
+const minName = pc => ['Cm','C#m','Dm','Ebm','Em','Fm','F#m','Gm','G#m','Am','Bbm','Bm'][pc];
+function pnGridData(){ const it = LIB.items.find(i => i.kind === 'pgrid'); return it ? it.data.cells || {} : {}; }
+function pnGrid(){
+  const cells = pnGridData();
+  const half = arr => `<tbody>
+      <tr class="sh-maj"><th rowspan="4" class="g-name">טוניקות</th>${arr.map(pc => `<th><button class="pg-h" data-pg-root="${pc}" data-pg-q="maj" title="לאקורדים של ${majName(pc)}">${majName(pc)}</button></th>`).join('')}</tr>
+      <tr>${arr.map(pc => `<td><div class="pg-cell" contenteditable="true" data-cell="M${pc}" dir="auto">${esc(cells['M' + pc] || '')}</div></td>`).join('')}</tr>
+      <tr class="sh-min">${arr.map(pc => `<th><button class="pg-h" data-pg-root="${(pc + 9) % 12}" data-pg-q="min" title="לאקורדים של ${minName((pc + 9) % 12)}">${minName((pc + 9) % 12)}</button></th>`).join('')}</tr>
+      <tr>${arr.map(pc => `<td><div class="pg-cell" contenteditable="true" data-cell="m${(pc + 9) % 12}" dir="auto">${esc(cells['m' + ((pc + 9) % 12)] || '')}</div></td>`).join('')}</tr>
+    </tbody>`;
+  $('#pn-main').innerHTML = `<div class="spread" style="margin-bottom:8px"><h3>טבלת טוניקות</h3><span class="muted" id="pg-msg"></span></div>
+    <p class="hint" style="margin-bottom:10px">בשורה הירוקה הטוניקות המז׳וריות, ובשורה האדומה מתחת לכל אחת המינור המקביל שלה. אפשר לכתוב בכל תא, והכתוב נשמר אוטומטית. לחיצה על שם של טוניקה פותחת את האקורדים שלה.</p>
+    <div class="scroll-x"><table class="shape-table pg-table">${half([0,1,2,3,4,5])}${half([6,7,8,9,10,11])}</table></div>`;
+}
+let pgT = null;
+function pnGridSave(){
+  clearTimeout(pgT);
+  pgT = setTimeout(async () => {
+    const cells = {}; $$('#pn-main .pg-cell').forEach(c => { const v = c.innerText.trim(); if(v) cells[c.dataset.cell] = v; });
+    const msg = $('#pg-msg'); if(msg) msg.textContent = 'שומר…';
+    try{ await saveItems([{id:'pgrid', kind:'pgrid', data:{cells}}]); if($('#pg-msg')) $('#pg-msg').textContent = 'נשמר'; }
+    catch(e){ if($('#pg-msg')) $('#pg-msg').textContent = 'לא נשמר: ' + e.message; }
+  }, 700);
 }
 
 /* ================== ניווט ================== */
@@ -6137,6 +6188,8 @@ function init(){
   $('#as-stop').addEventListener('click', asStop);
   $('#as-top').addEventListener('click', () => { if(AS.sheet){ const r = AS.sheet.getBoundingClientRect(); window.scrollTo({top:window.scrollY + r.top - 80}); } if(AS.paused) asPlay(); });
   // פסנתר
+  $('#pn-main').addEventListener('click', e => { const h = e.target.closest('[data-pg-root]'); if(h){ PN.root = Number(h.dataset.pgRoot); PN.qual = h.dataset.pgQ; PN.tab = 'chords'; renderPiano(); window.scrollTo(0, 0); } });
+  $('#pn-main').addEventListener('input', e => { if(e.target.closest('.pg-cell')) pnGridSave(); });
   $('#pn-main').addEventListener('click', onPiano);
   $('#pn-main').addEventListener('change', e => {
     if(e.target.id === 'pn-scale'){ PN.scale = e.target.value; renderPiano(); }
