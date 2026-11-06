@@ -657,7 +657,13 @@ svg.piano{ display:block; height:auto; max-width:none; }
 .pg-table td{ padding:0; vertical-align:top; }
 .pg-table td.pg-cell{ position:relative; padding:6px 6px 26px; min-height:64px; vertical-align:top; }
 .pg-table td.pg-cell.drop-on{ background:color-mix(in srgb, var(--blue) 14%, var(--surface)); outline:2px dashed var(--blue); outline-offset:-3px; }
-.pg-old{ font-size:.8rem; color:var(--ink-2); white-space:pre-wrap; text-align:center; border-top:1px dashed var(--line); margin-top:4px; padding-top:2px; }
+.pg-old{ font-size:.8rem; color:var(--ink-2); white-space:pre-wrap; text-align:center; border-top:1px dashed var(--line); margin-top:4px; padding-top:2px; display:grid; gap:2px; }
+.pg-old-acts{ display:flex; justify-content:center; gap:4px; }
+.pg-old-acts button, .pg-g-acts button{ appearance:none; border:0; background:none; color:var(--blue); font:600 .75rem 'Assistant',Arial,sans-serif; cursor:pointer; padding:1px 4px; border-radius:4px; }
+.pg-old-acts button[data-old-act="del"], .pg-g-acts button[data-pg-genre="del"]{ color:var(--red); }
+.pg-g-acts{ display:flex; justify-content:center; gap:2px; margin-top:6px; opacity:.0; transition:opacity .12s; }
+th.g-name:hover .pg-g-acts, .pg-g-acts:focus-within{ opacity:1; }
+@media (hover: none){ .pg-g-acts{ opacity:1; } }
 .pg-new{ width:100%; min-height:30px; padding:3px 6px; font-size:.88rem; }
 .pg-cell:hover .tt-add{ opacity:1; }
 .pchords{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
@@ -3623,6 +3629,7 @@ const LINK_RE = /\{\{([^|{}]{0,60})\|\s*(https?:\/\/[^\s{}]+)\s*\}\}|(https?:\/\
 const PH_RE = /\u0000(\d+)\u0000/g;
 const chordSpan = name => `<b class="ch" data-c="${esc(name)}">${esc(name)}</b>`;
 function renderSheetHTML(text, n, manualKey){
+  text = normSpaces(text || '');
   const used = [], sp = spellForKey(detectKey(text, manualKey), n);
   const use = name => { const p = parseChord(name); const k = p ? p.root + p.suf + (p.bass ? '/' + p.bass : '') : name; if(!used.includes(k)) used.push(k); };
   const rows = String(text || '').replace(/\r/g, '').split('\n').map((rawLine, li) => {
@@ -5472,6 +5479,7 @@ function wireInline(onSave, onClose){
     if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's'){ e.preventDefault(); doSave(); }
     if(e.key === 'Escape'){ e.preventDefault(); root.querySelector('[data-ie="cancel"]').click(); }
   });
+  attachSmartPaste(ta);
   inlinePreview(); ta.focus();
 }
 window.addEventListener('beforeunload', e => { if(INL.ctx && INL.dirty){ e.preventDefault(); e.returnValue = ''; } });
@@ -5851,19 +5859,36 @@ const PG_ROWS = [0,1,2,3,4,5,6,7,8,9,10,11];
 const majName = pc => ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'][pc];
 const minName = pc => ['Cm','C#m','Dm','Ebm','Em','Fm','F#m','Gm','G#m','Am','Bbm','Bm'][pc];
 function pnGridData(){ const it = LIB.items.find(i => i.kind === 'pgrid'); return it ? it.data.cells || {} : {}; }
+function pgOld(gid, k, text){
+  return `<div class="pg-old" data-old="${esc(gid)}|${esc(k)}"><span>${esc(text)}</span><span class="pg-old-acts"><button type="button" data-old-act="song" title="להפוך לשיר">להפוך לשיר</button><button type="button" data-old-act="del" title="מחיקת הטקסט" aria-label="מחיקת הטקסט">✕</button></span></div>`;
+}
+async function pgOldAct(el, act){
+  const [gid, k] = el.dataset.old.split('|'), it = LIB.items.find(i => i.kind === 'pgrid'), cells = Object.assign({}, it ? it.data.cells : {});
+  const text = cells[gid + '|' + k] ?? cells[k] ?? '';
+  delete cells[gid + '|' + k];
+  const first = (genres()[0] || {id:''}).id; if(gid === first) delete cells[k];
+  if(act === 'song' && text.trim()){
+    const mode = k[0] === 'M' ? 'maj' : 'min', tonic = Number(k.slice(1));
+    const items = text.split('\n').map(x => x.trim()).filter(Boolean).map((name, i) => ({id:'', kind:'psong', data:{name, genreId:gid, mode, tonic, sheet:'', dir:'', key:(mode === 'maj' ? majName(tonic) : minName(tonic)), url:'', note:'', shift:0, order:Date.now() + i}}));
+    await saveItems(items);
+  }
+  await saveItems([{id:'pgrid', kind:'pgrid', data:{cells}}]);
+  renderPiano();
+}
 function pnGrid(){
   const cells = pnGridData(), gs = genres().map(g => ({id:g.id, name:g.data.name}));
-  if(!gs.length) gs.push({id:'', name:'כללי'});
+  const gids = gs.map(g => g.id);
+  if(!gs.length || pSongs().some(i => !gids.includes(i.data.genreId || ''))) gs.push({id:'', name:gs.length ? 'ללא ז׳אנר' : 'כללי'});
   const first = gs[0].id;
   const val = (gid, k) => cells[gid + '|' + k] ?? (gid === first ? cells[k] : '') ?? '';
   const ALL = [0,1,2,3,4,5,6,7,8,9,10,11];
   const block = g => `<tbody>
-      <tr class="sh-maj"><th rowspan="4" class="g-name">${esc(g.name)}</th>${ALL.map(pc => `<th><button class="pg-h" data-pg-root="${pc}" data-pg-q="maj" title="לאקורדים של ${majName(pc)}">${majName(pc)}</button></th>`).join('')}</tr>
-      <tr>${ALL.map(pc => `<td class="pg-cell" data-cell="${esc(g.id)}|M${pc}">${psCellHTML(g.id, 'maj', pc)}${val(g.id, 'M' + pc) ? `<div class="pg-old">${esc(val(g.id, 'M' + pc))}</div>` : ''}<button type="button" class="tt-add" data-pg-add="1" aria-label="הוספת שיר">+</button></td>`).join('')}</tr>
+      <tr class="sh-maj"><th rowspan="4" class="g-name"><div>${esc(g.name)}</div>${g.id ? `<div class="pg-g-acts"><button type="button" data-pg-genre="rename" data-gid="${esc(g.id)}">שינוי שם</button><button type="button" data-pg-genre="del" data-gid="${esc(g.id)}">מחיקה</button></div>` : ''}</th>${ALL.map(pc => `<th><button class="pg-h" data-pg-root="${pc}" data-pg-q="maj" title="לאקורדים של ${majName(pc)}">${majName(pc)}</button></th>`).join('')}</tr>
+      <tr>${ALL.map(pc => `<td class="pg-cell" data-cell="${esc(g.id)}|M${pc}">${psCellHTML(g.id, 'maj', pc)}${val(g.id, 'M' + pc) ? pgOld(g.id, 'M' + pc, val(g.id, 'M' + pc)) : ''}<button type="button" class="tt-add" data-pg-add="1" aria-label="הוספת שיר">+</button></td>`).join('')}</tr>
       <tr class="sh-min">${ALL.map(pc => { const m = (pc + 9) % 12; return `<th><button class="pg-h" data-pg-root="${m}" data-pg-q="min" title="לאקורדים של ${minName(m)}">${minName(m)}</button></th>`; }).join('')}</tr>
-      <tr>${ALL.map(pc => { const m = (pc + 9) % 12; return `<td class="pg-cell" data-cell="${esc(g.id)}|m${m}">${psCellHTML(g.id, 'min', m)}${val(g.id, 'm' + m) ? `<div class="pg-old">${esc(val(g.id, 'm' + m))}</div>` : ''}<button type="button" class="tt-add" data-pg-add="1" aria-label="הוספת שיר">+</button></td>`; }).join('')}</tr>
+      <tr>${ALL.map(pc => { const m = (pc + 9) % 12; return `<td class="pg-cell" data-cell="${esc(g.id)}|m${m}">${psCellHTML(g.id, 'min', m)}${val(g.id, 'm' + m) ? pgOld(g.id, 'm' + m, val(g.id, 'm' + m)) : ''}<button type="button" class="tt-add" data-pg-add="1" aria-label="הוספת שיר">+</button></td>`; }).join('')}</tr>
     </tbody>`;
-  $('#pn-main').innerHTML = `<div class="spread" style="margin-bottom:8px"><h3>טבלת טוניקות</h3><span class="muted" id="pg-msg"></span></div>
+  $('#pn-main').innerHTML = `<div class="spread" style="margin-bottom:8px"><h3>טבלת טוניקות</h3><div class="row"><span class="muted" id="pg-msg"></span><button class="btn small primary" data-pg-genre="new">ז׳אנר חדש</button></div></div>
     <p class="hint" style="margin-bottom:10px">הז׳אנרים הם אותם ז׳אנרים של טבלת השירים בגיטרה. גוללים ימינה ושמאלה בין 12 הטוניקות. ה־+ בכל תא מוסיף שיר, לחיצה על שיר פותחת את דף האקורדים שלו לפסנתר, ובמחשב אפשר לגרור שיר לתא אחר. לחיצה על שם של טוניקה פותחת את האקורדים שלה.</p>
     <div class="scroll-x pg-scroll"><table class="shape-table pg-table">${gs.map(block).join('')}</table></div>`;
 }
@@ -5965,6 +5990,52 @@ async function onPsong(e){
   if(act === 'tr-up' || act === 'tr-down'){ PN.shift = clamp(PN.shift + (act === 'tr-up' ? 1 : -1), -11, 11); renderPiano(); return true; }
   if(act === 'fs-up' || act === 'fs-down'){ SH.size = clamp(SH.size + (act === 'fs-up' ? 2 : -2), 13, 32); store.set('pritah.sheetSize', SH.size); renderPiano(); return true; }
   return true;
+}
+
+/* ================== הדבקה חכמה של מילים ואקורדים ================== */
+function normSpaces(t){
+  return String(t).replace(/\r/g, '').replace(/[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g, ' ').replace(/[\u200B\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
+    .split('\n').map(line => { let out = ''; for(const ch of line){ if(ch === '\t'){ const n = 8 - (out.length % 8); out += ' '.repeat(n); } else out += ch; } return out.replace(/\s+$/, ''); }).join('\n');
+}
+const BLOCK_TAGS = new Set(['DIV','P','TR','LI','H1','H2','H3','H4','H5','H6','PRE','TABLE','TBODY','SECTION','ARTICLE','UL','OL','BLOCKQUOTE']);
+function htmlToSheet(html){
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script,style,noscript,button,input,select,svg').forEach(n => n.remove());
+  const lines = [[]]; let inlineChords = 0;
+  const push = s => lines[lines.length - 1].push(s);
+  const nl = () => { if(lines[lines.length - 1].length) lines.push([]); };
+  const isChordEl = el => { const t = (el.textContent || '').replace(/\u00A0/g, ' ').trim(); return t && !/\s/.test(t) && parseChord(t) && !el.querySelector('br, div, p, tr'); };
+  const blockHasLyrics = el => { let b = el.parentElement; while(b && !BLOCK_TAGS.has(b.tagName) && b.tagName !== 'TD' && b.tagName !== 'BODY') b = b.parentElement; if(!b) return false; const clone = b.cloneNode(true); [...clone.querySelectorAll('*')].forEach(x => { if(isChordEl(x) && x.children.length === 0) x.textContent = ''; }); return /[\p{L}]{2,}/u.test(clone.textContent.replace(/\u00A0/g, ' ')); };
+  const walk = node => {
+    if(node.nodeType === 3){ push(node.nodeValue.replace(/\n+/g, ' ')); return; }
+    if(node.nodeType !== 1) return;
+    const tag = node.tagName;
+    if(tag === 'BR'){ nl(); return; }
+    if(node.children.length === 0 && isChordEl(node) && blockHasLyrics(node)){ push(`[${node.textContent.replace(/\u00A0/g, ' ').trim()}]`); inlineChords++; return; }
+    const block = BLOCK_TAGS.has(tag);
+    if(block) nl();
+    [...node.childNodes].forEach(walk);
+    if(tag === 'TD') push('  ');
+    if(block) nl();
+  };
+  walk(doc.body);
+  const text = normSpaces(lines.map(l => l.join('')).join('\n')).replace(/\n{3,}/g, '\n\n').trim();
+  return {text, inlineChords};
+}
+function attachSmartPaste(ta){
+  if(!ta || ta.dataset.smartPaste) return; ta.dataset.smartPaste = '1';
+  ta.addEventListener('paste', e => {
+    const cd = e.clipboardData; if(!cd) return;
+    const plain = cd.getData('text/plain'), html = cd.getData('text/html');
+    let out = normSpaces(plain);
+    if(html){ try{ const r = htmlToSheet(html); if(r.inlineChords >= 2) out = r.text; }catch(err){} }
+    if(out === plain) return;
+    e.preventDefault();
+    const s = ta.selectionStart, en = ta.selectionEnd;
+    ta.value = ta.value.slice(0, s) + out + ta.value.slice(en);
+    ta.setSelectionRange(s + out.length, s + out.length);
+    ta.dispatchEvent(new Event('input', {bubbles:true}));
+  });
 }
 
 /* ================== ניווט ================== */
@@ -6255,6 +6326,7 @@ function init(){
   resetBandPdf = setupPdfImport('bsg', $('#bsg-sheet'), $('#bsg-name'));
   resetSongPdf = setupPdfImport('fso', $('#fso-sheet'), $('#fso-name'));
   setupPreview('fso'); setupPreview('bsg');
+  ['#fso-sheet', '#bsg-sheet', '#ysg-sheet'].forEach(id => attachSmartPaste($(id)));
   ['fso','bsg','ysg'].forEach(pre => { let t; $(`#${pre}-sheet`).addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { const sel = $(`#${pre}-key`), v = sel.value; sel.innerHTML = keySelectHTML($(`#${pre}-sheet`).value, v); }, 400); }); });
   setupLinkInsert('fso'); setupLinkInsert('bsg');
   $('#bsg-add-part').addEventListener('click', () => addPartRow('', ''));
@@ -6295,6 +6367,23 @@ function init(){
   $('#pn-main').addEventListener('click', async e => {
     if(PN.tab !== 'grid') return;
     if(PN.songId){ if(await onPsong(e)) e.stopImmediatePropagation(); return; }
+    const oa = e.target.closest('[data-old-act]');
+    if(oa){ e.stopImmediatePropagation(); if(oa.dataset.oldAct === 'del' && !confirm('למחוק את הטקסט הזה מהתא?')) return; return pgOldAct(oa.closest('.pg-old'), oa.dataset.oldAct); }
+    const gb = e.target.closest('[data-pg-genre]');
+    if(gb){
+      e.stopImmediatePropagation();
+      const act = gb.dataset.pgGenre, g = genres().find(x => x.id === gb.dataset.gid);
+      if(act === 'new' || act === 'rename'){
+        const name = prompt(act === 'new' ? 'שם הז׳אנר החדש:' : 'שם חדש לז׳אנר:', g ? g.data.name : '');
+        if(!name || !name.trim()) return;
+        await saveItems([{id:g ? g.id : '', kind:'genre', data:Object.assign({}, g ? g.data : {order:Date.now()}, {name:name.trim()})}]);
+      }
+      if(act === 'del'){
+        if(!confirm(`למחוק את הז׳אנר "${g.data.name}"? הוא יימחק גם מטבלת השירים של הגיטרה. השירים עצמם לא יימחקו, אלא יעברו ל"ללא ז׳אנר".`)) return;
+        const r = await tCall('teacherDeleteContent', {id:g.id}); LIB.items = r.items; T.data.songs = r.items.filter(i => i.kind === 'song'); T.data.pvoices = r.items.filter(i => ['pvoice','pgrid','psong'].includes(i.kind)); refreshLib();
+      }
+      return renderPiano();
+    }
     const sg = e.target.closest('.ps-song'); if(sg){ PN.songId = sg.dataset.psong; PN.shift = 0; renderPiano(); window.scrollTo(0, 0); return; }
     const add = e.target.closest('[data-pg-add]');
     if(add){
