@@ -675,6 +675,32 @@ th.g-name:hover .pg-g-acts, .pg-g-acts:focus-within{ opacity:1; }
 .pg-h{ appearance:none; border:0; background:none; font:inherit; font-weight:700; color:inherit; cursor:pointer; padding:2px 8px; border-radius:6px; direction:ltr; unicode-bidi:isolate; }
 .pg-h:hover{ background:rgba(255,255,255,.4); text-decoration:underline; }
 
+/* Payments & pricing */
+.pay-table{ border-collapse:collapse; min-width:100%; font-size:.92rem; }
+.pay-table th, .pay-table td{ border:1px solid var(--line); padding:4px 6px; text-align:center; white-space:nowrap; }
+.pay-table thead th{ background:var(--surface-2); font-weight:700; }
+.pay-table th small, .pay-table tfoot small{ display:block; font-weight:400; color:var(--ink-2); font-size:.75rem; }
+.pay-table .pt-name{ min-width:150px; position:sticky; right:0; background:var(--surface); z-index:1; text-align:start; }
+.pay-table thead .pt-name, .pay-table tfoot .pt-name{ background:var(--surface-2); }
+.pay-table .pt-so{ min-width:120px; }
+.pay-table td input{ min-height:32px; padding:3px 6px; border-radius:6px; }
+.pay-table td.pc{ cursor:pointer; min-width:44px; font-weight:700; user-select:none; }
+.pay-table td.pc:hover{ background:var(--surface-2); }
+.pay-table td.pc.paid{ background:color-mix(in srgb, var(--green) 22%, var(--surface)); color:var(--green); }
+.pay-table td.pc.debt{ background:color-mix(in srgb, var(--red) 16%, var(--surface)); color:var(--red); }
+.pay-table td.pc.free{ background:var(--surface-2); color:var(--ink-2); font-weight:600; font-size:.8rem; }
+.pay-table .now{ box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--amber) 70%, transparent); }
+.pay-table tfoot th{ background:var(--surface-2); font-weight:700; }
+.pt-sum{ font-weight:700; }
+.calc{ display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin:10px 0 14px; }
+.calc-out{ display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; }
+.co{ border:1px solid var(--line); border-radius:12px; padding:10px 12px; display:grid; gap:2px; background:var(--surface); }
+.co small{ color:var(--ink-2); font-weight:700; }
+.co b{ font-family:'Secular One',Arial,sans-serif; font-weight:400; font-size:1.6rem; line-height:1.1; direction:ltr; text-align:right; }
+.co span{ color:var(--ink-2); font-size:.85rem; }
+.co.main{ border-color:var(--youth); background:color-mix(in srgb, var(--youth) 10%, var(--surface)); }
+.co .neg{ color:var(--red); }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -983,7 +1009,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
     </div>
     <div id="yo-dash" hidden>
       <div class="spread" style="margin-bottom:14px">
-        <div class="seg" id="yo-tabs"><button data-v="home">לוח</button><button data-v="songs">שירים</button><button data-v="rehs">חזרות</button><button data-v="tasks">משימות</button><button data-v="members">חברים</button></div>
+        <div class="seg" id="yo-tabs"><button data-v="home">לוח</button><button data-v="songs">שירים</button><button data-v="rehs">חזרות</button><button data-v="tasks">משימות</button><button data-v="members">חברים</button><button data-v="mgmt" id="yo-tab-mgmt" hidden>ניהול ותמחור</button></div>
         <div class="row">
           <span class="row" id="yo-group-wrap" style="gap:6px"><select id="yo-group" aria-label="בחירת הרכב" style="max-width:200px"></select><button class="btn small" id="yo-new-group">הרכב חדש</button></span>
           <button class="btn small" id="yo-refresh">רענון</button><button class="btn small" id="yo-logout">יציאה</button>
@@ -2245,10 +2271,10 @@ function serverHandle(req, store, teacherPassword){
     if(a === 'youthLogin'){
       const people = store.all('YouthPeople').map(nPerson);
       const vis = me.staff ? people : people.filter(p => p.groupId === me.groupId || p.staff).map(p => ({id:p.id, groupId:p.groupId, name:p.name, role:p.role, staff:p.staff}));
-      return {me:{id:me.id, name:me.name, role:me.role, staff:me.staff, groupId:me.groupId}, people:vis, items:store.all('Youth').map(nY).filter(it => canGroup(it.groupId)).filter(it => it.kind !== 'ynote' || it.data.visibility === 'all' || it.authorId === me.id || (it.data.visibility === 'to' && (it.data.to || []).indexOf(me.id) >= 0))};
+      return {me:{id:me.id, name:me.name, role:me.role, staff:me.staff, groupId:me.groupId}, people:vis, items:store.all('Youth').map(nY).filter(it => canGroup(it.groupId)).filter(it => me.staff || (it.kind !== 'ledger' && it.kind !== 'pricing')).filter(it => it.kind !== 'ynote' || it.data.visibility === 'all' || it.authorId === me.id || (it.data.visibility === 'to' && (it.data.to || []).indexOf(me.id) >= 0))};
     }
     if(a === 'youthSave'){
-      const KINDS = ['group','song','task','rehearsal','post','rsvp','ynote','tdone'], STAFF_ONLY = ['group','song','rehearsal'], list = req.items || [], out = [];
+      const KINDS = ['group','song','task','rehearsal','post','rsvp','ynote','tdone','ledger','pricing'], STAFF_ONLY = ['group','song','rehearsal','ledger','pricing'], list = req.items || [], out = [];
       if(!list.length) throw new Error('אין מה לשמור.');
       list.forEach(it => {
         if(KINDS.indexOf(it.kind) < 0) throw new Error('סוג פריט לא מוכר.');
@@ -4861,6 +4887,7 @@ function renderYouth(){
   $('#yo-gname').textContent = g ? g.data.name : '';
   $('#yo-fuck').hidden = !(g && g.data.fuckBtn);
   $$('#yo-tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === Y.tab && !Y.songId && !Y.rehId));
+  $('#yo-tab-mgmt').hidden = !yStaff();
   $('#yo-tabs').hidden = !g;
   if(!logged || !g) $('#yo-fuck').hidden = true;
   if(!g){
@@ -4870,7 +4897,8 @@ function renderYouth(){
   if(Y.songId && yGet(Y.songId)) return ySongView();
   if(Y.rehId && yGet(Y.rehId)) return yRehView();
   Y.songId = null; Y.rehId = null;
-  ({home:yHome, songs:ySongsList, rehs:yRehsList, tasks:yTasksList, members:yMembersView})[Y.tab]();
+  if(Y.tab === 'mgmt' && !yStaff()) Y.tab = 'home';
+  ({home:yHome, songs:ySongsList, rehs:yRehsList, tasks:yTasksList, members:yMembersView, mgmt:yMgmt})[Y.tab]();
 }
 
 /* לוח */
@@ -5126,6 +5154,7 @@ async function saveYPerson(e){
 }
 
 async function onYouthMain(e){
+  if(Y.tab === 'mgmt' && !Y.songId && !Y.rehId && ymClick(e)) return;
   const c = e.target.closest('[data-c]');
   if(c){ playChordName(c.dataset.c); c.classList.add('on'); setTimeout(() => c.classList.remove('on'), 500); return; }
   const tf = e.target.closest('#yo-taskf button'); if(tf){ Y.taskF = tf.dataset.v; return renderYouth(); }
@@ -6061,6 +6090,108 @@ function attachSmartPaste(ta){
   });
 }
 
+/* ================== הרכבים צעירים: ניהול ותמחור (מנחים בלבד) ================== */
+const HE_MONTHS = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
+const ym = (y, m) => `${y}-${String(m + 1).padStart(2, '0')}`;
+function seasonStart(){ const d = new Date(); return d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1; }
+function seasonMonths(y){ const out = []; for(let i = 0; i < 12; i++){ const m = (8 + i) % 12, yy = m >= 8 ? y : y + 1; out.push({key:ym(yy, m), label:HE_MONTHS[m], year:yy}); } return out; }
+const ledId = () => ('led_' + Y.gid).replace(/[^A-Za-z0-9_]/g, '').slice(0, 60);
+const prcId = () => ('prc_' + Y.gid).replace(/[^A-Za-z0-9_]/g, '').slice(0, 60);
+function ledger(){ const it = yGet(ledId()); return it ? JSON.parse(JSON.stringify(it.data)) : {rows:[], marks:{}}; }
+function pricing(){ const it = yGet(prcId()); return Object.assign({price:0, participants:0, rehCost:0, rehs:4, managers:2}, it ? it.data : {}); }
+let ymSaveT = null, ymPending = null;
+function ymSave(kind, data){
+  if(kind === 'ledger'){ const it = yGet(ledId()); if(it) it.data = data; else Y.items.push({id:ledId(), kind:'ledger', groupId:Y.gid, data}); }
+  else { const it = yGet(prcId()); if(it) it.data = data; else Y.items.push({id:prcId(), kind:'pricing', groupId:Y.gid, data}); }
+  ymPending = ymPending || {}; ymPending[kind] = data;
+  const msg = $('#ym-msg'); if(msg) msg.textContent = 'שומר…';
+  clearTimeout(ymSaveT);
+  ymSaveT = setTimeout(async () => {
+    const p = ymPending; ymPending = null;
+    const items = Object.keys(p).map(k => ({id:k === 'ledger' ? ledId() : prcId(), kind:k, groupId:Y.gid, data:p[k]}));
+    try{ const r = await yCall('youthSave', {items}); yMerge(r.items); if($('#ym-msg')) $('#ym-msg').textContent = 'נשמר'; }
+    catch(e){ if($('#ym-msg')) $('#ym-msg').textContent = 'לא נשמר: ' + e.message; }
+  }, 600);
+}
+const nis = v => '₪' + (Math.round((Number(v) || 0) * 100) / 100).toLocaleString('he-IL');
+function yMgmt(){
+  if(!yStaff()){ $('#yo-main').innerHTML = '<p class="empty">האזור הזה פתוח רק למנחים.</p>'; return; }
+  Y.season = Y.season || seasonStart();
+  const L = ledger(), P = pricing(), months = seasonMonths(Y.season), now = ym(new Date().getFullYear(), new Date().getMonth());
+  const rows = L.rows.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+  const st = (rid, k) => (L.marks[rid] || {})[k] || '';
+  const paidCount = k => rows.filter(r => st(r.id, k) === 'paid').length;
+  const cellTxt = v => v === 'paid' ? '✓' : v === 'debt' ? '✗' : v === 'free' ? 'פטור' : '';
+  const memberIds = new Set(rows.map(r => r.personId).filter(Boolean));
+  const missing = yMembers().filter(m => !memberIds.has(m.id));
+  const income = P.price * P.participants, cost = P.rehCost * P.rehs, net = income - cost, per = P.managers > 0 ? net / P.managers : 0;
+  $('#yo-main').innerHTML = `
+    <div class="spread" style="margin-bottom:6px"><h2>ניהול ותמחור</h2><span class="muted" id="ym-msg"></span></div>
+    <p class="muted" style="margin-bottom:14px">האזור הזה גלוי רק למנחים. בני הנוער לא רואים אותו, ופרטי התשלום לא נשלחים אליהם בכלל.</p>
+    <section class="sub-panel">
+      <div class="spread"><h3>מעקב תשלומים</h3>
+        <div class="row">
+          <button class="btn ghost small" data-ym="season" data-d="-1" aria-label="שנה קודמת">▶</button><b>שנת פעילות ${Y.season}–${String(Y.season + 1).slice(2)}</b><button class="btn ghost small" data-ym="season" data-d="1" aria-label="שנה הבאה">◀</button>
+          ${missing.length ? `<button class="btn small" data-ym="add-members">הוספת חברי ההרכב (${missing.length})</button>` : ''}
+          <button class="btn small primary" data-ym="add-row">הוספת משתתף</button>
+        </div></div>
+      <p class="hint">לחיצה על תא מחליפה: ✓ שולם, ✗ לא שולם, פטור, וריק.</p>
+      ${rows.length ? `<div class="scroll-x"><table class="pay-table">
+        <thead><tr><th class="pt-name">שם</th><th class="pt-so">מספר הוראת קבע</th>${months.map(m => `<th class="${m.key === now ? 'now' : ''}">${m.label}<small>${String(m.year).slice(2)}</small></th>`).join('')}<th>שולמו</th><th></th></tr></thead>
+        <tbody>${rows.map(r => `<tr data-rid="${esc(r.id)}">
+          <td class="pt-name"><input data-f="name" value="${esc(r.name)}" aria-label="שם"></td>
+          <td class="pt-so"><input data-f="standing" value="${esc(r.standing || '')}" dir="ltr" inputmode="numeric" aria-label="מספר הוראת קבע"></td>
+          ${months.map(m => { const v = st(r.id, m.key); return `<td class="pc ${v} ${m.key === now ? 'now' : ''}" data-k="${m.key}" role="button" tabindex="0" aria-label="${esc(r.name)} ${m.label}">${cellTxt(v)}</td>`; }).join('')}
+          <td class="pt-sum">${months.filter(m => st(r.id, m.key) === 'paid').length}</td>
+          <td><button class="btn ghost small danger" data-ym="del-row" aria-label="מחיקת שורה">✕</button></td></tr>`).join('')}
+        </tbody>
+        <tfoot><tr><th class="pt-name">שילמו</th><th class="pt-so"></th>${months.map(m => `<th class="${m.key === now ? 'now' : ''}">${paidCount(m.key)}/${rows.length}${P.price ? `<small>${nis(paidCount(m.key) * P.price)}</small>` : ''}</th>`).join('')}<th colspan="2"></th></tr></tfoot>
+      </table></div>` : `<p class="empty">עוד אין משתתפים. ${missing.length ? 'אפשר להוסיף את כל חברי ההרכב בלחיצה.' : 'לחצו על "הוספת משתתף".'}</p>`}
+    </section>
+    <section class="sub-panel" style="margin-top:18px">
+      <h3>מחשבון תמחור</h3>
+      <div class="calc">
+        <label class="field">עלות למשתתף לחודש (₪)<input type="number" min="0" step="1" data-p="price" value="${P.price || ''}"></label>
+        <label class="field">כמות משתתפים<div class="row" style="flex-wrap:nowrap"><input type="number" min="0" step="1" data-p="participants" value="${P.participants || ''}"><button class="btn small" data-ym="from-members" title="לפי מספר החברים בהרכב">${yMembers().length}</button></div></label>
+        <label class="field">עלות של חזרה אחת (₪)<input type="number" min="0" step="1" data-p="rehCost" value="${P.rehCost || ''}"></label>
+        <label class="field">כמות חזרות בחודש<input type="number" min="0" step="1" data-p="rehs" value="${P.rehs || ''}"></label>
+        <label class="field">כמות מנהלים<input type="number" min="1" step="1" data-p="managers" value="${P.managers || 2}"></label>
+      </div>
+      <div class="calc-out" id="ym-out">${calcOutHTML(P, rows, months, now)}</div>
+    </section>`;
+}
+function calcOutHTML(P, rows, months, now){
+  const income = P.price * P.participants, cost = P.rehCost * P.rehs, net = income - cost, per = P.managers > 0 ? net / P.managers : 0;
+  const L = ledger(), paidNow = (rows || []).filter(r => ((L.marks[r.id] || {})[now]) === 'paid').length;
+  return `<div class="co"><small>הכנסה חודשית</small><b>${nis(income)}</b><span>${P.participants || 0} × ${nis(P.price)}</span></div>
+    <div class="co"><small>הוצאות חודשיות</small><b>${nis(cost)}</b><span>${P.rehs || 0} חזרות × ${nis(P.rehCost)}</span></div>
+    <div class="co"><small>רווח חודשי</small><b class="${net < 0 ? 'neg' : ''}">${nis(net)}</b><span>הכנסה פחות הוצאות</span></div>
+    <div class="co main"><small>לכל אחד מ־${P.managers || 0} המנהלים</small><b class="${per < 0 ? 'neg' : ''}">${nis(per)}</b><span>לחודש</span></div>
+    ${P.price ? `<div class="co"><small>נגבה בפועל החודש</small><b>${nis(paidNow * P.price)}</b><span>${paidNow} שילמו לפי הטבלה</span></div>` : ''}`;
+}
+function ymClick(e){
+  const cell = e.target.closest('.pay-table td.pc');
+  if(cell){
+    const L = ledger(), rid = cell.closest('tr').dataset.rid, k = cell.dataset.k, cur = (L.marks[rid] || {})[k] || '';
+    const next = {'':'paid', paid:'debt', debt:'free', free:''}[cur];
+    L.marks[rid] = Object.assign({}, L.marks[rid]); if(next) L.marks[rid][k] = next; else delete L.marks[rid][k];
+    ymSave('ledger', L); yMgmt(); return true;
+  }
+  const b = e.target.closest('[data-ym]'); if(!b) return false;
+  const act = b.dataset.ym, L = ledger();
+  if(act === 'season'){ Y.season += Number(b.dataset.d); yMgmt(); }
+  if(act === 'add-row'){ L.rows.push({id:'r' + Math.random().toString(36).slice(2, 9), name:'', standing:'', order:Date.now()}); ymSave('ledger', L); yMgmt(); const ins = $$('.pay-table input[data-f="name"]'); if(ins.length) ins[ins.length - 1].focus(); }
+  if(act === 'add-members'){ const have = new Set(L.rows.map(r => r.personId)); yMembers().filter(m => !have.has(m.id)).forEach((m, i) => L.rows.push({id:'r' + Math.random().toString(36).slice(2, 9), personId:m.id, name:m.name, standing:'', order:Date.now() + i})); ymSave('ledger', L); yMgmt(); }
+  if(act === 'del-row'){ const rid = b.closest('tr').dataset.rid, r = L.rows.find(x => x.id === rid); if(!confirm(`למחוק את ${r.name || 'השורה'} ואת כל סימוני התשלום שלה?`)) return true; L.rows = L.rows.filter(x => x.id !== rid); delete L.marks[rid]; ymSave('ledger', L); yMgmt(); }
+  if(act === 'from-members'){ const P = pricing(); P.participants = yMembers().length; ymSave('pricing', P); yMgmt(); }
+  return true;
+}
+function ymInput(e){
+  const f = e.target.dataset.f, p = e.target.dataset.p;
+  if(f){ const L = ledger(), rid = e.target.closest('tr').dataset.rid, r = L.rows.find(x => x.id === rid); if(!r) return; r[f] = e.target.value; ymSave('ledger', L); return true; }
+  if(p){ const P = pricing(); P[p] = Math.max(0, Number(e.target.value) || 0); ymSave('pricing', P); const rows = ledger().rows; $('#ym-out').innerHTML = calcOutHTML(P, rows, seasonMonths(Y.season), ym(new Date().getFullYear(), new Date().getMonth())); return true; }
+}
+
 /* ================== ניווט ================== */
 function renderHomeState(){
   const st = {teacher:typeof T !== 'undefined' && T.data ? 'מחובר' : '', student:typeof S !== 'undefined' && S.student ? 'מחובר/ת: ' + S.student.name : '', velvet:typeof B !== 'undefined' && B.member ? 'מחובר/ת: ' + B.member.name : '', youth:typeof Y !== 'undefined' && Y.me ? 'מחובר/ת: ' + Y.me.name : ''};
@@ -6311,6 +6442,8 @@ function init(){
   $('#yo-new-group').addEventListener('click', async () => { const name = prompt('שם ההרכב:'); if(!name || !name.trim()) return; const r = await ySave([{id:yRid(), kind:'group', data:{name:name.trim()}}]); Y.gid = r[0].id; store.set('pritah.ygid', Y.gid); Y.tab = 'members'; renderYouth(); });
   $('#yo-main').addEventListener('click', onYouthMain);
   $('#yo-main').addEventListener('change', onYouthChange);
+  $('#yo-main').addEventListener('input', e => { if(Y.tab === 'mgmt') ymInput(e); });
+  $('#yo-main').addEventListener('keydown', e => { const c = e.target.closest('.pay-table td.pc'); if(c && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); c.click(); } });
   $('#fys').addEventListener('submit', saveYSong);
   $('#ysg-dir').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ Y.editSong.dir = b.dataset.v; syncYSheetDir(); } });
   $('#ysg-sheet').addEventListener('input', syncYSheetDir);
