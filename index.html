@@ -6098,7 +6098,7 @@ function seasonMonths(y){ const out = []; for(let i = 0; i < 12; i++){ const m =
 const ledId = () => ('led_' + Y.gid).replace(/[^A-Za-z0-9_]/g, '').slice(0, 60);
 const prcId = () => ('prc_' + Y.gid).replace(/[^A-Za-z0-9_]/g, '').slice(0, 60);
 function ledger(){ const it = yGet(ledId()); return it ? JSON.parse(JSON.stringify(it.data)) : {rows:[], marks:{}}; }
-function pricing(){ const it = yGet(prcId()); return Object.assign({price:0, participants:0, rehCost:0, rehs:4, marketing:0, managers:2}, it ? it.data : {}); }
+function pricing(){ const it = yGet(prcId()); return Object.assign({price:0, participants:0, rehCost:0, rehs:4, rehHours:1.5, marketing:0, managers:2}, it ? it.data : {}); }
 let ymSaveT = null, ymPending = null;
 function ymSave(kind, data){
   if(kind === 'ledger'){ const it = yGet(ledId()); if(it) it.data = data; else Y.items.push({id:ledId(), kind:'ledger', groupId:Y.gid, data}); }
@@ -6155,20 +6155,24 @@ function yMgmt(){
         <label class="field">כמות משתתפים<div class="row" style="flex-wrap:nowrap"><input type="number" min="0" step="1" data-p="participants" value="${P.participants || ''}"><button class="btn small" data-ym="from-members" title="לפי מספר החברים בהרכב">${yMembers().length}</button></div></label>
         <label class="field">עלות של חזרה אחת (₪)<input type="number" min="0" step="1" data-p="rehCost" value="${P.rehCost || ''}"></label>
         <label class="field">כמות חזרות בחודש<input type="number" min="0" step="1" data-p="rehs" value="${P.rehs || ''}"></label>
+        <label class="field">משך כל חזרה (שעות)<input type="number" min="0" step="0.25" data-p="rehHours" value="${P.rehHours || ''}" placeholder="למשל 1.5"></label>
         <label class="field">שיווק לחודש (₪)<input type="number" min="0" step="1" data-p="marketing" value="${P.marketing || ''}"></label>
         <label class="field">כמות מנהלים<input type="number" min="1" step="1" data-p="managers" value="${P.managers || 2}"></label>
       </div>
       <div class="calc-out" id="ym-out">${calcOutHTML(P, rows, months, now)}</div>
     </section>`;
 }
+const fmtHours = h => { const r = Math.round(h * 100) / 100; return r === 1 ? 'שעה אחת של' : `${r} שעות של`; };
 function calcOutHTML(P, rows, months, now){
   const rehTotal = P.rehCost * P.rehs, mkt = Number(P.marketing) || 0;
   const income = P.price * P.participants, cost = rehTotal + mkt, net = income - cost, per = P.managers > 0 ? net / P.managers : 0;
+  const hours = (Number(P.rehs) || 0) * (Number(P.rehHours) || 0);
   const L = ledger(), paidNow = (rows || []).filter(r => ((L.marks[r.id] || {})[now]) === 'paid').length;
   return `<div class="co"><small>הכנסה חודשית</small><b>${nis(income)}</b><span>${P.participants || 0} × ${nis(P.price)}</span></div>
     <div class="co"><small>הוצאות חודשיות</small><b>${nis(cost)}</b><span>חזרות ${nis(rehTotal)} (${P.rehs || 0} × ${nis(P.rehCost)})${mkt ? ` + שיווק ${nis(mkt)}` : ''}</span></div>
     <div class="co"><small>רווח חודשי</small><b class="${net < 0 ? 'neg' : ''}">${nis(net)}</b><span>הכנסה פחות הוצאות</span></div>
     <div class="co main"><small>לכל אחד מ־${P.managers || 0} המנהלים</small><b class="${per < 0 ? 'neg' : ''}">${nis(per)}</b><span>לחודש</span></div>
+    <div class="co main"><small>שכר לשעת עבודה</small><b class="${per < 0 ? 'neg' : ''}">${hours > 0 ? nis(per / hours) : '–'}</b><span>${hours > 0 ? `לכל מנהל, לפי ${fmtHours(hours)} חזרות בחודש` : 'צריך למלא כמות חזרות ומשך חזרה'}</span></div>
     ${P.price ? `<div class="co"><small>נגבה בפועל החודש</small><b>${nis(paidNow * P.price)}</b><span>${paidNow} שילמו לפי הטבלה</span></div>` : ''}`;
 }
 function ymClick(e){
