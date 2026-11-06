@@ -580,6 +580,7 @@ a.btn.wa{ background:#1F9D55; border-color:#1F9D55; color:#fff; }
 .ied-bar{ display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; position:sticky; top:calc(env(safe-area-inset-top, 0px) + 58px); z-index:5; background:var(--surface); padding:8px 0; border-bottom:1px solid var(--line); }
 .ied-tools{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 .ied-tools input{ width:120px; min-height:34px; padding:4px 10px; }
+.ied-sep{ width:1px; height:24px; background:var(--line); margin:0 4px; }
 .ied-chips{ display:flex; flex-wrap:wrap; gap:4px; direction:ltr; }
 .ied-chip{ appearance:none; border:1px solid var(--line); background:var(--surface-2); color:var(--chord); font:700 .9rem 'Assistant',Arial,sans-serif; padding:3px 10px; border-radius:8px; cursor:pointer; }
 .ied-chip:hover{ border-color:var(--chord); }
@@ -5432,6 +5433,10 @@ function inlineEditorHTML(){
       <div class="ied-chips" id="ied-chips"></div>
       <input id="ied-custom" dir="ltr" placeholder="אקורד אחר" maxlength="12" aria-label="אקורד אחר">
       <button type="button" class="btn small" data-ie="custom">הוספה</button>
+      <span class="ied-sep"></span>
+      <button type="button" class="btn small" data-ie="pdf">ייבוא מ־PDF</button><input type="file" id="ied-pdf" accept="application/pdf,.pdf" hidden>
+      <button type="button" class="btn small ghost" data-ie="pdf-rev" hidden>העברית יצאה הפוכה</button>
+      <span class="muted" id="ied-pdf-msg"></span>
     </div>
     <p class="hint">שמים את הסמן ממש לפני המילה, ולוחצים על אקורד. הוא ייכנס כך: [Am]מילה, ויוצג בדיוק מעליה. אפשר גם לכתוב אקורדים בשורה נפרדת מעל המילים. כותרת כמו "פזמון:" מסומנת אוטומטית. שמירה: Ctrl+S.</p>
     <div class="ied-split">
@@ -5469,6 +5474,8 @@ function wireInline(onSave, onClose){
     if(b.dataset.ie === 'custom'){ const v = $('#ied-custom').value.trim(); if(!parseChord(v)){ $('#ied-state').textContent = 'זה לא נראה כמו אקורד.'; return; } inlineInsert(v); $('#ied-custom').value = ''; }
     if(b.dataset.ie === 'cancel'){ if(INL.dirty && !confirm('לצאת בלי לשמור את השינויים?')) return; INL.ctx = ''; onClose(); }
     if(b.dataset.ie === 'save') doSave();
+    if(b.dataset.ie === 'pdf') $('#ied-pdf').click();
+    if(b.dataset.ie === 'pdf-rev' && INL.pdfLines){ INL.pdfRev = !INL.pdfRev; ta.value = buildSheetFromLines(INL.pdfLines, {reverse:INL.pdfRev}).sheet; inlinePreview(); }
   });
   const doSave = async () => {
     const btn = root.querySelector('[data-ie="save"]'); btn.disabled = true; $('#ied-state').textContent = 'שומר…';
@@ -5480,6 +5487,18 @@ function wireInline(onSave, onClose){
     if(e.key === 'Escape'){ e.preventDefault(); root.querySelector('[data-ie="cancel"]').click(); }
   });
   attachSmartPaste(ta);
+  $('#ied-pdf').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+    if(ta.value.trim() && !confirm('להחליף את הטקסט שכבר כתוב בטקסט מהקובץ?')) return;
+    const msg = $('#ied-pdf-msg'); msg.textContent = 'קורא את הקובץ…';
+    try{
+      INL.pdfLines = await pdfLines(f); INL.pdfRev = false;
+      if(!INL.pdfLines.some(Boolean)) throw new Error('לא נמצא טקסט בקובץ. כנראה שזה PDF סרוק.');
+      ta.value = buildSheetFromLines(INL.pdfLines, {}).sheet; inlinePreview();
+      root.querySelector('[data-ie="pdf-rev"]').hidden = !INL.pdfLines.some(l => l && lineIsRTL(l));
+      msg.textContent = 'נקלט. כדאי לעבור על התוצאה לפני השמירה.';
+    }catch(err){ msg.textContent = err.message; }
+  });
   inlinePreview(); ta.focus();
 }
 window.addEventListener('beforeunload', e => { if(INL.ctx && INL.dirty){ e.preventDefault(); e.returnValue = ''; } });
@@ -6028,7 +6047,11 @@ function attachSmartPaste(ta){
     const cd = e.clipboardData; if(!cd) return;
     const plain = cd.getData('text/plain'), html = cd.getData('text/html');
     let out = normSpaces(plain);
-    if(html){ try{ const r = htmlToSheet(html); if(r.inlineChords >= 2) out = r.text; }catch(err){} }
+    if(html){ try{
+      const r = htmlToSheet(html);
+      const gaps = t => t.split('\n').filter(isChordLine).reduce((a, l) => a + (l.trim().match(/ {2,}/g) || []).length, 0);
+      if(r.inlineChords >= 2 || gaps(r.text) > gaps(out)) out = r.text;
+    }catch(err){} }
     if(out === plain) return;
     e.preventDefault();
     const s = ta.selectionStart, en = ta.selectionEnd;
