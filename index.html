@@ -701,6 +701,24 @@ th.g-name:hover .pg-g-acts, .pg-g-acts:focus-within{ opacity:1; }
 .co.main{ border-color:var(--youth); background:color-mix(in srgb, var(--youth) 10%, var(--surface)); }
 .co .neg{ color:var(--red); }
 
+/* Links */
+.links-head{ background:#3B3A6E; }
+.hc-links{ --hc:#3B3A6E; }
+.lk-group{ margin-top:14px; }
+.lk-group h3{ margin-bottom:8px; }
+.lk-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px; }
+.lk-card{ display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:10px; align-items:start; border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--surface); }
+.lk-card.fav{ border-color:color-mix(in srgb, var(--amber) 70%, var(--line)); }
+.lk-ico{ width:28px; height:28px; border-radius:6px; margin-top:2px; }
+.lk-body{ display:grid; gap:1px; min-width:0; }
+.lk-body a{ font-weight:700; color:var(--blue); text-decoration:none; overflow-wrap:anywhere; }
+.lk-body a:hover{ text-decoration:underline; }
+.lk-body small{ color:var(--ink-2); text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lk-body p{ font-size:.9rem; color:var(--ink-2); margin-top:3px; overflow-wrap:anywhere; }
+.lk-acts{ display:grid; justify-items:end; gap:2px; }
+.lk-star{ appearance:none; border:0; background:none; font-size:1.25rem; color:var(--amber); cursor:pointer; line-height:1; padding:2px; }
+.lk-form{ margin-bottom:12px; grid-column:1 / -1; }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -741,6 +759,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
       <button class="tab" data-view="velvet" id="tab-velvet" hidden>VELVET</button>
       <button class="tab" data-view="youth" id="tab-youth" hidden>הרכבים צעירים</button>
       <button class="tab" data-view="piano" id="tab-piano" hidden>פסנתר</button>
+      <button class="tab" data-view="links" id="tab-links" hidden>קישורים</button>
     </nav>
     <button class="mini" id="metro-mini" hidden>עצור מטרונום</button>
   </div>
@@ -761,6 +780,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
       <button class="home-card hc-velvet" data-go="velvet"><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v10.6A4 4 0 1 0 16 17V7h4V3h-6Z"/></svg></span><span class="hc-text"><b dir="ltr">VELVET</b><small>האזור של הלהקה: שירים, סטליסט ומועמדים</small></span><span class="hc-state" data-state="velvet"></span></button>
       <button class="home-card hc-youth" data-go="youth"><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8 13c-3.3 0-6 1.7-6 4v2h12v-2c0-2.3-2.7-4-6-4Zm8 .5c-.8 0-1.6.1-2.3.4 1.4.9 2.3 2.1 2.3 3.6V19h6v-1.8c0-2.1-2.7-3.7-6-3.7Z"/></svg></span><span class="hc-text"><b>הרכבים צעירים</b><small>שירים, חזרות, תפקידים ומשימות להרכב</small></span><span class="hc-state" data-state="youth"></span></button>
       <button class="home-card hc-piano" data-go="piano" hidden><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3V4Zm2 2v12h2.5v-5H9V6H5Zm5.5 0v7H12v5h-1.5v-5H9.5V6h1Zm3 0v7h1.5v5H17.5v-5H19V6h-1.5v7H16V6h-2.5Z"/></svg></span><span class="hc-text"><b>פסנתר</b><small>אזור פרטי: סולמות וצורות אקורדים על הקלידים</small></span><span class="hc-state" data-state="piano"></span></button>
+      <button class="home-card hc-links" data-go="links" hidden><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a3 3 0 1 1 4.2 4.2l-2 2a1 1 0 1 1-1.4-1.4l2-2a1 1 0 1 0-1.4-1.4l-3.5 3.5a1 1 0 0 1-1.4 0Zm2.8-2.8a1 1 0 0 1 0 1.4l-3.5 3.5a3 3 0 1 1-4.2-4.2l2-2a1 1 0 1 1 1.4 1.4l-2 2a1 1 0 1 0 1.4 1.4l3.5-3.5a1 1 0 0 1 1.4 0Z"/></svg></span><span class="hc-text"><b>קישורים</b><small>אזור פרטי: אתרים ותוכנות חשובים</small></span><span class="hc-state" data-state="links"></span></button>
     </div>
     <div class="home-tools"><span class="muted">כלים פתוחים לכולם:</span>
       <button class="chip" data-go="metronome">מטרונום</button><button class="chip" data-go="tuner">טיונר</button><button class="chip" data-go="chords">אקורדים</button><button class="chip" data-go="fretboard">צוואר וסולמות</button><button class="chip" data-go="theory">תיאוריה</button><button class="chip" data-go="songs">שירים</button>
@@ -985,6 +1005,13 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
         </div>
       </section>
     </div>
+  </section>
+
+  <!-- קישורים -->
+  <section class="view" id="v-links">
+    <div class="velvet-head links-head"><div><span class="yh-brand">קישורים</span><span class="yh-group">אתרים ותוכנות חשובים, רק לך</span></div></div>
+    <div class="login panel" id="lk-locked"><h2>אזור פרטי</h2><p class="muted">האזור הזה פתוח רק למורה.</p><button class="btn primary big" data-go-view="teacher">כניסת מורה</button></div>
+    <div id="lk-dash" hidden><section class="panel" id="lk-main"></section></div>
   </section>
 
   <!-- פסנתר -->
@@ -2223,7 +2250,7 @@ function serverHandle(req, store, teacherPassword){
 
   const nMember = m => ({id:String(m.id), name:String(m.name || ''), role:String(m.role || ''), pin:String(m.pin || ''), createdAt:String(m.createdAt || '')});
   const nBand = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
-  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => ['song','pvoice','pgrid','psong'].indexOf(c.kind) < 0)};
+  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => ['song','pvoice','pgrid','psong','plink'].indexOf(c.kind) < 0)};
   if(a === 'publicApplyForm' || a === 'publicApplySubmit'){
     const f = store.all('Band').map(nBand).find(x => x.kind === 'form');
     const d = f ? f.data : null;
@@ -2417,7 +2444,7 @@ function serverHandle(req, store, teacherPassword){
   if(a.indexOf('teacher') === 0){
     if(!teacherPassword || String(req.password || '') !== String(teacherPassword)) throw new Error('הסיסמה שגויה.');
     if(a === 'teacherLoad'){
-      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => c.kind === 'pvoice' || c.kind === 'pgrid' || c.kind === 'psong'), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
+      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => ['pvoice','pgrid','psong','plink'].indexOf(c.kind) >= 0), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
     }
     if(a === 'teacherSaveSettings'){
       const KEYS = ['teacherEmail','notifyDone','notifyPractice','remindHour','remindDays','siteUrl'], inp = req.settings || {}, rows = store.all('Settings');
@@ -2528,7 +2555,7 @@ function serverHandle(req, store, teacherPassword){
       return {};
     }
     if(a === 'teacherSaveContent'){
-      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice','pgrid','psong'], list = req.items || [];
+      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice','pgrid','psong','plink'], list = req.items || [];
       if(!list.length) throw new Error('אין מה לשמור.');
       const all = store.all('Content'), fresh = [], out = [];
       list.forEach(it => {
@@ -2774,6 +2801,7 @@ function sStats(sid){
 let tMode = 'students';
 function renderTeacher(){
   const logged = !!T.data;
+  if(typeof updateLinksTab === 'function') updateLinksTab();
   if(typeof updatePianoTab === 'function') updatePianoTab();
   if(typeof updateBandTab === 'function') updateBandTab();
   if(typeof updateYouthTab === 'function') updateYouthTab();
@@ -3002,7 +3030,7 @@ async function loadLibrary(){
   refreshLib();
 }
 function privateSongs(){ return (T.data && T.data.songs ? T.data.songs : []).concat(T.data && T.data.pvoices ? T.data.pvoices : [], S.student && S.songs ? S.songs : []); }
-function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => !['song','pvoice','pgrid','psong'].includes(i.kind)); privateSongs().forEach(it => mergeItems([it])); refreshLib(); if(typeof updatePianoTab === 'function'){ updatePianoTab(); if(currentView === 'piano') renderPiano(); } }
+function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => !['song','pvoice','pgrid','psong','plink'].includes(i.kind)); privateSongs().forEach(it => mergeItems([it])); refreshLib(); if(typeof updatePianoTab === 'function'){ updatePianoTab(); if(currentView === 'piano') renderPiano(); } if(typeof updateLinksTab === 'function'){ updateLinksTab(); if(currentView === 'links') renderLinks(); } }
 function refreshLib(){
   renderChords(); renderShapesPanel(); renderTheory(); applySongView();
   if(T.data) renderTeacher();
@@ -3011,7 +3039,7 @@ function refreshLib(){
 function mergeItems(list){ list.forEach(it => { const i = LIB.items.findIndex(x => x.id === it.id); if(i >= 0) LIB.items[i] = it; else LIB.items.push(it); }); }
 async function saveItems(items, errEl){
   const r = await tCall('teacherSaveContent', {items}, errEl); mergeItems(r.items);
-  if(T.data){ ['songs:song', 'pvoices:pvoice', 'pvoices:pgrid', 'pvoices:psong'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; r.items.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); }
+  if(T.data){ ['songs:song', 'pvoices:pvoice', 'pvoices:pgrid', 'pvoices:psong', 'pvoices:plink'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; r.items.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); }
   refreshLib(); return r.items;
 }
 
@@ -6198,17 +6226,80 @@ function ymInput(e){
   if(p){ const P = pricing(); P[p] = Math.max(0, Number(e.target.value) || 0); ymSave('pricing', P); const rows = ledger().rows; $('#ym-out').innerHTML = calcOutHTML(P, rows, seasonMonths(Y.season), ym(new Date().getFullYear(), new Date().getMonth())); return true; }
 }
 
+/* ================== קישורים חשובים (מורה בלבד) ================== */
+const LK = {q:'', cat:'', edit:null};
+const lkItems = () => LIB.items.filter(i => i.kind === 'plink');
+const lkCats = () => [...new Set(lkItems().map(i => (i.data.cat || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'he'));
+const lkDomain = u => { try{ return new URL(u).hostname.replace(/^www\./, ''); }catch(e){ return ''; } };
+function lkFormHTML(it){
+  const d = it ? it.data : {cat:LK.cat || ''};
+  return `<div class="pn-edit lk-form" data-lk-form="${it ? esc(it.id) : 'new'}">
+    <div class="calc" style="margin:0">
+      <label class="field">שם<input data-lf="name" maxlength="80" value="${esc(d.name || '')}" placeholder="למשל: Tab4u"></label>
+      <label class="field" style="grid-column:span 2">קישור<input data-lf="url" dir="ltr" value="${esc(d.url || '')}" placeholder="https://..."></label>
+      <label class="field">קטגוריה<input data-lf="cat" list="lk-cats" maxlength="40" value="${esc(d.cat || '')}" placeholder="למשל: אתרי אקורדים"></label>
+    </div>
+    <label class="field">הערה <small>(לא חובה)</small><input data-lf="note" maxlength="300" value="${esc(d.note || '')}" placeholder="למשל: שם משתמש, למה זה טוב"></label>
+    <div class="row"><button class="btn primary small" data-lk="save">שמירה</button><button class="btn ghost small" data-lk="cancel">ביטול</button>${it ? '<button class="btn small danger" data-lk="del" style="margin-inline-start:auto">מחיקה</button>' : ''}<span class="err" data-lk-err></span></div>
+  </div>`;
+}
+function renderLinks(){
+  const ok = !!T.data;
+  $('#lk-locked').hidden = ok; $('#lk-dash').hidden = !ok;
+  if(!ok) return;
+  const q = LK.q.trim().toLowerCase(), cats = lkCats();
+  const list = lkItems().filter(i => (!LK.cat || (i.data.cat || '') === LK.cat) && (!q || [i.data.name, i.data.url, i.data.note, i.data.cat].join(' ').toLowerCase().includes(q)));
+  const groups = {};
+  list.forEach(i => { const c = (i.data.cat || '').trim() || 'כללי'; (groups[c] = groups[c] || []).push(i); });
+  const order = Object.keys(groups).sort((a, b) => a === 'כללי' ? 1 : b === 'כללי' ? -1 : a.localeCompare(b, 'he'));
+  const card = i => LK.edit === i.id ? lkFormHTML(i) : `<article class="lk-card ${i.data.fav ? 'fav' : ''}">
+      <img class="lk-ico" src="https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(lkDomain(i.data.url))}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <div class="lk-body"><a href="${esc(i.data.url)}" target="_blank" rel="noopener">${esc(i.data.name || lkDomain(i.data.url))}</a><small dir="ltr">${esc(lkDomain(i.data.url))}</small>${i.data.note ? `<p>${esc(i.data.note)}</p>` : ''}</div>
+      <div class="lk-acts"><button class="lk-star" data-lk="fav" data-id="${esc(i.id)}" aria-label="${i.data.fav ? 'הסרה מהמועדפים' : 'הוספה למועדפים'}" title="מועדף">${i.data.fav ? '★' : '☆'}</button><button class="btn ghost small" data-lk="edit" data-id="${esc(i.id)}">עריכה</button></div>
+    </article>`;
+  $('#lk-main').innerHTML = `
+    <datalist id="lk-cats">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+    <div class="row" style="margin-bottom:12px">
+      <input type="search" id="lk-q" placeholder="חיפוש" value="${esc(LK.q)}" style="max-width:260px" aria-label="חיפוש בקישורים">
+      <select id="lk-cat" style="max-width:220px" aria-label="קטגוריה"><option value="">כל הקטגוריות</option>${cats.map(c => `<option ${c === LK.cat ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
+      <button class="btn primary" data-lk="new" style="margin-inline-start:auto">קישור חדש</button>
+    </div>
+    ${LK.edit === 'new' ? lkFormHTML(null) : ''}
+    ${order.length ? order.map(c => `<section class="lk-group"><h3>${esc(c)} <small class="muted">${groups[c].length}</small></h3><div class="lk-grid">${groups[c].sort((a, b) => (b.data.fav ? 1 : 0) - (a.data.fav ? 1 : 0) || String(a.data.name).localeCompare(String(b.data.name), 'he')).map(card).join('')}</div></section>`).join('')
+      : `<p class="empty">${lkItems().length ? 'אין קישורים שמתאימים לחיפוש.' : 'עוד אין קישורים. לחצו על "קישור חדש" כדי להוסיף אתר או תוכנה.'}</p>`}`;
+  const f = $('[data-lk-form] [data-lf="name"]'); if(f && !f.value) f.focus();
+}
+async function onLinks(e){
+  const b = e.target.closest('[data-lk]'); if(!b) return;
+  const act = b.dataset.lk;
+  if(act === 'new'){ LK.edit = 'new'; return renderLinks(); }
+  if(act === 'edit'){ LK.edit = b.dataset.id; return renderLinks(); }
+  if(act === 'cancel'){ LK.edit = null; return renderLinks(); }
+  if(act === 'fav'){ const it = lkItems().find(i => i.id === b.dataset.id); await saveItems([{id:it.id, kind:'plink', data:Object.assign({}, it.data, {fav:!it.data.fav})}]); return renderLinks(); }
+  const form = b.closest('[data-lk-form]'), err = form && form.querySelector('[data-lk-err]');
+  if(act === 'del'){ const it = lkItems().find(i => i.id === form.dataset.lkForm); if(!confirm(`למחוק את "${it.data.name}"?`)) return; const r = await tCall('teacherDeleteContent', {id:it.id}); LIB.items = r.items; T.data.pvoices = r.items.filter(i => ['pvoice','pgrid','psong','plink'].includes(i.kind)); LK.edit = null; return renderLinks(); }
+  if(act === 'save'){
+    const v = k => form.querySelector(`[data-lf="${k}"]`).value.trim();
+    let url = v('url'); if(url && !/^[a-z]+:\/\//i.test(url)) url = 'https://' + url;
+    if(!lkDomain(url)){ err.textContent = 'צריך קישור תקין, למשל https://www.tab4u.com'; return; }
+    const id = form.dataset.lkForm === 'new' ? '' : form.dataset.lkForm, old = id ? lkItems().find(i => i.id === id).data : {created:Date.now()};
+    try{ await saveItems([{id, kind:'plink', data:Object.assign({}, old, {name:v('name') || lkDomain(url), url, cat:v('cat'), note:v('note')})}], err); LK.edit = null; renderLinks(); toast('הקישור נשמר'); }catch(x){}
+  }
+}
+function updateLinksTab(){ $('#tab-links').hidden = !T.data; const c = $('.home-card[data-go="links"]'); if(c) c.hidden = !T.data; }
+
 /* ================== ניווט ================== */
 function renderHomeState(){
   const st = {teacher:typeof T !== 'undefined' && T.data ? 'מחובר' : '', student:typeof S !== 'undefined' && S.student ? 'מחובר/ת: ' + S.student.name : '', velvet:typeof B !== 'undefined' && B.member ? 'מחובר/ת: ' + B.member.name : '', youth:typeof Y !== 'undefined' && Y.me ? 'מחובר/ת: ' + Y.me.name : ''};
   $$('.hc-state').forEach(el => { el.textContent = st[el.dataset.state] || ''; el.hidden = !st[el.dataset.state]; });
 }
-const VIEWS = ['piano','home','metronome','tuner','chords','fretboard','theory','songs','student','teacher','velvet','youth'];
+const VIEWS = ['links','piano','home','metronome','tuner','chords','fretboard','theory','songs','student','teacher','velvet','youth'];
 let currentView = 'home';
 function showView(v){
   if(!VIEWS.includes(v)) v = 'home';
   if(v === 'home') renderHomeState();
   if(v === 'piano') renderPiano();
+  if(v === 'links') renderLinks();
   if(v === 'songs' && (T.data || S.student) && !SGF.userPicked && !SG.song){ SGF.view = 'table'; applySongView(); }
   currentView = v;
   $$('.view').forEach(el => el.classList.toggle('active', el.id === 'v-' + v));
@@ -6524,6 +6615,13 @@ function init(){
   $('#as-faster').addEventListener('click', () => asSpeed(1));
   $('#as-stop').addEventListener('click', asStop);
   $('#as-top').addEventListener('click', () => { if(AS.sheet){ const r = AS.sheet.getBoundingClientRect(); window.scrollTo({top:window.scrollY + r.top - 80}); } if(AS.paused) asPlay(); });
+  // קישורים
+  $('#lk-main').addEventListener('click', onLinks);
+  $('#lk-main').addEventListener('input', e => { if(e.target.id === 'lk-q'){ LK.q = e.target.value; const pos = e.target.selectionStart; renderLinks(); const q = $('#lk-q'); q.focus(); q.setSelectionRange(pos, pos); } });
+  $('#lk-main').addEventListener('change', e => { if(e.target.id === 'lk-cat'){ LK.cat = e.target.value; renderLinks(); } });
+  $('#lk-main').addEventListener('keydown', e => { if(e.key === 'Enter' && e.target.closest('[data-lk-form] input')){ e.preventDefault(); e.target.closest('[data-lk-form]').querySelector('[data-lk="save"]').click(); } });
+  $('#lk-locked').addEventListener('click', e => { if(e.target.closest('[data-go-view]')) showView('teacher'); });
+  updateLinksTab();
   // פסנתר
   $('#pn-main').addEventListener('click', e => { const h = e.target.closest('[data-pg-root]'); if(h){ PN.root = Number(h.dataset.pgRoot); PN.qual = h.dataset.pgQ; PN.tab = 'chords'; renderPiano(); window.scrollTo(0, 0); } });
   $('#pn-main').addEventListener('click', async e => {
