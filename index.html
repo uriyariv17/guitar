@@ -735,6 +735,8 @@ th.g-name:hover .pg-g-acts, .pg-g-acts:focus-within{ opacity:1; }
 .pr-saved{ display:inline-flex; gap:4px; align-items:center; }
 .pr-saved .lnk{ appearance:none; border:0; background:none; font:inherit; color:var(--blue); cursor:pointer; padding:0; }
 .pr-saved .lnk.del{ color:var(--red); }
+#pr-snd{ font-size:.85rem; font-weight:700; } #pr-snd.snd-ready{ color:var(--green); } #pr-snd.snd-loading{ color:var(--ink-2); } #pr-snd.snd-failed{ color:var(--orange); }
+#pr-canvas{ touch-action:none; cursor:ns-resize; }
 
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
@@ -5622,7 +5624,8 @@ function pianoSVG(o){
   });
   return s + '</svg>';
 }
-function pianoTone(m, t, dur, g){
+function pianoTone(m, t, dur, g, vel){
+  if(SAMP.state === 'ready' && sampleNote(m, t, dur, vel != null ? vel : clamp(g * 4.5, .2, 1))) return;
   const ctx = ac(), f = midiFreq(m), o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), o3 = ctx.createOscillator();
   const gn = ctx.createGain(), g2 = ctx.createGain(), g3 = ctx.createGain(), lp = ctx.createBiquadFilter();
   o1.type = 'triangle'; o2.type = 'sine'; o3.type = 'sine'; o1.frequency.value = f; o2.frequency.value = f * 2; o3.frequency.value = f * 3.01;
@@ -6306,8 +6309,40 @@ async function onLinks(e){
 }
 function updateLinksTab(){ $('#tab-links').hidden = !T.data; const c = $('.home-card[data-go="links"]'); if(c) c.hidden = !T.data; }
 
-/* ================== Piano Roll: קריאת קבצי MusicXML ו־MIDI ================== */
-const PR = {loop:{a:null, b:null, on:false}, drag:null, piece:null, t:0, t0:0, pps:90, speed:1, playing:false, hands:{1:true, 2:true}, timer:null, raf:null, sched:0, acStart:0, songStart:0, savedId:null};
+/* ================== צליל פסנתר אמיתי (דגימות Salamander Grand Piano) ================== */
+const PIANO_SAMPLES = (() => { const nm = ['C','Ds','Fs','A'], pc = [0,3,6,9], out = [{n:'A0', m:21}]; for(let o = 1; o <= 7; o++) nm.forEach((x, i) => out.push({n:x + o, m:(o + 1) * 12 + pc[i]})); out.push({n:'C8', m:108}); return out; })();
+const SAMP = {buf:{}, state:'idle', promise:null, base:'https://tonejs.github.io/audio/salamander/', out:null};
+function sampOut(){
+  if(SAMP.out) return SAMP.out;
+  const ctx = ac(), comp = ctx.createDynamicsCompressor(), g = ctx.createGain();
+  comp.threshold.value = -14; comp.ratio.value = 3; comp.attack.value = .005; comp.release.value = .2; g.gain.value = .9;
+  g.connect(comp); comp.connect(ctx.destination); SAMP.out = g; return g;
+}
+function loadPianoSamples(){
+  if(SAMP.promise) return SAMP.promise;
+  SAMP.state = 'loading'; updateSampState();
+  SAMP.promise = Promise.all(PIANO_SAMPLES.map(async s => {
+    const r = await fetch(SAMP.base + s.n + '.mp3'); if(!r.ok) throw new Error('http ' + r.status);
+    SAMP.buf[s.m] = await ac().decodeAudioData(await r.arrayBuffer());
+  })).then(() => { SAMP.state = 'ready'; }).catch(() => { SAMP.state = Object.keys(SAMP.buf).length >= 8 ? 'ready' : 'failed'; }).finally(updateSampState);
+  return SAMP.promise;
+}
+function updateSampState(){ const el = $('#pr-snd'); if(!el) return; el.textContent = {loading:'טוען צליל פסנתר…', ready:'צליל: פסנתר כנף אמיתי', failed:'צליל הפסנתר לא נטען, מנגן בצליל מסונתז', idle:''}[SAMP.state]; el.className = 'snd-' + SAMP.state; }
+function sampleNote(m, t, dur, vel){
+  const keys = Object.keys(SAMP.buf).map(Number); if(!keys.length) return false;
+  let near = keys[0]; keys.forEach(k => { if(Math.abs(k - m) < Math.abs(near - m)) near = k; });
+  const ctx = ac(), src = ctx.createBufferSource(), g = ctx.createGain();
+  src.buffer = SAMP.buf[near]; src.playbackRate.value = Math.pow(2, (m - near) / 12);
+  const v = clamp(vel, .05, 1);
+  g.gain.setValueAtTime(v * v * .95 + .05, t);
+  const rel = t + Math.max(.08, dur);
+  g.gain.setValueAtTime(v * v * .95 + .05, rel); g.gain.setTargetAtTime(0, rel, .09);
+  src.connect(g); g.connect(sampOut()); src.start(t); src.stop(rel + .8);
+  return true;
+}
+
+/* ================== Piano Roll: קריאת MusicXML ו־MIDI ================== */
+const PR = {loop:{a:null, b:null, on:false}, drag:null, piece:null, t:0, pps:110, speed:1, playing:false, hands:{1:true, 2:true}, timer:null, raf:null, sched:0, acStart:0, songStart:0, savedId:null};
 const prItems = () => LIB.items.filter(i => i.kind === 'proll');
 async function unzipFiles(buf){
   const dv = new DataView(buf), u8 = new Uint8Array(buf), out = {};
@@ -6324,54 +6359,106 @@ async function unzipFiles(buf){
   }
   return out;
 }
-function tempoMapToSec(changes){ // changes: [{q, bpm}] sorted; returns fn q->sec
+function tempoMapToSec(changes){
   const cs = changes.length ? changes.slice().sort((a, b) => a.q - b.q) : [{q:0, bpm:100}];
   if(cs[0].q > 0) cs.unshift({q:0, bpm:cs[0].bpm});
   const acc = [0]; for(let i = 1; i < cs.length; i++) acc[i] = acc[i - 1] + (cs[i].q - cs[i - 1].q) * 60 / cs[i - 1].bpm;
   return q => { let i = cs.length - 1; while(i > 0 && cs[i].q > q) i--; return acc[i] + (q - cs[i].q) * 60 / cs[i].bpm; };
 }
+const DYN = {pppp:.2, ppp:.28, pp:.36, p:.46, mp:.56, mf:.66, f:.78, ff:.88, fff:.95, ffff:1, sf:.85, sfz:.88, fz:.85, rf:.8, fp:.78};
+function measureOrder(measures){
+  // פריסת חזרות וקפיצות "בית 1 / בית 2"
+  const n = measures.length, info = measures.map(m => {
+    const bl = [...m.querySelectorAll(':scope > barline')];
+    const fwd = bl.some(b => (b.querySelector('repeat') || {getAttribute:() => ''}).getAttribute('direction') === 'forward');
+    const bw = bl.map(b => b.querySelector('repeat')).find(r => r && r.getAttribute('direction') === 'backward');
+    const endStart = bl.map(b => b.querySelector('ending')).find(e => e && e.getAttribute('type') === 'start');
+    const endStop = bl.some(b => { const e = b.querySelector('ending'); return e && /stop|discontinue/.test(e.getAttribute('type')); });
+    return {fwd, back:bw ? Number(bw.getAttribute('times') || 2) : 0, endNums:endStart ? String(endStart.getAttribute('number') || '1').split(/[,\s]+/).map(Number).filter(Boolean) : null, endStop};
+  });
+  let cur = null; info.forEach(x => { if(x.endNums) cur = x.endNums; x.ending = cur; if(x.endStop) cur = null; });
+  const seq = [], done = {}; let i = 0, start = 0, pass = 1, guard = 0;
+  while(i < n && guard++ < n * 8){
+    const x = info[i];
+    if(x.fwd && i !== start){ start = i; pass = 1; }
+    if(x.ending && !x.ending.includes(pass)){ i++; continue; }
+    seq.push(i);
+    if(x.back){ done[i] = (done[i] || 1); if(done[i] < x.back){ done[i]++; pass++; i = start; continue; } pass = 1; start = i + 1; }
+    i++;
+  }
+  return seq;
+}
 function parseMusicXML(text){
   const doc = new DOMParser().parseFromString(text, 'application/xml');
   if(doc.querySelector('parsererror')) throw new Error('הקובץ לא נקרא כ־MusicXML תקין.');
+  if(doc.querySelector('score-timewise')) throw new Error('הקובץ בפורמט timewise. יצאו אותו מחדש כ־MusicXML רגיל (partwise).');
   const title = (doc.querySelector('work-title') || doc.querySelector('movement-title') || {}).textContent || '';
   const STEP = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
-  const notes = [], tempos = [], bars = new Set();
-  const parts = [...doc.querySelectorAll('part')];
+  const notes = [], tempos = [], bars = [], pedals = [];
+  const parts = [...doc.querySelectorAll('score-partwise > part')];
+  if(!parts.length) throw new Error('לא נמצאו חלקים בקובץ.');
+  const order = measureOrder([...parts[0].querySelectorAll(':scope > measure')]);
+  let repeated = false;
   parts.forEach((part, pi) => {
-    let div = 1, pos = 0, lastStart = 0, mStart = 0;
+    const measures = [...part.querySelectorAll(':scope > measure')];
+    let div = 1, pos = 0, lastStart = 0, dyn = .66, pedalOn = null;
     const open = {};
-    [...part.querySelectorAll(':scope > measure')].forEach(meas => {
-      mStart = pos; if(pi === 0) bars.add(Math.round(mStart * 1000) / 1000);
+    order.forEach((mi, k) => {
+      const meas = measures[mi]; if(!meas) return;
+      if(k > 0 && order[k - 1] >= mi) repeated = true;
+      const mStart = pos; let maxPos = pos;
+      if(pi === 0) bars.push({q:mStart, n:Number(meas.getAttribute('number')) || mi + 1});
       [...meas.children].forEach(el => {
         const tag = el.tagName;
         if(tag === 'attributes'){ const d = el.querySelector('divisions'); if(d) div = Number(d.textContent) || 1; }
         else if(tag === 'backup'){ pos -= Number(el.querySelector('duration').textContent) / div; }
-        else if(tag === 'forward'){ pos += Number(el.querySelector('duration').textContent) / div; }
-        else if(tag === 'direction' || tag === 'sound'){ const snd = tag === 'sound' ? el : el.querySelector('sound'); if(snd && snd.getAttribute('tempo')) tempos.push({q:pos, bpm:Number(snd.getAttribute('tempo'))}); }
+        else if(tag === 'forward'){ pos += Number(el.querySelector('duration').textContent) / div; maxPos = Math.max(maxPos, pos); }
+        else if(tag === 'direction' || tag === 'sound'){
+          const snd = tag === 'sound' ? el : el.querySelector('sound');
+          const off = Number((el.querySelector('offset') || {}).textContent || 0) / div;
+          if(snd && snd.getAttribute('tempo')) tempos.push({q:pos + off, bpm:Number(snd.getAttribute('tempo'))});
+          else if(tag === 'direction'){ const mt = el.querySelector('metronome per-minute'), bu = (el.querySelector('metronome beat-unit') || {}).textContent; if(mt && !tempos.some(t => Math.abs(t.q - pos) < 1e-6)){ const f = {whole:4, half:2, quarter:1, eighth:.5, '16th':.25}[bu] || 1, dot = el.querySelector('metronome beat-unit-dot') ? 1.5 : 1; tempos.push({q:pos + off, bpm:Number(mt.textContent) * f * dot}); } }
+          if(snd && snd.getAttribute('dynamics')) dyn = clamp(Number(snd.getAttribute('dynamics')) / 100 * .72, .15, 1);
+          const dn = el.querySelector('dynamics > *'); if(dn && DYN[dn.tagName] != null) dyn = DYN[dn.tagName];
+          const pd = el.querySelector('pedal');
+          if(pd){ const ty = pd.getAttribute('type'), at = pos + off; if(ty === 'start'){ pedalOn = at; } else if(ty === 'stop' && pedalOn != null){ pedals.push([pedalOn, at]); pedalOn = null; } else if(ty === 'change'){ if(pedalOn != null) pedals.push([pedalOn, at]); pedalOn = at; } }
+          if(snd){ const dp = snd.getAttribute('damper-pedal'); if(dp === 'yes' && pedalOn == null) pedalOn = pos; if(dp === 'no' && pedalOn != null){ pedals.push([pedalOn, pos]); pedalOn = null; } }
+        }
         else if(tag === 'note'){
-          if(el.querySelector('grace')) return;
+          if(el.querySelector(':scope > grace') || el.querySelector(':scope > cue')) return;
           const dur = Number((el.querySelector(':scope > duration') || {}).textContent || 0) / div;
           const isChord = !!el.querySelector(':scope > chord');
           const start = isChord ? lastStart : pos;
-          if(!isChord){ lastStart = pos; pos += dur; }
+          if(!isChord){ lastStart = pos; pos += dur; maxPos = Math.max(maxPos, pos); }
           const pitch = el.querySelector(':scope > pitch'); if(!pitch) return;
-          const midi = (Number(pitch.querySelector('octave').textContent) + 1) * 12 + STEP[pitch.querySelector('step').textContent.trim()] + Number((pitch.querySelector('alter') || {}).textContent || 0);
+          const midi = (Number(pitch.querySelector('octave').textContent) + 1) * 12 + STEP[pitch.querySelector('step').textContent.trim()] + Math.round(Number((pitch.querySelector('alter') || {}).textContent || 0));
           const staff = Number((el.querySelector(':scope > staff') || {}).textContent || 0);
           const hand = staff ? (staff >= 2 ? 2 : 1) : (pi >= 1 ? 2 : 1);
-          const tieStop = [...el.querySelectorAll(':scope > tie')].some(t => t.getAttribute('type') === 'stop');
-          const tieStart = [...el.querySelectorAll(':scope > tie')].some(t => t.getAttribute('type') === 'start');
+          const ties = [...el.querySelectorAll(':scope > tie, :scope > notations > tied')].map(t => t.getAttribute('type'));
           const key = midi + '_' + hand;
-          if(tieStop && open[key]){ open[key].dq += dur; if(!tieStart) delete open[key]; return; }
-          const n = {midi, q:start, dq:dur, hand, vel:.8};
-          notes.push(n); if(tieStart) open[key] = n;
+          if(ties.includes('stop') && open[key]){ open[key].dq += dur; if(!ties.includes('start')) delete open[key]; return; }
+          const art = el.querySelector(':scope > notations > articulations');
+          const stacc = art && (art.querySelector('staccato') || art.querySelector('staccatissimo'));
+          const accent = art && (art.querySelector('accent') || art.querySelector('strong-accent'));
+          const nd = el.getAttribute('dynamics');
+          const vel = clamp((nd ? Number(nd) / 100 * .72 : dyn) * (accent ? 1.18 : 1), .1, 1);
+          const nn = {midi, q:start, dq:dur, hand, vel, stacc:!!stacc};
+          notes.push(nn); if(ties.includes('start')) open[key] = nn;
         }
       });
+      pos = Math.max(pos, maxPos);
     });
+    if(pedalOn != null) pedals.push([pedalOn, pos]);
   });
   if(!notes.length) throw new Error('לא נמצאו תווים בקובץ.');
   const toSec = tempoMapToSec(tempos);
-  const out = notes.map(n => ({midi:n.midi, s:toSec(n.q), d:Math.max(.05, toSec(n.q + n.dq) - toSec(n.q)), hand:n.hand, vel:n.vel})).sort((a, b) => a.s - b.s);
-  return {title:title.trim(), notes:out, bars:[...bars].sort((a, b) => a - b).map(toSec), bpm:(tempos[0] || {bpm:100}).bpm};
+  const ped = pedals.map(([a, b]) => [toSec(a), toSec(b)]);
+  const out = notes.map(n => {
+    const s = toSec(n.q), e = toSec(n.q + n.dq), d = Math.max(.04, (e - s) * (n.stacc ? .5 : 1));
+    let ds = d; const pe = ped.find(([a, b]) => s + d > a - .01 && s + d <= b + .01); if(pe) ds = Math.max(d, pe[1] - s);
+    return {midi:n.midi, s, d, ds, hand:n.hand, vel:n.vel};
+  }).sort((a, b) => a.s - b.s || a.midi - b.midi);
+  return {title:title.trim(), notes:out, bars:bars.map(b => toSec(b.q)), barNums:bars.map(b => b.n), bpm:(tempos[0] || {bpm:100}).bpm, repeated, pedal:ped.length > 0};
 }
 function parseMIDI(buf){
   const u8 = new Uint8Array(buf); let p = 0;
@@ -6382,9 +6469,9 @@ function parseMIDI(buf){
   if(str(4) !== 'MThd') throw new Error('זה לא קובץ MIDI תקין.');
   const hl = u32(); u16(); const ntr = u16(), division = u16(); p += hl - 6;
   if(division & 0x8000) throw new Error('סוג תזמון ה־MIDI הזה לא נתמך.');
-  const tempos = [], tracks = [], timesig = [];
+  const tempos = [], tracks = [], timesig = [], pedal = {};
   for(let t = 0; t < ntr && p < u8.length; t++){
-    if(str(4) !== 'MTrk'){ break; }
+    if(str(4) !== 'MTrk') break;
     const len = u32(), end = p + len; let tick = 0, rs = 0; const on = {}, notes = [];
     while(p < end){
       tick += vlq(); let st = u8[p];
@@ -6393,20 +6480,29 @@ function parseMIDI(buf){
       else if(st === 0xf0 || st === 0xf7){ p += vlq(); }
       else {
         const ty = st & 0xf0, ch = st & 0x0f, a = u8[p++], b = (ty === 0xc0 || ty === 0xd0) ? 0 : u8[p++];
+        if(ch === 9) continue;
         if(ty === 0x90 && b > 0){ (on[ch + '_' + a] = on[ch + '_' + a] || []).push({tick, vel:b}); }
         else if(ty === 0x80 || (ty === 0x90 && b === 0)){ const q = on[ch + '_' + a]; if(q && q.length){ const s = q.shift(); notes.push({midi:a, t0:s.tick, t1:tick, vel:s.vel / 127, ch}); } }
+        else if(ty === 0xb0 && a === 64){ const pk = t + '_' + ch; pedal[pk] = pedal[pk] || []; pedal[pk].push({tick, down:b >= 64}); }
       }
     }
-    p = end; if(notes.length) tracks.push(notes);
+    p = end; if(notes.length) tracks.push({notes, idx:t});
   }
   if(!tracks.length) throw new Error('לא נמצאו תווים בקובץ.');
   const toSec = tempoMapToSec(tempos.map(x => ({q:x.tick / division, bpm:60000000 / x.us})));
+  const ped = []; Object.values(pedal).forEach(evs => { let d = null; evs.sort((a, b) => a.tick - b.tick).forEach(e => { if(e.down && d == null) d = e.tick; if(!e.down && d != null){ ped.push([toSec(d / division), toSec(e.tick / division)]); d = null; } }); });
   const all = [];
-  tracks.forEach((tr, ti) => tr.forEach(n => all.push({midi:n.midi, s:toSec(n.t0 / division), d:Math.max(.05, toSec(n.t1 / division) - toSec(n.t0 / division)), vel:n.vel, hand:tracks.length >= 2 ? (ti === 0 ? 1 : 2) : (n.midi >= 60 ? 1 : 2)})));
-  all.sort((a, b) => a.s - b.s);
-  const lastQ = Math.max(...tracks.flat().map(n => n.t1)) / division, ts = timesig[0] || {num:4, den:4}, barQ = ts.num * 4 / ts.den, bars = [];
-  for(let q = 0; q <= lastQ + .01; q += barQ) bars.push(toSec(q));
-  return {title:'', notes:all, bars, bpm:tempos.length ? Math.round(60000000 / tempos[0].us) : 120};
+  tracks.forEach((tr, ti) => tr.notes.forEach(n => {
+    const s = toSec(n.t0 / division), d = Math.max(.04, toSec(n.t1 / division) - s);
+    let ds = d; const pe = ped.find(([a, b]) => s + d > a - .01 && s + d <= b + .01); if(pe) ds = Math.max(d, pe[1] - s);
+    all.push({midi:n.midi, s, d, ds, vel:n.vel, hand:tracks.length >= 2 ? (ti === 0 ? 1 : 2) : (n.midi >= 60 ? 1 : 2)});
+  }));
+  all.sort((a, b) => a.s - b.s || a.midi - b.midi);
+  const lastQ = Math.max(...tracks.flatMap(tr => tr.notes.map(n => n.t1))) / division, bars = [];
+  const ts = timesig.length ? timesig.slice().sort((a, b) => a.tick - b.tick) : [{tick:0, num:4, den:4}];
+  let q = 0, k = 0;
+  while(q <= lastQ + .01 && bars.length < 5000){ while(k + 1 < ts.length && ts[k + 1].tick / division <= q + 1e-6) k++; bars.push(toSec(q)); q += ts[k].num * 4 / ts[k].den; }
+  return {title:'', notes:all, bars, barNums:bars.map((_, i) => i + 1), bpm:tempos.length ? Math.round(60000000 / tempos[0].us) : 120, repeated:false, pedal:ped.length > 0};
 }
 async function prLoadFile(f){
   const name = f.name.toLowerCase(), msg = $('#pr-msg'); msg.textContent = 'קורא את הקובץ…';
@@ -6428,19 +6524,22 @@ async function prLoadFile(f){
   }catch(e){ msg.textContent = e.message; }
 }
 function prOpen(piece, savedId){
-  prStop(); PR.piece = piece; PR.savedId = savedId; PR.t = 0; PR.t0 = 0; PR.loop = {a:null, b:null, on:false};
+  prStop(); PR.piece = piece; PR.savedId = savedId; PR.t = 0; PR.loop = {a:null, b:null, on:false};
+  piece.notes.forEach(n => { if(n.ds == null) n.ds = n.d; });
   piece.dur = Math.max(...piece.notes.map(n => n.s + n.d));
   piece.lo = Math.min(...piece.notes.map(n => n.midi)); piece.hi = Math.max(...piece.notes.map(n => n.midi));
+  piece.barNums = piece.barNums && piece.barNums.length === piece.bars.length ? piece.barNums : piece.bars.map((_, i) => i + 1);
   renderPiano();
 }
-function encodeNotes(ns){ return ns.map(n => [n.midi, Math.round(n.s * 100), Math.max(1, Math.round(n.d * 100)), n.hand, Math.round((n.vel || .8) * 9)].map(x => x.toString(36)).join(',')).join(';'); }
-function decodeNotes(s){ return String(s || '').split(';').filter(Boolean).map(t => { const [m, a, d, h, v] = t.split(',').map(x => parseInt(x, 36)); return {midi:m, s:a / 100, d:d / 100, hand:h, vel:(v || 7) / 9}; }); }
+const r100 = v => Math.round(v * 100);
+function encodeNotes(ns){ return ns.map(n => [n.midi, r100(n.s), Math.max(1, r100(n.d)), n.hand, Math.round((n.vel || .7) * 9), Math.max(0, r100(n.ds || n.d) - r100(n.d))].map(x => x.toString(36)).join(',')).join(';'); }
+function decodeNotes(s){ return String(s || '').split(';').filter(Boolean).map(t => { const [m, a, d, h, v, x] = t.split(',').map(z => parseInt(z, 36)); return {midi:m, s:a / 100, d:d / 100, ds:(d + (x || 0)) / 100, hand:h, vel:(v || 6) / 9}; }); }
 function pnRoll(){
-  const P = PR.piece;
-  const saved = prItems().sort((a, b) => String(a.data.title).localeCompare(String(b.data.title), 'he'));
+  if(SAMP.state === 'idle') loadPianoSamples();
+  const P = PR.piece, saved = prItems().sort((a, b) => String(a.data.title).localeCompare(String(b.data.title), 'he'));
   let h = `<div class="pr-intro">
       <h3>Piano Roll</h3>
-      <p class="muted">טוענים יצירה כקובץ <b>MusicXML</b> (‎.mxl, .musicxml) או <b>MIDI</b> (‎.mid), ומקבלים תצוגת piano roll עם נגינה, האטה והפרדת ידיים.</p>
+      <p class="muted">טוענים יצירה כקובץ <b>MusicXML</b> (‎.mxl, .musicxml) או <b>MIDI</b> (‎.mid), ומקבלים תווים שיורדים אל המקלדת, עם נגינה בצליל פסנתר אמיתי, האטה, לולאה והפרדת ידיים.</p>
       <details class="pr-help"><summary>יש לי רק דף תווים (PDF או צילום). מה עושים?</summary>
         <p>קריאה של דף תווים מודפס דורשת זיהוי תווים אופטי (OMR). אין כרגע דרך אמינה לעשות את זה בתוך דפדפן, ולכן ממירים פעם אחת בכלי חיצוני ומייבאים לכאן:</p>
         <ul><li><b>MuseScore</b> (חינם): באתר musescore.com יש "Import PDF". אחרי ההמרה מייצאים כ־MusicXML.</li>
@@ -6448,13 +6547,14 @@ function pnRoll(){
         <li>אפליקציות טלפון כמו <b>PlayScore 2</b> או <b>Soundslice</b> מצלמות דף ומייצאות MusicXML או MIDI.</li></ul>
         <p>ההמרה לא תמיד מושלמת, במיוחד בכתב יד או בסריקה לא חדה. כדאי להקשיב לתוצאה ולתקן בתוכנה לפני הייבוא.</p>
       </details>
-      <div class="row"><button class="btn primary" data-pr="file">טעינת קובץ</button><input type="file" id="pr-file" accept=".mid,.midi,.mxl,.musicxml,.xml,.pdf,.png,.jpg,.jpeg" hidden><span class="muted" id="pr-msg"></span></div>
+      <div class="row"><button class="btn primary" data-pr="file">טעינת קובץ</button><input type="file" id="pr-file" accept=".mid,.midi,.mxl,.musicxml,.xml,.pdf,.png,.jpg,.jpeg" hidden><span class="muted" id="pr-msg"></span><span id="pr-snd"></span></div>
       ${saved.length ? `<div class="chips" style="margin-top:8px">${saved.map(i => `<span class="chip pr-saved"><button class="lnk" data-pr="open" data-id="${esc(i.id)}">${esc(i.data.title)}</button><button class="lnk del" data-pr="del" data-id="${esc(i.id)}" aria-label="מחיקה">✕</button></span>`).join('')}</div>` : ''}
     </div>`;
   if(P){
     const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const facts = [`${P.notes.length} תווים`, `${P.bars.length} תיבות`, fmt(P.dur), `טמפו פתיחה ${Math.round(P.bpm)}`, P.repeated ? 'חזרות נפרסו' : '', P.pedal ? 'עם פדל' : ''].filter(Boolean).join(', ');
     h += `<div class="sub-panel" style="margin-top:14px">
-      <div class="spread"><div><h3>${esc(P.title)}</h3><p class="muted">${P.notes.length} תווים, ${fmt(P.dur)}</p></div>
+      <div class="spread"><div><h3>${esc(P.title)}</h3><p class="muted">${esc(facts)}</p></div>
         ${PR.savedId ? '' : '<button class="btn small" data-pr="save">שמירה ברשימה</button>'}</div>
       <div class="row pr-ctl">
         <button class="btn primary" data-pr="play" id="pr-play">${PR.playing ? 'השהיה' : 'נגינה'}</button>
@@ -6462,7 +6562,7 @@ function pnRoll(){
         <label class="row" style="gap:6px;font-weight:600">מהירות<select id="pr-speed">${[.5,.6,.75,.9,1,1.25,1.5].map(v => `<option value="${v}" ${v === PR.speed ? 'selected' : ''}>${Math.round(v * 100)}%</option>`).join('')}</select></label>
         <label class="row pr-hand r" style="gap:6px;font-weight:600"><input type="checkbox" data-hand="1" ${PR.hands[1] ? 'checked' : ''}> יד ימין</label>
         <label class="row pr-hand l" style="gap:6px;font-weight:600"><input type="checkbox" data-hand="2" ${PR.hands[2] ? 'checked' : ''}> יד שמאל</label>
-        <div class="seg"><button data-pr="zoom-out" aria-label="הקטנה">−</button><button data-pr="zoom-in" aria-label="הגדלה">+</button></div>
+        <div class="seg"><button data-pr="zoom-out" aria-label="פחות מרווח">−</button><button data-pr="zoom-in" aria-label="יותר מרווח">+</button></div>
         <span class="muted" id="pr-time" dir="ltr"></span>
       </div>
       <div class="row pr-loop">
@@ -6472,71 +6572,84 @@ function pnRoll(){
         <button class="btn small" data-pr="loop-bars">קביעה</button>
         <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-loop-on" ${PR.loop.on ? 'checked' : ''} ${PR.loop.a == null ? 'disabled' : ''}> לחזור שוב ושוב</label>
         ${PR.loop.a != null ? '<button class="btn ghost small" data-pr="loop-clear">ביטול הלולאה</button>' : ''}
-        <span class="muted" id="pr-loop-txt">${PR.loop.a != null ? '' : 'או גוררים עם העכבר על התצוגה כדי לסמן קטע.'}</span>
+        <span class="muted" id="pr-loop-txt">${PR.loop.a != null ? '' : 'או גוררים למעלה או למטה על התצוגה כדי לסמן קטע.'}</span>
       </div>
-      <div class="pr-wrap" dir="ltr"><canvas id="pr-canvas" height="440"></canvas></div>
-      <input type="range" id="pr-scroll" min="0" max="${Math.ceil(P.dur * 10)}" value="0" dir="ltr" aria-label="גלילה ביצירה" style="width:100%">
-      <p class="hint">לחיצה על התצוגה מזיזה את נקודת הנגינה. גרירה מסמנת קטע ללולאה (נצמד לתחילת תיבה). גלגלת העכבר גוללת לאורך היצירה.</p>
+      <div class="pr-wrap" dir="ltr"><canvas id="pr-canvas"></canvas></div>
+      <input type="range" id="pr-scroll" min="0" max="${Math.ceil(P.dur * 10)}" value="${Math.round(PR.t * 10)}" dir="ltr" aria-label="מיקום ביצירה" style="width:100%">
+      <p class="hint">התווים יורדים אל המקלדת, והקו האדום הוא הרגע הנוכחי. גלגלת העכבר או הפס שמתחת מזיזים את המיקום. גרירה למעלה או למטה מסמנת קטע ללולאה.</p>
     </div>`;
   }
   $('#pn-main').innerHTML = h;
+  updateSampState();
   if(P){ prResize(); prDraw(); }
+}
+const PR_H = 560, PR_KH = 96;
+function prResize(){ const c = $('#pr-canvas'); if(!c) return; const w = c.parentElement.clientWidth, dpr = window.devicePixelRatio || 1; c.style.width = w + 'px'; c.style.height = PR_H + 'px'; c.width = w * dpr; c.height = PR_H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
+function prKeys(W){
+  const P = PR.piece; let lo = Math.max(21, P.lo - 2), hi = Math.min(108, P.hi + 2);
+  while(hi - lo < 28){ if(lo > 21) lo--; if(hi < 108) hi++; }
+  while(pIsBlack(lo)) lo--; while(pIsBlack(hi)) hi++;
+  const whites = []; for(let m = lo; m <= hi; m++) if(!pIsBlack(m)) whites.push(m);
+  const ww = W / whites.length, bw = ww * .62, pos = {};
+  whites.forEach((m, i) => { pos[m] = {x:i * ww, w:ww, black:false}; });
+  for(let m = lo; m <= hi; m++) if(pIsBlack(m)){ const L = pos[m - 1]; if(L) pos[m] = {x:L.x + ww - bw / 2, w:bw, black:true}; }
+  return {lo, hi, pos, ww, bw};
 }
 function prBarAt(t){ const B = PR.piece.bars; let i = 0; while(i + 1 < B.length && B[i + 1] <= t + 1e-6) i++; return i + 1; }
 function prBarTime(n){ const B = PR.piece.bars; return n - 1 < B.length ? B[Math.max(0, n - 1)] : PR.piece.dur; }
-function prSetLoop(a, b){ if(b - a < .1) return; PR.loop = {a, b, on:true}; const was = PR.playing; prStop(); PR.t = a; if(PR.t < PR.t0 || PR.t > PR.t0 + 1) PR.t0 = Math.max(0, a - .5); renderPiano(); if(was) prPlay(); }
+function prSetLoop(a, b){ if(b - a < .1) return; PR.loop = {a, b, on:true}; const was = PR.playing; prStop(); PR.t = a; renderPiano(); if(was) prPlay(); }
 function prSnap(t){ const B = PR.piece.bars; if(!B.length) return t; let best = t, bd = .35 * 60 / (PR.piece.bpm || 100); B.concat([PR.piece.dur]).forEach(x => { if(Math.abs(x - t) < bd){ bd = Math.abs(x - t); best = x; } }); return best; }
-function prResize(){ const c = $('#pr-canvas'); if(!c) return; const w = c.parentElement.clientWidth, dpr = window.devicePixelRatio || 1; c.style.width = w + 'px'; c.style.height = '440px'; c.width = w * dpr; c.height = 440 * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
-const KBW = 46;
+function prTimeAtY(yPx){ return PR.t + (PR_H - PR_KH - yPx) / PR.pps; }
 function prDraw(){
   const c = $('#pr-canvas'), P = PR.piece; if(!c || !P) return;
-  const ctx = c.getContext('2d'), W = c.clientWidth, H = 440, dark = matchMedia('(prefers-color-scheme: dark)').matches;
-  const lo = Math.max(21, P.lo - 2), hi = Math.min(108, P.hi + 2), rows = hi - lo + 1, rh = H / rows;
-  const view = (W - KBW) / PR.pps;
-  if(PR.playing && (PR.t > PR.t0 + view * .75 || PR.t < PR.t0)) PR.t0 = Math.max(0, PR.t - view * .2);
-  const x = s => KBW + (s - PR.t0) * PR.pps, y = m => (hi - m) * rh;
-  ctx.fillStyle = dark ? '#151a24' : '#ffffff'; ctx.fillRect(0, 0, W, H);
-  for(let m = lo; m <= hi; m++){ if(pIsBlack(m)){ ctx.fillStyle = dark ? '#1b2130' : '#f2f4f8'; ctx.fillRect(KBW, y(m), W - KBW, rh); } if(m % 12 === 0){ ctx.fillStyle = dark ? '#2b3345' : '#d7dce6'; ctx.fillRect(KBW, y(m) + rh - 1, W - KBW, 1); } }
-  ctx.strokeStyle = dark ? '#34405a' : '#c9d0dc'; ctx.lineWidth = 1;
-  P.bars.forEach((b, i) => { const bx = x(b); if(bx < KBW || bx > W) return; ctx.beginPath(); ctx.moveTo(bx + .5, 0); ctx.lineTo(bx + .5, H); ctx.stroke(); ctx.fillStyle = dark ? '#7d8aa5' : '#8a94a8'; ctx.font = '10px Assistant, Arial'; ctx.fillText(String(i + 1), bx + 3, 11); });
-  const sounding = new Set();
+  const ctx = c.getContext('2d'), W = c.clientWidth, H = PR_H, NH = H - PR_KH, dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const K = prKeys(W), y = t => NH - (t - PR.t) * PR.pps;
+  ctx.fillStyle = dark ? '#121722' : '#fbfcfe'; ctx.fillRect(0, 0, W, NH);
+  for(let m = K.lo; m <= K.hi; m++){ const k = K.pos[m]; if(!k) continue; if(k.black){ ctx.fillStyle = dark ? '#181e2b' : '#f0f2f7'; ctx.fillRect(k.x, 0, k.w, NH); } else if(m % 12 === 0 || m % 12 === 5){ ctx.fillStyle = dark ? '#2a3244' : '#dde2ea'; ctx.fillRect(k.x, 0, 1, NH); } }
+  ctx.font = '10px Assistant, Arial';
+  P.bars.forEach((b, i) => { const by = y(b); if(by < 0 || by > NH) return; ctx.fillStyle = dark ? '#34405a' : '#c9d0dc'; ctx.fillRect(0, by, W, 1); ctx.fillStyle = dark ? '#7d8aa5' : '#8a94a8'; ctx.fillText(String(P.barNums[i] || i + 1), 3, by - 3); });
+  const L = PR.drag ? {a:Math.min(PR.drag.a, PR.drag.b), b:Math.max(PR.drag.a, PR.drag.b)} : PR.loop;
+  if(L.a != null && L.b != null){ const ya = Math.min(NH, y(L.a)), yb = Math.max(0, y(L.b)); if(ya > yb){ ctx.fillStyle = 'rgba(255,201,51,.16)'; ctx.fillRect(0, yb, W, ya - yb); ctx.fillStyle = '#E0A400'; if(y(L.a) <= NH) ctx.fillRect(0, y(L.a) - 1, W, 3); if(y(L.b) >= 0) ctx.fillRect(0, y(L.b) - 1, W, 3); } }
+  const sounding = {};
   P.notes.forEach(n => {
-    const x0 = x(n.s), x1 = x(n.s + n.d); if(x1 < KBW || x0 > W) return;
-    const on = PR.t >= n.s && PR.t < n.s + n.d, vis = PR.hands[n.hand];
-    if(on && vis) sounding.add(n.midi);
-    const base = n.hand === 1 ? [49, 110, 230] : [32, 165, 120];
-    ctx.fillStyle = `rgba(${base.join(',')},${!vis ? .15 : on ? 1 : .78})`;
-    const yy = y(n.midi) + 1, hh = Math.max(2, rh - 2), xx = Math.max(KBW, x0), ww = Math.max(2, x1 - xx - 1);
-    ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(xx, yy, ww, hh, Math.min(3, hh / 2)); else ctx.rect(xx, yy, ww, hh); ctx.fill();
+    const k = K.pos[n.midi]; if(!k) return;
+    const y0 = y(n.s + n.d), y1 = y(n.s); if(y1 < 0 || y0 > NH) return;
+    const vis = PR.hands[n.hand], on = PR.t >= n.s && PR.t < n.s + n.d;
+    if(on && vis) sounding[n.midi] = n.hand;
+    const col = n.hand === 1 ? [49, 110, 230] : [32, 165, 120];
+    const a = !vis ? .14 : on ? 1 : .55 + .4 * (n.vel || .7);
+    ctx.fillStyle = `rgba(${col.join(',')},${a})`;
+    const xx = k.x + 1.5, w = Math.max(3, k.w - 3), top = Math.max(0, y0), hh = Math.max(3, Math.min(NH, y1) - top - 1);
+    ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(xx, top, w, hh, Math.min(4, w / 2)); else ctx.rect(xx, top, w, hh); ctx.fill();
     if(on && vis){ ctx.strokeStyle = '#FFC933'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1; }
   });
-  for(let m = lo; m <= hi; m++){
-    const b = pIsBlack(m), act = sounding.has(m);
-    ctx.fillStyle = act ? '#FFC933' : b ? '#1E2330' : '#FFFFFF'; ctx.fillRect(0, y(m), b ? KBW * .62 : KBW, rh);
-    ctx.strokeStyle = '#9AA3B5'; ctx.strokeRect(.5, y(m) + .5, (b ? KBW * .62 : KBW) - 1, rh - 1);
-    if(m % 12 === 0 && rh >= 7){ ctx.fillStyle = '#5b667a'; ctx.font = `${Math.min(10, rh)}px Assistant, Arial`; ctx.fillText('C' + (Math.floor(m / 12) - 1), KBW * .64, y(m) + rh - 2); }
-  }
-  ctx.fillStyle = dark ? '#3a4560' : '#c9d0dc'; ctx.fillRect(KBW - 1, 0, 1, H);
-  const L = PR.drag ? {a:Math.min(PR.drag.a, PR.drag.b), b:Math.max(PR.drag.a, PR.drag.b)} : PR.loop;
-  if(L.a != null && L.b != null){ const la = Math.max(KBW, x(L.a)), lb = Math.min(W, x(L.b)); if(lb > la){ ctx.fillStyle = 'rgba(255,201,51,.18)'; ctx.fillRect(la, 0, lb - la, H); ctx.fillStyle = '#E0A400'; if(x(L.a) >= KBW) ctx.fillRect(x(L.a) - 1, 0, 3, H); if(x(L.b) <= W) ctx.fillRect(x(L.b) - 1, 0, 3, H); } }
-  const px = x(PR.t); if(px >= KBW && px <= W){ ctx.fillStyle = '#E8423F'; ctx.fillRect(px - 1, 0, 2, H); }
-  const tEl = $('#pr-time'); if(tEl) tEl.textContent = `${Math.floor(PR.t / 60)}:${String(Math.floor(PR.t % 60)).padStart(2, '0')} / ${Math.floor(P.dur / 60)}:${String(Math.floor(P.dur % 60)).padStart(2, '0')}`;
-  const sc = $('#pr-scroll'); if(sc && document.activeElement !== sc) sc.value = Math.round(PR.t0 * 10);
+  ctx.fillStyle = '#E8423F'; ctx.fillRect(0, NH - 2, W, 2);
+  // מקלדת
+  for(let m = K.lo; m <= K.hi; m++){ const k = K.pos[m]; if(!k || k.black) continue; const h = sounding[m]; ctx.fillStyle = h ? (h === 1 ? '#7FA7F2' : '#6FD3AE') : '#ffffff'; ctx.fillRect(k.x, NH, k.w, PR_KH); ctx.strokeStyle = '#9AA3B5'; ctx.strokeRect(k.x + .5, NH + .5, k.w - 1, PR_KH - 1); if(m % 12 === 0 && k.w > 12){ ctx.fillStyle = '#5b667a'; ctx.font = `${Math.min(11, k.w * .55)}px Assistant, Arial`; ctx.textAlign = 'center'; ctx.fillText('C' + (Math.floor(m / 12) - 1), k.x + k.w / 2, H - 8); ctx.textAlign = 'start'; } }
+  for(let m = K.lo; m <= K.hi; m++){ const k = K.pos[m]; if(!k || !k.black) continue; const h = sounding[m]; ctx.fillStyle = h ? (h === 1 ? '#316EE6' : '#20A578') : '#1E2330'; ctx.fillRect(k.x, NH, k.w, PR_KH * .62); }
+  const tEl = $('#pr-time'); if(tEl) tEl.textContent = `תיבה ${P.barNums[prBarAt(PR.t) - 1] || prBarAt(PR.t)} · ${Math.floor(PR.t / 60)}:${String(Math.floor(PR.t % 60)).padStart(2, '0')} / ${Math.floor(P.dur / 60)}:${String(Math.floor(P.dur % 60)).padStart(2, '0')}`;
+  const sc = $('#pr-scroll'); if(sc && document.activeElement !== sc) sc.value = Math.round(PR.t * 10);
 }
 function prPlay(){
   const P = PR.piece; if(!P) return;
   if(PR.t >= P.dur) PR.t = 0;
   if(PR.loop.on && PR.loop.a != null && (PR.t < PR.loop.a - .01 || PR.t >= PR.loop.b)) PR.t = PR.loop.a;
-  const ctx = ac(); PR.playing = true; PR.acStart = ctx.currentTime + .05; PR.songStart = PR.t; PR.sched = PR.t;
+  const ctx = ac(); PR.playing = true; PR.acStart = ctx.currentTime + .08; PR.songStart = PR.t; PR.sched = PR.t;
   const tick = () => {
     if(!PR.playing) return;
-    const now = ctx.currentTime, horizon = PR.songStart + (now + .25 - PR.acStart) * PR.speed;
+    const now = ctx.currentTime, horizon = PR.songStart + (now + .3 - PR.acStart) * PR.speed;
     const cap = PR.loop.on && PR.loop.a != null ? Math.min(horizon, PR.loop.b) : horizon;
-    P.notes.forEach(n => { if(n.s >= PR.sched && n.s < cap && PR.hands[n.hand]){ const at = PR.acStart + (n.s - PR.songStart) / PR.speed; pianoTone(n.midi, Math.max(now, at), Math.min(4, n.d / PR.speed + .3), .12 + .12 * (n.vel || .7)); } });
-    PR.sched = horizon;
-    if(PR.loop.on && PR.loop.a != null && PR.songStart + (now - PR.acStart) * PR.speed >= PR.loop.b){ prStop(); PR.t = PR.loop.a; if(PR.t < PR.t0) PR.t0 = Math.max(0, PR.t - .5); prPlay(); return; }
+    P.notes.forEach(n => {
+      if(n.s >= PR.sched - 1e-6 && n.s < cap && PR.hands[n.hand]){
+        const at = Math.max(now, PR.acStart + (n.s - PR.songStart) / PR.speed);
+        let len = (n.ds || n.d) / PR.speed; if(PR.loop.on && PR.loop.a != null) len = Math.min(len, (PR.loop.b - n.s) / PR.speed + .15);
+        pianoTone(n.midi, at, Math.min(8, len), .1 + .16 * (n.vel || .7), n.vel || .7);
+      }
+    });
+    PR.sched = cap;
+    if(PR.loop.on && PR.loop.a != null && PR.songStart + (now - PR.acStart) * PR.speed >= PR.loop.b){ prStop(); PR.t = PR.loop.a; prPlay(); return; }
     if(PR.songStart + (now - PR.acStart) * PR.speed > P.dur + .5){ prStop(); PR.t = P.dur; prDraw(); return; }
-    PR.timer = setTimeout(tick, 60);
+    PR.timer = setTimeout(tick, 50);
   };
   tick();
   const frame = () => { if(!PR.playing) return; PR.t = Math.max(PR.songStart, PR.songStart + (ctx.currentTime - PR.acStart) * PR.speed); prDraw(); PR.raf = requestAnimationFrame(frame); };
@@ -6544,28 +6657,28 @@ function prPlay(){
   const b = $('#pr-play'); if(b) b.textContent = 'השהיה';
 }
 function prStop(){ PR.playing = false; clearTimeout(PR.timer); cancelAnimationFrame(PR.raf); const b = $('#pr-play'); if(b) b.textContent = 'נגינה'; }
+function prSeek(t){ const was = PR.playing; prStop(); PR.t = clamp(t, 0, PR.piece.dur); prDraw(); if(was) prPlay(); }
 async function onRoll(e){
   if(PN.tab !== 'roll') return false;
-  const cv = e.target.closest('#pr-canvas');
-  if(cv){ if(PR.justDragged){ PR.justDragged = false; return true; } const r = cv.getBoundingClientRect(), xx = e.clientX - r.left; if(xx > KBW){ const was = PR.playing; prStop(); PR.t = Math.max(0, PR.t0 + (xx - KBW) / PR.pps); prDraw(); if(was) prPlay(); } return true; }
+  if(e.target.closest('#pr-canvas')) return true;
   const b = e.target.closest('[data-pr]'); if(!b) return false;
   const act = b.dataset.pr;
   if(act === 'file') $('#pr-file').click();
-  if(act === 'play') PR.playing ? prStop() : prPlay();
+  if(act === 'play'){ if(SAMP.state === 'idle') loadPianoSamples(); PR.playing ? prStop() : prPlay(); }
+  if(act === 'restart') prSeek(PR.loop.on && PR.loop.a != null ? PR.loop.a : 0);
+  if(act === 'zoom-in' || act === 'zoom-out'){ PR.pps = clamp(PR.pps * (act === 'zoom-in' ? 1.3 : 1 / 1.3), 25, 600); prDraw(); }
   if(act === 'loop-bars'){
-    const a = Number($('#pr-la').value), b = Number($('#pr-lb').value), n = PR.piece.bars.length;
-    if(!a || !b || a < 1 || b < a || a > n){ $('#pr-loop-txt').textContent = `בחרו תיבות בין 1 ל־${n}.`; return true; }
-    prSetLoop(prBarTime(a), b + 1 <= n ? prBarTime(b + 1) : PR.piece.dur);
+    const a = Number($('#pr-la').value), bb = Number($('#pr-lb').value), n = PR.piece.bars.length;
+    if(!a || !bb || a < 1 || bb < a || a > n){ $('#pr-loop-txt').textContent = `בחרו תיבות בין 1 ל־${n}.`; return true; }
+    prSetLoop(prBarTime(a), bb + 1 <= n ? prBarTime(bb + 1) : PR.piece.dur);
   }
   if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; renderPiano(); }
-  if(act === 'restart'){ const was = PR.playing; prStop(); PR.t = 0; PR.t0 = 0; prDraw(); if(was) prPlay(); }
-  if(act === 'zoom-in' || act === 'zoom-out'){ PR.pps = clamp(PR.pps * (act === 'zoom-in' ? 1.4 : 1 / 1.4), 15, 500); prDraw(); }
-  if(act === 'open'){ const it = prItems().find(i => i.id === b.dataset.id); prOpen({title:it.data.title, notes:decodeNotes(it.data.notes), bars:it.data.bars || [], bpm:it.data.bpm}, it.id); }
+  if(act === 'open'){ const it = prItems().find(i => i.id === b.dataset.id); prOpen({title:it.data.title, notes:decodeNotes(it.data.notes), bars:it.data.bars || [], barNums:it.data.barNums, bpm:it.data.bpm, repeated:it.data.repeated, pedal:it.data.pedal}, it.id); }
   if(act === 'del'){ const it = prItems().find(i => i.id === b.dataset.id); if(!confirm(`למחוק את "${it.data.title}" מהרשימה?`)) return true; const r = await tCall('teacherDeleteContent', {id:it.id}); LIB.items = r.items; T.data.pvoices = r.items.filter(i => ['pvoice','pgrid','psong','plink','proll'].includes(i.kind)); if(PR.savedId === it.id) PR.savedId = null; renderPiano(); }
   if(act === 'save'){
-    const P = PR.piece, enc = encodeNotes(P.notes), bars = P.bars.map(v => Math.round(v * 100) / 100);
-    if(enc.length + JSON.stringify(bars).length > 42000){ alert('היצירה ארוכה מדי לשמירה ברשימה. אפשר לטעון אותה מהקובץ בכל פעם.'); return true; }
-    try{ const r = await saveItems([{id:'', kind:'proll', data:{title:P.title, notes:enc, bars, bpm:P.bpm}}]); PR.savedId = r[0].id; toast('היצירה נשמרה ברשימה'); renderPiano(); }catch(err){ alert(err.message); }
+    const P = PR.piece, enc = encodeNotes(P.notes), bars = P.bars.map(v => Math.round(v * 100) / 100), seq = P.barNums.every((n, i) => n === i + 1) ? null : P.barNums;
+    if(enc.length + JSON.stringify(bars).length + (seq ? JSON.stringify(seq).length : 0) > 42000){ alert('היצירה ארוכה מדי לשמירה ברשימה. אפשר לטעון אותה מהקובץ בכל פעם.'); return true; }
+    try{ const r = await saveItems([{id:'', kind:'proll', data:{title:P.title, notes:enc, bars, barNums:seq, bpm:P.bpm, repeated:P.repeated, pedal:P.pedal}}]); PR.savedId = r[0].id; toast('היצירה נשמרה ברשימה'); renderPiano(); }catch(err){ alert(err.message); }
   }
   return true;
 }
@@ -6580,7 +6693,7 @@ let currentView = 'home';
 function showView(v){
   if(!VIEWS.includes(v)) v = 'home';
   if(v === 'home') renderHomeState();
-  if(v === 'piano') renderPiano();
+  if(v === 'piano'){ if(T.data && typeof loadPianoSamples === 'function') loadPianoSamples(); renderPiano(); }
   if(v === 'links') renderLinks();
   if(v === 'songs' && (T.data || S.student) && !SGF.userPicked && !SG.song){ SGF.view = 'table'; applySongView(); }
   currentView = v;
@@ -6950,21 +7063,21 @@ function init(){
     const hc = e.target.closest('[data-hand]'); if(hc){ PR.hands[hc.dataset.hand] = hc.checked; prDraw(); }
     if(e.target.id === 'pr-loop-on'){ PR.loop.on = e.target.checked; }
   });
-  $('#pn-main').addEventListener('input', e => { if(e.target.id === 'pr-scroll'){ PR.t0 = Number(e.target.value) / 10; if(!PR.playing) prDraw(); else { const was = true; prStop(); PR.t = PR.t0; prDraw(); prPlay(); } } });
+  $('#pn-main').addEventListener('input', e => { if(e.target.id === 'pr-scroll') prSeek(Number(e.target.value) / 10); });
   $('#pn-main').addEventListener('pointerdown', e => {
     const cv = e.target.closest('#pr-canvas'); if(!cv || !PR.piece) return;
-    const r = cv.getBoundingClientRect(), xx = e.clientX - r.left; if(xx <= KBW) return;
-    const t = PR.t0 + (xx - KBW) / PR.pps; PR.drag = {a:t, b:t, x0:e.clientX};
-    const move = ev => { PR.drag.b = PR.t0 + (ev.clientX - r.left - KBW) / PR.pps; if(Math.abs(ev.clientX - PR.drag.x0) > 6) prDraw(); };
+    const r = cv.getBoundingClientRect(), yy = e.clientY - r.top; if(yy > PR_H - PR_KH) return;
+    const t = prTimeAtY(yy); PR.drag = {a:t, b:t, y0:e.clientY};
+    const move = ev => { PR.drag.b = prTimeAtY(ev.clientY - r.top); if(Math.abs(ev.clientY - PR.drag.y0) > 6) prDraw(); };
     const up = ev => {
       window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
       const d = PR.drag; PR.drag = null;
-      if(Math.abs(ev.clientX - d.x0) > 6){ PR.justDragged = true; const a = prSnap(Math.max(0, Math.min(d.a, d.b))), b = prSnap(Math.min(PR.piece.dur, Math.max(d.a, d.b))); prSetLoop(a, b); }
+      if(Math.abs(ev.clientY - d.y0) > 6){ const a = prSnap(Math.max(0, Math.min(d.a, d.b))), b = prSnap(Math.min(PR.piece.dur, Math.max(d.a, d.b))); prSetLoop(a, b); }
       else prDraw();
     };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   });
-  $('#pn-main').addEventListener('wheel', e => { if(!e.target.closest('#pr-canvas') || !PR.piece) return; e.preventDefault(); PR.t0 = clamp(PR.t0 + (e.deltaY + e.deltaX) / PR.pps, 0, PR.piece.dur); prDraw(); }, {passive:false});
+  $('#pn-main').addEventListener('wheel', e => { if(!e.target.closest('#pr-canvas') || !PR.piece) return; e.preventDefault(); prSeek(PR.t - e.deltaY / PR.pps); }, {passive:false});
   window.addEventListener('resize', () => { if(PN.tab === 'roll' && $('#pr-canvas')){ prResize(); prDraw(); } });
   $('#pn-main').addEventListener('click', onPiano);
   $('#pn-main').addEventListener('change', e => {
