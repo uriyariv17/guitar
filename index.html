@@ -738,6 +738,36 @@ th.g-name:hover .pg-g-acts, .pg-g-acts:focus-within{ opacity:1; }
 #pr-snd{ font-size:.85rem; font-weight:700; } #pr-snd.snd-ready{ color:var(--green); } #pr-snd.snd-loading{ color:var(--ink-2); } #pr-snd.snd-failed{ color:var(--orange); }
 #pr-canvas{ touch-action:none; cursor:ns-resize; }
 
+/* Recordings */
+.task-recs{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); display:grid; gap:8px; }
+.task-recs-h{ font-weight:700; font-size:.92rem; color:var(--ink-2); }
+.rec-up .row{ gap:8px; }
+.rec-btn{ display:inline-flex; align-items:center; gap:6px; }
+.rec-dot{ width:11px; height:11px; border-radius:50%; background:#E8423F; display:inline-block; }
+.rec-dot.on{ animation:recpulse 1s infinite; }
+@keyframes recpulse{ 50%{ opacity:.25; } }
+.rec-live{ padding:8px 10px; border-radius:10px; background:color-mix(in srgb, #E8423F 10%, var(--surface)); }
+.rec-time{ font-variant-numeric:tabular-nums; font-weight:700; }
+.rec-ready{ display:grid; gap:8px; padding:10px; border:1px solid var(--line); border-radius:10px; }
+.rec-media{ width:100%; max-height:280px; }
+.rec-note{ min-height:36px; }
+.rec-list{ display:grid; gap:6px; }
+.rec-item{ border:1px solid var(--line); border-radius:10px; padding:8px 10px; display:grid; gap:6px; background:var(--surface); }
+.rec-item.new{ border-color:color-mix(in srgb, var(--orange) 55%, var(--line)); }
+.rec-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.rec-play{ appearance:none; width:36px; height:36px; border-radius:50%; border:0; background:var(--blue); color:#fff; font-size:.95rem; cursor:pointer; flex:none; }
+.rec-meta{ display:grid; flex:1; min-width:120px; }
+.rec-meta small{ color:var(--ink-2); }
+.rec-note-t, .rec-cmt-t{ font-size:.92rem; margin:0; }
+.rec-cmt-t{ background:color-mix(in srgb, var(--green) 10%, var(--surface)); padding:6px 8px; border-radius:8px; }
+.rec-frame{ width:100%; height:64px; border:0; border-radius:8px; background:var(--surface-2); }
+.rec-frame.vid{ height:auto; aspect-ratio:16 / 9; }
+.rec-fb{ gap:8px; }
+.rec-fb .rec-cmt{ flex:1; min-width:180px; min-height:34px; }
+.rec-inbox{ border:1px solid color-mix(in srgb, var(--orange) 45%, var(--line)); background:color-mix(in srgb, var(--orange) 7%, var(--surface)); border-radius:12px; padding:10px 14px; margin:10px 0; }
+.rec-inbox ul{ margin:6px 0; padding-inline-start:18px; display:grid; gap:3px; }
+.rec-inbox .lnk{ appearance:none; border:0; background:none; color:var(--blue); font:inherit; font-weight:700; cursor:pointer; padding:0; }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -2306,7 +2336,26 @@ function serverHandle(req, store, teacherPassword){
     }
     return {done:true, message:String(d.success || 'תודה! קיבלנו את הפרטים.')};
   }
-  const nPerson = r => ({id:String(r.id), groupId:String(r.groupId || ''), name:String(r.name || ''), role:String(r.role || ''), pin:String(r.pin || ''), staff:bool(r.staff), createdAt:String(r.createdAt || '')});
+  const nPerson = r => ({id:String(r.id), groupId:String(r.groupId || ''), name:String(r.name || ''), role:String(r.role || ''), pin:String(r.pin || ''), staff:bool(r.staff), createdAt:String(r.createdAt || ''), email:String(r.email || '')});
+  const nRec = r => ({id:String(r.id), scope:String(r.scope || ''), ownerId:String(r.ownerId || ''), groupId:String(r.groupId || ''), taskId:String(r.taskId || ''), fileId:String(r.fileId || ''), url:String(r.url || ''), name:String(r.name || ''), mime:String(r.mime || ''), size:num(r.size), note:String(r.note || ''), createdAt:String(r.createdAt || ''), heard:bool(r.heard), comment:String(r.comment || ''), commentBy:String(r.commentBy || '')});
+  const storeRecording = (rq, path, viewers) => {
+    const mime = String(rq.mime || '').split(';')[0].trim().toLowerCase(), data = String(rq.data || '');
+    if(!/^(audio|video)\//.test(mime)) throw new Error('אפשר להעלות רק קובץ שמע או וידאו.');
+    if(!data) throw new Error('הקובץ ריק.');
+    if(data.length > 28000000) throw new Error('הקובץ גדול מדי. אפשר עד 20MB, בערך 15 דקות שמע.');
+    const name = String(rq.name || 'הקלטה').replace(/[\\/:*?"<>|]/g, '_').slice(0, 120), size = Math.round(data.length * .75);
+    if(typeof DriveApp === 'undefined'){
+      if(data.length > 3000000) throw new Error('במצב הדגמה אפשר לנסות רק קבצים קטנים. בשרת האמיתי אפשר עד 20MB.');
+      return {fileId:'', url:'data:' + mime + ';base64,' + data, name, mime, size};
+    }
+    let folder = DriveApp.getRootFolder();
+    ['פריטה - הקלטות'].concat(path).forEach(n => { const it = folder.getFoldersByName(n); folder = it.hasNext() ? it.next() : folder.createFolder(n); });
+    const file = folder.createFile(Utilities.newBlob(Utilities.base64Decode(data), mime, name));
+    (viewers || []).forEach(em => { try{ if(em) file.addViewer(em); }catch(e){} });
+    return {fileId:file.getId(), url:'https://drive.google.com/file/d/' + file.getId() + '/preview', name, mime, size};
+  };
+  const trashRec = raw => { try{ if(raw.fileId && typeof DriveApp !== 'undefined') DriveApp.getFileById(String(raw.fileId)).setTrashed(true); }catch(e){} };
+
   const nY = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), groupId:String(r.groupId || ''), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
   if(a.indexOf('youth') === 0){
     const pin = String(req.pin || '').trim();
@@ -2317,7 +2366,30 @@ function serverHandle(req, store, teacherPassword){
     if(a === 'youthLogin'){
       const people = store.all('YouthPeople').map(nPerson);
       const vis = me.staff ? people : people.filter(p => p.groupId === me.groupId || p.staff).map(p => ({id:p.id, groupId:p.groupId, name:p.name, role:p.role, staff:p.staff}));
-      return {me:{id:me.id, name:me.name, role:me.role, staff:me.staff, groupId:me.groupId}, people:vis, items:store.all('Youth').map(nY).filter(it => canGroup(it.groupId)).filter(it => me.staff || (it.kind !== 'ledger' && it.kind !== 'pricing')).filter(it => it.kind !== 'ynote' || it.data.visibility === 'all' || it.authorId === me.id || (it.data.visibility === 'to' && (it.data.to || []).indexOf(me.id) >= 0))};
+      return {recs:store.all('Recs').map(nRec).filter(r => r.scope === 'youth' && (me.staff ? canGroup(r.groupId) : r.ownerId === me.id)), me:{id:me.id, name:me.name, role:me.role, staff:me.staff, groupId:me.groupId}, people:vis, items:store.all('Youth').map(nY).filter(it => canGroup(it.groupId)).filter(it => me.staff || (it.kind !== 'ledger' && it.kind !== 'pricing')).filter(it => it.kind !== 'ynote' || it.data.visibility === 'all' || it.authorId === me.id || (it.data.visibility === 'to' && (it.data.to || []).indexOf(me.id) >= 0))};
+    }
+    if(a === 'youthUploadRec'){
+      const task = store.all('Youth').map(nY).find(t => t.kind === 'task' && t.id === String(req.taskId));
+      if(!task || !canGroup(task.groupId)) throw new Error('המשימה לא נמצאה.');
+      const grp = store.all('Youth').map(nY).find(g => g.kind === 'group' && g.id === task.groupId);
+      const viewers = store.all('YouthPeople').map(nPerson).filter(p => p.staff && p.email).map(p => p.email);
+      const f = storeRecording(req, ['הרכבים צעירים', grp ? String(grp.data.name || 'הרכב') : 'הרכב', me.name], viewers);
+      const row = Object.assign({id:newId(), scope:'youth', ownerId:me.id, groupId:task.groupId, taskId:task.id, note:String(req.note || '').slice(0, 500), createdAt:now(), heard:false, comment:'', commentBy:''}, f);
+      store.insert('Recs', row); return {rec:nRec(row)};
+    }
+    if(a === 'youthRecFeedback'){
+      if(!me.staff) throw new Error('רק המנחים יכולים לסמן הקלטות.');
+      const raw = store.all('Recs').find(r => String(r.id) === String(req.id) && String(r.scope) === 'youth');
+      if(!raw || !canGroup(String(raw.groupId))) throw new Error('ההקלטה לא נמצאה.');
+      if(req.heard !== undefined) raw.heard = bool(req.heard);
+      if(req.comment !== undefined){ raw.comment = String(req.comment || '').slice(0, 1000); raw.commentBy = me.name; }
+      store.update('Recs', raw); return {rec:nRec(raw)};
+    }
+    if(a === 'youthDeleteRec'){
+      const raw = store.all('Recs').find(r => String(r.id) === String(req.id) && String(r.scope) === 'youth');
+      if(!raw) return {};
+      if(!(me.staff && canGroup(String(raw.groupId))) && String(raw.ownerId) !== me.id) throw new Error('אפשר למחוק רק הקלטות שלך.');
+      trashRec(raw); store.remove('Recs', r => String(r.id) === String(req.id)); return {};
     }
     if(a === 'youthSave'){
       const KINDS = ['group','song','task','rehearsal','post','rsvp','ynote','tdone','ledger','pricing'], STAFF_ONLY = ['group','song','rehearsal','ledger','pricing'], list = req.items || [], out = [];
@@ -2439,7 +2511,21 @@ function serverHandle(req, store, teacherPassword){
       const myTasks = store.all('Tasks').filter(t => String(t.studentId) === st.id).map(nTask);
       const songIds = new Set(st.songs);
       myTasks.forEach(t => String(t.attachments || '').split(',').forEach(k => { if(k.indexOf('v:') === 0) songIds.add(k.slice(2)); }));
-      return {songs:store.all('Content').map(nContent).filter(c => c.kind === 'song' && songIds.has(c.id)), student:{id:st.id, name:st.name, weeklyGoal:st.weeklyGoal}, tasks:myTasks, logs:store.all('Logs').filter(l => String(l.studentId) === st.id).map(nLog), lessons:store.all('Lessons').filter(l => String(l.studentId) === st.id).map(nLesson)};
+      return {recs:store.all('Recs').map(nRec).filter(r => r.scope === 'student' && r.ownerId === st.id), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song' && songIds.has(c.id)), student:{id:st.id, name:st.name, weeklyGoal:st.weeklyGoal}, tasks:myTasks, logs:store.all('Logs').filter(l => String(l.studentId) === st.id).map(nLog), lessons:store.all('Lessons').filter(l => String(l.studentId) === st.id).map(nLesson)};
+    }
+    if(a === 'studentUploadRec'){
+      const task = store.all('Tasks').find(t => String(t.id) === String(req.taskId) && String(t.studentId) === st.id);
+      if(!task) throw new Error('המשימה לא נמצאה.');
+      const f = storeRecording(req, ['תלמידים', st.name], []);
+      const row = Object.assign({id:newId(), scope:'student', ownerId:st.id, groupId:'', taskId:String(task.id), note:String(req.note || '').slice(0, 500), createdAt:now(), heard:false, comment:'', commentBy:''}, f);
+      store.insert('Recs', row);
+      const S = settingsObj(); if(S.notifyDone === 'true') mail(S.teacherEmail, `${st.name} העלה/תה הקלטה: ${task.title}`, `${st.name} העלה/תה הקלטה למשימה "${task.title}".${row.note ? '\nהערה: ' + row.note : ''}${S.siteUrl ? '\n\nלהאזנה: ' + S.siteUrl + '#teacher' : ''}`);
+      return {rec:nRec(row)};
+    }
+    if(a === 'studentDeleteRec'){
+      const raw = store.all('Recs').find(r => String(r.id) === String(req.id) && String(r.scope) === 'student' && String(r.ownerId) === st.id);
+      if(!raw) return {};
+      trashRec(raw); store.remove('Recs', r => String(r.id) === String(req.id)); return {};
     }
     if(a === 'studentUpdateTask'){
       const raw = store.all('Tasks').find(t => String(t.id) === String(req.taskId) && String(t.studentId) === st.id);
@@ -2463,7 +2549,7 @@ function serverHandle(req, store, teacherPassword){
   if(a.indexOf('teacher') === 0){
     if(!teacherPassword || String(req.password || '') !== String(teacherPassword)) throw new Error('הסיסמה שגויה.');
     if(a === 'teacherLoad'){
-      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => ['pvoice','pgrid','psong','plink','proll'].indexOf(c.kind) >= 0), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
+      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), recs:store.all('Recs').map(nRec).filter(r => r.scope === 'student'), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => ['pvoice','pgrid','psong','plink','proll'].indexOf(c.kind) >= 0), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
     }
     if(a === 'teacherSaveSettings'){
       const KEYS = ['teacherEmail','notifyDone','notifyPractice','remindHour','remindDays','siteUrl'], inp = req.settings || {}, rows = store.all('Settings');
@@ -2486,8 +2572,8 @@ function serverHandle(req, store, teacherPassword){
       if(!/^\d{4,8}$/.test(ppin)) throw new Error('הקוד צריך להיות 4 עד 8 ספרות.');
       const all = store.all('YouthPeople');
       if(all.some(x => String(x.pin) === ppin && String(x.id) !== String(p.id || ''))) throw new Error('הקוד הזה כבר תפוס.');
-      if(p.id){ const raw = all.find(x => String(x.id) === String(p.id)); if(!raw) throw new Error('לא נמצא.'); raw.name = name; raw.pin = ppin; store.update('YouthPeople', raw); return {person:nPerson(raw)}; }
-      const np = {id:newId(), groupId:'', name, role:'מנחה', pin:ppin, staff:true, createdAt:now()};
+      if(p.id){ const raw = all.find(x => String(x.id) === String(p.id)); if(!raw) throw new Error('לא נמצא.'); raw.name = name; raw.pin = ppin; if(p.email !== undefined) raw.email = String(p.email || '').trim(); store.update('YouthPeople', raw); return {person:nPerson(raw)}; }
+      const np = {id:newId(), groupId:'', name, role:'מנחה', pin:ppin, staff:true, createdAt:now(), email:String(p.email || '').trim()};
       store.insert('YouthPeople', np); return {person:nPerson(np)};
     }
     if(a === 'teacherDeleteYouthStaff'){ store.remove('YouthPeople', x => String(x.id) === String(req.id) && bool(x.staff)); return {}; }
@@ -2497,6 +2583,17 @@ function serverHandle(req, store, teacherPassword){
       raw.songs = (req.songs || []).map(String).filter(x => /^[A-Za-z0-9_]{1,60}$/.test(x)).slice(0, 200).join(',');
       store.update('Students', raw);
       return {student:nStudent(raw)};
+    }
+    if(a === 'teacherRecFeedback'){
+      const raw = store.all('Recs').find(r => String(r.id) === String(req.id) && String(r.scope) === 'student');
+      if(!raw) throw new Error('ההקלטה לא נמצאה.');
+      if(req.heard !== undefined) raw.heard = bool(req.heard);
+      if(req.comment !== undefined){ raw.comment = String(req.comment || '').slice(0, 1000); raw.commentBy = 'המורה'; }
+      store.update('Recs', raw); return {rec:nRec(raw)};
+    }
+    if(a === 'teacherDeleteRec'){
+      const raw = store.all('Recs').find(r => String(r.id) === String(req.id)); if(!raw) return {};
+      trashRec(raw); store.remove('Recs', r => String(r.id) === String(req.id)); return {};
     }
     if(a === 'teacherSyncBandSongs'){
       store.all('Band').map(nBand).filter(x => x.kind === 'bsong').forEach(b => syncBandSong(b.id, b.data));
@@ -2625,6 +2722,7 @@ const LocalDB = (() => {
   if(!db.Lessons) db.Lessons = [];
   if(!db.Settings) db.Settings = [];
   if(!db.Youth) db.Youth = [];
+  if(!db.Recs) db.Recs = [];
   if(!db.YouthPeople) db.YouthPeople = [{id:'ys_demo', groupId:'', name:'אני', role:'מנחה', pin:'4444', staff:true, createdAt:new Date().toISOString()}];
   const save = () => store.set(KEY, JSON.stringify(db));
   return {
@@ -2657,7 +2755,7 @@ async function studentLogin(pin, silent){
   $('#stu-go').disabled = true;
   try{
     const r = await api('studentLogin', {pin});
-    S.pin = pin; S.student = r.student; S.tasks = r.tasks; S.logs = r.logs; S.lessons = r.lessons || []; S.songs = r.songs || [];
+    S.recs = r.recs || []; S.pin = pin; S.student = r.student; S.tasks = r.tasks; S.logs = r.logs; S.lessons = r.lessons || []; S.songs = r.songs || [];
     dropPrivateSongs();
     store.set('pritah.pin', pin);
     renderStudent();
@@ -2720,6 +2818,10 @@ function studentTaskHTML(t){
     <div class="task-actions">
       ${t.targetBpm ? `<button class="btn ghost small" data-act="metro">תרגול עם מטרונום ב־${t.targetBpm}</button>` : ''}
       <button class="btn ghost small" data-act="done">${t.done ? 'החזר לפתוחות' : 'סמן כהושלם'}</button>
+    </div>
+    <div class="task-recs"><div class="task-recs-h">הקלטה למורה</div>
+      ${recListHTML(recsForTask(S.recs, t.id), {scope:'student', feedback:false, showOwner:false, canDelete:r => !r.heard, ownerName:() => ''})}
+      ${recUploaderHTML('student', t.id)}
     </div>
   </article>`;
 }
@@ -2850,6 +2952,7 @@ function renderTeacherOverview(students){
       <div class="spread"><h3>עדכונים אחרונים ${fresh ? `<span class="chip warn">${fresh} חדשים</span>` : ''}</h3>${fresh ? '<button class="btn ghost small" data-act="feed-seen">סימון הכול כנקרא</button>' : ''}</div>
       ${feed.length ? `<ul class="feed">${feed.map(f => `<li class="${f.at > seen ? 'new' : ''} ${f.kind}" data-sid="${esc(f.sid)}"><span class="dot"></span><span>${f.html}</span><span class="muted" style="white-space:nowrap">${fmtDate(f.at)}</span></li>`).join('')}</ul>` : '<p class="muted">אין עדכונים בשבועיים האחרונים.</p>'}
     </div>
+    ${(() => { const nw = (T.data.recs || []).filter(r => !r.heard).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); if(!nw.length) return ''; return `<div class="rec-inbox"><b>הקלטות שמחכות להאזנה (${nw.length})</b><ul>${nw.slice(0, 12).map(r => { const st = T.data.students.find(x => x.id === r.ownerId), tk = T.data.tasks.find(x => x.id === r.taskId); return `<li><button class="lnk" data-act="open-student" data-sid="${esc(r.ownerId)}">${esc(st ? st.name : 'תלמיד')}</button> <span class="muted">${esc(tk ? tk.title : '')}, ${fmtDate(r.createdAt)}</span></li>`; }).join('')}</ul></div>`; })()}
     ${idle.length ? `<div class="idle"><b>עוד לא תרגלו השבוע:</b> ${idle.map(s => `<button class="chip" data-act="open-student" data-sid="${esc(s.id)}">${esc(s.name)}</button>`).join(' ')}</div>` : ''}
     <div class="scroll-x"><table class="simple">
       <thead><tr><th>שם</th><th>פתוחות</th><th>באיחור</th><th>הושלמו</th><th>השבוע</th><th>ברצף</th><th>תרגול אחרון</th></tr></thead>
@@ -2898,6 +3001,7 @@ function teacherTaskHTML(t){
       <button class="btn ghost small danger" data-act="del-task">מחיקה</button>
     </div>
     ${t.targetReps ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}
+    ${recsForTask(T.data.recs, t.id).length ? `<div class="task-recs" style="grid-column:1 / -1"><div class="task-recs-h">הקלטות</div>${recListHTML(recsForTask(T.data.recs, t.id), {scope:'teacher', feedback:true, showOwner:false, canDelete:() => true, ownerName:() => ''})}</div>` : ''}
   </div>`;
 }
 function mergeTasks(list){ list.forEach(t => { const i = T.data.tasks.findIndex(x => x.id === t.id); if(i >= 0) T.data.tasks[i] = t; else T.data.tasks.push(t); }); }
@@ -4909,7 +5013,7 @@ async function youthLogin(pin, silent){
   try{
     const r = await api('youthLogin', {pin});
     if(pin !== Y.pin) Object.assign(Y, {tab:'home', songId:null, rehId:null});
-    Object.assign(Y, {pin, me:r.me, people:r.people, items:r.items});
+    Object.assign(Y, {pin, me:r.me, people:r.people, items:r.items, recs:r.recs || []});
     const saved = store.get('pritah.ygid');
     Y.gid = r.me.staff ? (yGroups().some(g => g.id === saved) ? saved : (yGroups()[0] || {}).id || '') : r.me.groupId;
     store.set('pritah.youthpin', pin);
@@ -4960,6 +5064,12 @@ function yRsvpHTML(r){
   </div>`;
 }
 function yCalLinks(r){ return `<button class="btn small" data-act="cal-google" data-id="${esc(r.id)}">הוספה ליומן Google</button><button class="btn small" data-act="cal-ics" data-id="${esc(r.id)}">ליומן באייפון</button>`; }
+function yRecInbox(){
+  if(!yStaff()) return '';
+  const nw = (Y.recs || []).filter(r => !r.heard && r.groupId === Y.gid).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  if(!nw.length) return '';
+  return `<section class="y-card rec-inbox"><h3>הקלטות שמחכות להאזנה (${nw.length})</h3><ul>${nw.slice(0, 10).map(r => { const tk = yGet(r.taskId); return `<li><b>${esc(yName(r.ownerId))}</b> <span class="muted">${esc(tk ? tk.data.title : '')}, ${fmtDate(r.createdAt)}</span></li>`; }).join('')}</ul><button class="btn small" data-act="tab" data-v="tasks">להאזנה במשימות</button></section>`;
+}
 function yHome(){
   const next = upcomingRehs()[0];
   const myTasks = yOf('task').filter(t => Y.me.staff ? !taskDone(t) : (isDoer(t) && !myTaskDone(t)));
@@ -4967,6 +5077,7 @@ function yHome(){
   $('#yo-main').innerHTML = `
     <div class="y-home">
       <div class="stack">
+        ${yRecInbox()}
         <section class="y-card">
           <h3>החזרה הבאה</h3>
           ${next ? `<button class="y-reh-head" data-act="open-reh" data-id="${esc(next.id)}"><b>${esc(fmtRehDate(next))}</b>${next.data.place ? `<span class="muted">${esc(next.data.place)}</span>` : ''}</button>
@@ -5145,6 +5256,7 @@ function yTaskHTML(t){
       ${group && doers.length ? `<div class="t-who"><span class="muted">${doneCount === doers.length ? 'כולם ביצעו' : `ביצעו ${doneCount} מתוך ${doers.length}`}:</span> ${doers.map(id => `<span class="who ${set.has(id) ? 'yes' : ''}">${set.has(id) ? '✓ ' : ''}${esc(yName(id))}</span>`).join('')}</div>` : ''}
     </div>
     ${canEdit ? `<div class="acts"><button class="btn ghost small" data-act="edit-task" data-id="${esc(t.id)}">עריכה</button></div>` : ''}
+    ${(() => { const rs = recsForTask(Y.recs, t.id), doer = isDoer(t) && !yStaff(); if(!rs.length && !doer) return ''; return `<div class="task-recs" style="grid-column:1 / -1"><div class="task-recs-h">${yStaff() ? 'הקלטות' : 'הקלטה למנחים'}</div>${recListHTML(rs, {scope:'youth', feedback:yStaff(), showOwner:yStaff(), canDelete:r => yStaff() || (r.ownerId === Y.me.id && !r.heard), ownerName:yName})}${doer ? recUploaderHTML('youth', t.id) : ''}</div>`; })()}
   </div>`;
 }
 function yTasksList(){
@@ -5297,10 +5409,11 @@ function renderTeacherYouth(){
     <div class="row" style="margin-top:14px;align-items:end">
       <label class="field" style="width:200px">שם המנחה<input id="ys-name" maxlength="60"></label>
       <label class="field" style="width:150px">קוד כניסה<input id="ys-pin" inputmode="numeric" dir="ltr" maxlength="8"></label>
+      <label class="field" style="width:240px">מייל של גוגל <small>(להאזנה להקלטות)</small><input id="ys-email" type="email" dir="ltr" maxlength="120" placeholder="name@gmail.com"></label>
       <button class="btn" data-act="ys-gen">קוד אקראי</button><button class="btn primary" data-act="ys-add">הוספת מנחה</button>
     </div>
     <p class="err" id="ys-err"></p>
-    ${staff.length ? staff.map(p => `<div class="t-task"><div><b>${esc(p.name)}</b><div class="muted" style="font-size:.94rem">קוד: <span class="pin">${esc(p.pin)}</span></div></div><div class="acts"><button class="btn ghost small" data-act="ys-edit" data-id="${esc(p.id)}">שינוי קוד</button><button class="btn ghost small danger" data-act="ys-del" data-id="${esc(p.id)}">הסרה</button></div></div>`).join('') : '<p class="empty">עוד אין מנחים. הוסף את עצמך ואת השותף שלך.</p>'}`;
+    ${staff.length ? staff.map(p => `<div class="t-task"><div><b>${esc(p.name)}</b><div class="muted" style="font-size:.94rem">קוד: <span class="pin">${esc(p.pin)}</span>${p.email ? `, <span dir="ltr">${esc(p.email)}</span>` : ', בלי מייל להקלטות'}</div></div><div class="acts"><button class="btn ghost small" data-act="ys-email" data-id="${esc(p.id)}">מייל</button><button class="btn ghost small" data-act="ys-edit" data-id="${esc(p.id)}">שינוי קוד</button><button class="btn ghost small danger" data-act="ys-del" data-id="${esc(p.id)}">הסרה</button></div></div>`).join('') : '<p class="empty">עוד אין מנחים. הוסף את עצמך ואת השותף שלך.</p>'}`;
 }
 async function onTeacherYouth(e){
   const b = e.target.closest('[data-act]'); if(!b) return;
@@ -5308,9 +5421,10 @@ async function onTeacherYouth(e){
   const used = () => new Set(list.map(p => p.pin));
   if(act === 'ys-gen'){ let p; do{ p = String(Math.floor(1000 + Math.random() * 9000)); }while(used().has(p)); $('#ys-pin').value = p; }
   if(act === 'ys-add'){
-    try{ const r = await tCall('teacherSaveYouthStaff', {person:{name:$('#ys-name').value, pin:$('#ys-pin').value}}, $('#ys-err')); T.data.youthStaff = list.concat([r.person]); renderTeacher(); }catch(err){}
+    try{ const r = await tCall('teacherSaveYouthStaff', {person:{name:$('#ys-name').value, pin:$('#ys-pin').value, email:$('#ys-email').value}}, $('#ys-err')); T.data.youthStaff = list.concat([r.person]); renderTeacher(); }catch(err){}
   }
   if(act === 'ys-edit'){ const p = list.find(x => x.id === b.dataset.id), pin = prompt(`קוד חדש ל${p.name}:`, p.pin); if(!pin) return; try{ const r = await tCall('teacherSaveYouthStaff', {person:{id:p.id, name:p.name, pin}}); T.data.youthStaff = list.map(x => x.id === p.id ? r.person : x); renderTeacher(); }catch(err){} }
+  if(act === 'ys-email'){ const p = list.find(x => x.id === b.dataset.id), em = prompt(`מייל של גוגל ל${p.name}. איתו הוא יוכל להאזין להקלטות מההרכבים:`, p.email || ''); if(em === null) return; if(em.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em.trim())){ alert('המייל לא תקין.'); return; } try{ const r = await tCall('teacherSaveYouthStaff', {person:{id:p.id, name:p.name, pin:p.pin, email:em.trim()}}); T.data.youthStaff = list.map(x => x.id === p.id ? r.person : x); renderTeacher(); }catch(err){} }
   if(act === 'ys-del'){ const p = list.find(x => x.id === b.dataset.id); if(!confirm(`להסיר את ${p.name} מהמנחים?`)) return; await tCall('teacherDeleteYouthStaff', {id:p.id}); T.data.youthStaff = list.filter(x => x.id !== p.id); renderTeacher(); }
 }
 
@@ -6682,6 +6796,130 @@ async function onRoll(e){
   }
   return true;
 }
+
+/* ================== הקלטות של תלמידים וחברי הרכב ================== */
+const REC = {key:'', phase:'idle', mr:null, chunks:[], blob:null, url:'', mime:'', start:0, timer:null, stream:null, open:new Set()};
+const recFmt = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+const recSize = b => b > 1048576 ? (b / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(b / 1024)) + 'KB';
+function recUploaderHTML(ctx, taskId){
+  const key = ctx + ':' + taskId, mine = REC.key === key ? REC.phase : 'idle';
+  return `<div class="rec-up" data-rec-ctx="${ctx}" data-task="${esc(taskId)}">
+    ${mine === 'idle' ? `<div class="row"><button type="button" class="btn small rec-btn" data-rec="start"><span class="rec-dot"></span>הקלטה עכשיו</button><button type="button" class="btn small" data-rec="file">העלאת קובץ מהמכשיר</button><input type="file" accept="audio/*,video/*" hidden></div>` : ''}
+    ${mine === 'recording' ? `<div class="row rec-live"><span class="rec-dot on"></span><b>מקליט</b><span class="rec-time" dir="ltr">0:00</span><button type="button" class="btn small primary" data-rec="stop">סיום ההקלטה</button><button type="button" class="btn small ghost" data-rec="discard">ביטול</button></div>` : ''}
+    ${mine === 'ready' || mine === 'sending' ? `<div class="rec-ready">
+      ${/^video/.test(REC.mime) ? `<video controls src="${REC.url}" class="rec-media"></video>` : `<audio controls src="${REC.url}" class="rec-media"></audio>`}
+      <input class="rec-note" maxlength="300" placeholder="הערה (לא חובה), למשל: את הפזמון עוד קשה לי">
+      <div class="row"><button type="button" class="btn small primary" data-rec="send" ${mine === 'sending' ? 'disabled' : ''}>${mine === 'sending' ? 'שולח…' : 'שליחה'}</button><button type="button" class="btn small ghost" data-rec="discard" ${mine === 'sending' ? 'disabled' : ''}>ביטול</button><span class="muted">${recSize(REC.blob ? REC.blob.size : 0)}</span></div>
+    </div>` : ''}
+    <p class="rec-msg muted"></p>
+  </div>`;
+}
+function recPlayerHTML(r){
+  if(/^data:/.test(r.url)) return /^video/.test(r.mime) ? `<video controls src="${r.url}" class="rec-media"></video>` : `<audio controls src="${r.url}" class="rec-media"></audio>`;
+  return `<iframe class="rec-frame ${/^video/.test(r.mime) ? 'vid' : ''}" src="${esc(r.url)}" allow="autoplay" title="${esc(r.name)}"></iframe>`;
+}
+function recListHTML(recs, o){
+  if(!recs.length) return '';
+  return `<div class="rec-list">${recs.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(r => `<div class="rec-item ${r.heard ? 'heard' : 'new'}" data-rec-id="${esc(r.id)}" data-rec-scope="${o.scope}">
+    <div class="rec-head">
+      <button type="button" class="rec-play" data-recx="play" aria-label="השמעה">${REC.open.has(r.id) ? '■' : '▶'}</button>
+      <div class="rec-meta"><b>${o.showOwner ? esc(o.ownerName(r.ownerId)) + ', ' : ''}${fmtDate(r.createdAt)}</b><small>${/^video/.test(r.mime) ? 'וידאו' : 'שמע'}${r.size ? ', ' + recSize(r.size) : ''}</small></div>
+      ${r.heard ? '<span class="chip ok">נשמע</span>' : `<span class="chip ${o.feedback ? 'due soon' : ''}">${o.feedback ? 'חדש' : 'נשלח'}</span>`}
+      ${o.canDelete(r) ? '<button type="button" class="btn ghost small danger" data-recx="del">מחיקה</button>' : ''}
+    </div>
+    ${r.note ? `<p class="rec-note-t"><b>הערה:</b> ${esc(r.note)}</p>` : ''}
+    ${REC.open.has(r.id) ? recPlayerHTML(r) : ''}
+    ${o.feedback ? `<div class="row rec-fb"><label class="row" style="gap:6px;font-weight:600"><input type="checkbox" data-recx="heard" ${r.heard ? 'checked' : ''}> שמעתי</label><input class="rec-cmt" maxlength="1000" value="${esc(r.comment)}" placeholder="משוב לתלמיד (לא חובה)"><button type="button" class="btn small" data-recx="comment">שמירת משוב</button></div>`
+      : r.comment ? `<p class="rec-cmt-t"><b>משוב${r.commentBy ? ' מ' + esc(r.commentBy) : ''}:</b> ${esc(r.comment)}</p>` : ''}
+  </div>`).join('')}</div>`;
+}
+function recRerender(ctx){ if(ctx === 'student') renderStudent(); else if(ctx === 'youth') renderYouth(); else if(ctx === 'teacher') renderTeacher(); }
+function recCleanup(){ clearInterval(REC.timer); if(REC.stream) REC.stream.getTracks().forEach(t => t.stop()); if(REC.url) URL.revokeObjectURL(REC.url); Object.assign(REC, {key:'', phase:'idle', mr:null, chunks:[], blob:null, url:'', mime:'', stream:null}); }
+async function recStart(box){
+  if(REC.phase !== 'idle' && !confirm('יש הקלטה אחרת פתוחה. לבטל אותה?')) return;
+  recCleanup();
+  const msg = box.querySelector('.rec-msg');
+  if(!navigator.mediaDevices || !window.MediaRecorder){ msg.textContent = 'הדפדפן הזה לא תומך בהקלטה. אפשר להקליט באפליקציית ההקלטות של הטלפון ולהעלות את הקובץ.'; return; }
+  try{
+    REC.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+  }catch(e){ msg.textContent = 'אין גישה למיקרופון. צריך לאשר גישה בדפדפן, או להקליט באפליקציה אחרת ולהעלות את הקובץ.'; return; }
+  const types = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus', 'audio/webm'];
+  const mt = types.find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+  REC.mr = new MediaRecorder(REC.stream, mt ? {mimeType:mt, audioBitsPerSecond:96000} : undefined);
+  REC.key = box.dataset.recCtx + ':' + box.dataset.task; REC.phase = 'recording'; REC.chunks = []; REC.start = Date.now();
+  REC.mr.ondataavailable = e => { if(e.data.size) REC.chunks.push(e.data); };
+  REC.mr.onstop = () => {
+    REC.mime = (REC.mr.mimeType || mt || 'audio/webm').split(';')[0]; REC.blob = new Blob(REC.chunks, {type:REC.mime}); REC.url = URL.createObjectURL(REC.blob);
+    if(REC.stream) REC.stream.getTracks().forEach(t => t.stop()); REC.stream = null; REC.phase = 'ready'; clearInterval(REC.timer);
+    recRerender(REC.key.split(':')[0]);
+  };
+  REC.mr.start(1000);
+  REC.timer = setInterval(() => { const el = $(`.rec-up[data-task="${CSS.escape(REC.key.split(':').slice(1).join(':'))}"] .rec-time`); if(el) el.textContent = recFmt((Date.now() - REC.start) / 1000); if(Date.now() - REC.start > 15 * 60000) REC.mr.stop(); }, 500);
+  recRerender(box.dataset.recCtx);
+}
+function recFromFile(box, file){
+  if(!file) return;
+  const msg = box.querySelector('.rec-msg');
+  if(!/^(audio|video)\//.test(file.type) && !/\.(mp3|m4a|wav|aac|ogg|webm|mp4|mov|3gp|amr|flac)$/i.test(file.name)){ msg.textContent = 'אפשר להעלות רק קובץ שמע או וידאו.'; return; }
+  if(file.size > 20 * 1048576){ msg.textContent = `הקובץ גדול מדי (${recSize(file.size)}). אפשר עד 20MB. בווידאו מהטלפון כדאי לצלם קצר יותר או באיכות נמוכה יותר.`; return; }
+  recCleanup();
+  REC.key = box.dataset.recCtx + ':' + box.dataset.task; REC.blob = file; REC.mime = file.type || (/\.(mp4|mov|3gp)$/i.test(file.name) ? 'video/mp4' : 'audio/mpeg'); REC.url = URL.createObjectURL(file); REC.fileName = file.name; REC.phase = 'ready';
+  recRerender(box.dataset.recCtx);
+}
+const blobToB64 = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(new Error('לא הצלחתי לקרוא את הקובץ.')); r.readAsDataURL(b); });
+async function recSend(box){
+  const ctx = box.dataset.recCtx, taskId = box.dataset.task, msg = box.querySelector('.rec-msg'), note = (box.querySelector('.rec-note') || {}).value || '';
+  if(!REC.blob) return;
+  if(REC.blob.size > 20 * 1048576){ msg.textContent = 'הקובץ גדול מדי. אפשר עד 20MB.'; return; }
+  REC.phase = 'sending'; const keepNote = note; recRerender(ctx);
+  const nb = $(`.rec-up[data-task="${CSS.escape(taskId)}"] .rec-note`); if(nb) nb.value = keepNote;
+  try{
+    const ext = (REC.fileName && REC.fileName.includes('.')) ? '' : ({'audio/webm':'.webm', 'audio/mp4':'.m4a', 'audio/ogg':'.ogg', 'audio/mpeg':'.mp3'}[REC.mime] || '');
+    const who = ctx === 'student' ? S.student.name : Y.me.name;
+    const name = (REC.fileName || `${who} ${new Date().toLocaleDateString('he-IL').replace(/\./g, '-')}`) + ext;
+    const data = await blobToB64(REC.blob);
+    const r = ctx === 'student' ? await api('studentUploadRec', {pin:S.pin, taskId, name, mime:REC.mime, data, note:keepNote}) : await api('youthUploadRec', {pin:Y.pin, taskId, name, mime:REC.mime, data, note:keepNote});
+    if(ctx === 'student'){ S.recs = (S.recs || []).concat([r.rec]); } else { Y.recs = (Y.recs || []).concat([r.rec]); }
+    recCleanup(); recRerender(ctx); toast('ההקלטה נשלחה. כל הכבוד!');
+  }catch(e){ REC.phase = 'ready'; recRerender(ctx); const m2 = $(`.rec-up[data-task="${CSS.escape(taskId)}"] .rec-msg`); if(m2) m2.textContent = 'השליחה נכשלה: ' + e.message; }
+}
+async function recAction(btn){
+  const item = btn.closest('.rec-item'), id = item.dataset.recId, scope = item.dataset.recScope, act = btn.dataset.recx;
+  const ctx = scope === 'teacher' ? 'teacher' : scope === 'student' ? 'student' : 'youth';
+  const list = ctx === 'teacher' ? (T.data.recs || []) : ctx === 'student' ? (S.recs || []) : (Y.recs || []);
+  const r = list.find(x => x.id === id);
+  if(act === 'play'){ REC.open.has(id) ? REC.open.delete(id) : REC.open.add(id); recRerender(ctx); return; }
+  if(act === 'del'){
+    if(!confirm('למחוק את ההקלטה?')) return;
+    try{ if(ctx === 'teacher') await tCall('teacherDeleteRec', {id}); else if(ctx === 'student') await api('studentDeleteRec', {pin:S.pin, id}); else await api('youthDeleteRec', {pin:Y.pin, id}); }catch(e){ alert(e.message); return; }
+    const arr = list.filter(x => x.id !== id); if(ctx === 'teacher') T.data.recs = arr; else if(ctx === 'student') S.recs = arr; else Y.recs = arr;
+    return recRerender(ctx);
+  }
+  if(act === 'heard' || act === 'comment'){
+    const payload = {id};
+    if(act === 'heard') payload.heard = btn.checked;
+    else { payload.comment = item.querySelector('.rec-cmt').value.trim(); payload.heard = true; }
+    try{ const res = ctx === 'teacher' ? await tCall('teacherRecFeedback', payload) : await api('youthRecFeedback', Object.assign({pin:Y.pin}, payload)); Object.assign(r, res.rec); if(act === 'comment') toast('המשוב נשמר'); recRerender(ctx); }catch(e){ alert(e.message); }
+  }
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-rec]');
+  if(b){ e.stopPropagation(); const box = b.closest('.rec-up'), act = b.dataset.rec;
+    if(act === 'start') recStart(box);
+    if(act === 'stop' && REC.mr && REC.mr.state !== 'inactive') REC.mr.stop();
+    if(act === 'file') box.querySelector('input[type=file]').click();
+    if(act === 'discard'){ const ctx = box.dataset.recCtx; if(REC.mr && REC.mr.state === 'recording'){ REC.mr.onstop = null; REC.mr.stop(); } recCleanup(); recRerender(ctx); }
+    if(act === 'send') recSend(box);
+    return;
+  }
+  const x = e.target.closest('[data-recx]'); if(x && x.dataset.recx !== 'heard'){ e.stopPropagation(); recAction(x); }
+}, true);
+document.addEventListener('change', e => {
+  const f = e.target.closest('.rec-up input[type=file]'); if(f){ recFromFile(f.closest('.rec-up'), f.files[0]); f.value = ''; return; }
+  const h = e.target.closest('[data-recx="heard"]'); if(h) recAction(h);
+}, true);
+window.addEventListener('beforeunload', e => { if(REC.phase === 'recording' || REC.phase === 'ready' || REC.phase === 'sending'){ e.preventDefault(); e.returnValue = ''; } });
+function recsForTask(list, taskId){ return (list || []).filter(r => r.taskId === taskId); }
 
 /* ================== ניווט ================== */
 function renderHomeState(){
