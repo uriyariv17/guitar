@@ -719,6 +719,23 @@ th.g-name:hover .pg-g-acts, .pg-g-acts:focus-within{ opacity:1; }
 .lk-star{ appearance:none; border:0; background:none; font-size:1.25rem; color:var(--amber); cursor:pointer; line-height:1; padding:2px; }
 .lk-form{ margin-bottom:12px; grid-column:1 / -1; }
 
+/* Piano roll */
+.pr-intro{ display:grid; gap:8px; }
+.pr-help{ border:1px solid var(--line); border-radius:12px; padding:8px 12px; }
+.pr-help summary{ cursor:pointer; font-weight:700; }
+.pr-help ul{ margin:6px 0; padding-inline-start:20px; display:grid; gap:4px; }
+.pr-help p{ margin:6px 0; }
+.pr-ctl{ margin:8px 0; }
+.pr-loop{ margin:0 0 8px; padding:8px 10px; border:1px solid color-mix(in srgb, var(--amber) 55%, var(--line)); border-radius:10px; background:color-mix(in srgb, var(--amber) 7%, var(--surface)); }
+.pr-loop input[type=number]{ min-height:34px; padding:3px 6px; }
+.pr-hand.r input{ accent-color:#316EE6; } .pr-hand.l input{ accent-color:#20A578; }
+.pr-hand.r{ color:#316EE6; } .pr-hand.l{ color:#20A578; }
+.pr-wrap{ border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+#pr-canvas{ display:block; cursor:crosshair; touch-action:pan-y; }
+.pr-saved{ display:inline-flex; gap:4px; align-items:center; }
+.pr-saved .lnk{ appearance:none; border:0; background:none; font:inherit; color:var(--blue); cursor:pointer; padding:0; }
+.pr-saved .lnk.del{ color:var(--red); }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -1019,7 +1036,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
     <div class="velvet-head piano-head"><div><span class="yh-brand">פסנתר</span><span class="yh-group">אזור פרטי, רק לך</span></div></div>
     <div class="login panel" id="pn-locked"><h2>אזור פרטי</h2><p class="muted">האזור הזה פתוח רק למורה.</p><button class="btn primary big" data-go-view="teacher">כניסת מורה</button></div>
     <div id="pn-dash" hidden>
-      <div class="seg" id="pn-tabs" style="margin-bottom:14px"><button data-v="scales">סולמות</button><button data-v="chords">אקורדים והרמוניות</button><button data-v="grid">טבלת טוניקות</button></div>
+      <div class="seg" id="pn-tabs" style="margin-bottom:14px"><button data-v="scales">סולמות</button><button data-v="chords">אקורדים והרמוניות</button><button data-v="grid">טבלת טוניקות</button><button data-v="roll">Piano Roll</button></div>
       <section class="panel" id="pn-main"></section>
     </div>
   </section>
@@ -2250,7 +2267,7 @@ function serverHandle(req, store, teacherPassword){
 
   const nMember = m => ({id:String(m.id), name:String(m.name || ''), role:String(m.role || ''), pin:String(m.pin || ''), createdAt:String(m.createdAt || '')});
   const nBand = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
-  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => ['song','pvoice','pgrid','psong','plink'].indexOf(c.kind) < 0)};
+  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => ['song','pvoice','pgrid','psong','plink','proll'].indexOf(c.kind) < 0)};
   if(a === 'publicApplyForm' || a === 'publicApplySubmit'){
     const f = store.all('Band').map(nBand).find(x => x.kind === 'form');
     const d = f ? f.data : null;
@@ -2444,7 +2461,7 @@ function serverHandle(req, store, teacherPassword){
   if(a.indexOf('teacher') === 0){
     if(!teacherPassword || String(req.password || '') !== String(teacherPassword)) throw new Error('הסיסמה שגויה.');
     if(a === 'teacherLoad'){
-      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => ['pvoice','pgrid','psong','plink'].indexOf(c.kind) >= 0), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
+      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => ['pvoice','pgrid','psong','plink','proll'].indexOf(c.kind) >= 0), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
     }
     if(a === 'teacherSaveSettings'){
       const KEYS = ['teacherEmail','notifyDone','notifyPractice','remindHour','remindDays','siteUrl'], inp = req.settings || {}, rows = store.all('Settings');
@@ -2555,7 +2572,7 @@ function serverHandle(req, store, teacherPassword){
       return {};
     }
     if(a === 'teacherSaveContent'){
-      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice','pgrid','psong','plink'], list = req.items || [];
+      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice','pgrid','psong','plink','proll'], list = req.items || [];
       if(!list.length) throw new Error('אין מה לשמור.');
       const all = store.all('Content'), fresh = [], out = [];
       list.forEach(it => {
@@ -3030,7 +3047,7 @@ async function loadLibrary(){
   refreshLib();
 }
 function privateSongs(){ return (T.data && T.data.songs ? T.data.songs : []).concat(T.data && T.data.pvoices ? T.data.pvoices : [], S.student && S.songs ? S.songs : []); }
-function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => !['song','pvoice','pgrid','psong','plink'].includes(i.kind)); privateSongs().forEach(it => mergeItems([it])); refreshLib(); if(typeof updatePianoTab === 'function'){ updatePianoTab(); if(currentView === 'piano') renderPiano(); } if(typeof updateLinksTab === 'function'){ updateLinksTab(); if(currentView === 'links') renderLinks(); } }
+function dropPrivateSongs(){ LIB.items = LIB.items.filter(i => !['song','pvoice','pgrid','psong','plink','proll'].includes(i.kind)); privateSongs().forEach(it => mergeItems([it])); refreshLib(); if(typeof updatePianoTab === 'function'){ updatePianoTab(); if(currentView === 'piano') renderPiano(); } if(typeof updateLinksTab === 'function'){ updateLinksTab(); if(currentView === 'links') renderLinks(); } }
 function refreshLib(){
   renderChords(); renderShapesPanel(); renderTheory(); applySongView();
   if(T.data) renderTeacher();
@@ -3039,7 +3056,7 @@ function refreshLib(){
 function mergeItems(list){ list.forEach(it => { const i = LIB.items.findIndex(x => x.id === it.id); if(i >= 0) LIB.items[i] = it; else LIB.items.push(it); }); }
 async function saveItems(items, errEl){
   const r = await tCall('teacherSaveContent', {items}, errEl); mergeItems(r.items);
-  if(T.data){ ['songs:song', 'pvoices:pvoice', 'pvoices:pgrid', 'pvoices:psong', 'pvoices:plink'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; r.items.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); }
+  if(T.data){ ['songs:song', 'pvoices:pvoice', 'pvoices:pgrid', 'pvoices:psong', 'pvoices:plink', 'pvoices:proll'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; r.items.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); }
   refreshLib(); return r.items;
 }
 
@@ -5624,7 +5641,8 @@ function renderPiano(){
   $('#pn-locked').hidden = ok; $('#pn-dash').hidden = !ok;
   if(!ok) return;
   $$('#pn-tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === PN.tab));
-  PN.tab === 'scales' ? pnScales() : PN.tab === 'grid' ? (PN.songId ? psView() : pnGrid()) : pnChords();
+  if(PN.tab !== 'roll' && typeof prStop === 'function' && PR.playing) prStop();
+  PN.tab === 'scales' ? pnScales() : PN.tab === 'grid' ? (PN.songId ? psView() : pnGrid()) : PN.tab === 'roll' ? pnRoll() : pnChords();
 }
 const rootSeg = id => `<div class="seg" id="${id}" style="direction:ltr">${NOTES.map((n, i) => `<button data-v="${i}" aria-pressed="${PN.root === i}">${[1,3,6,8,10].includes(i) ? n + '/' + NOTES_FLAT[i] : n}</button>`).join('')}</div>`;
 function pnScales(){
@@ -6288,6 +6306,270 @@ async function onLinks(e){
 }
 function updateLinksTab(){ $('#tab-links').hidden = !T.data; const c = $('.home-card[data-go="links"]'); if(c) c.hidden = !T.data; }
 
+/* ================== Piano Roll: קריאת קבצי MusicXML ו־MIDI ================== */
+const PR = {loop:{a:null, b:null, on:false}, drag:null, piece:null, t:0, t0:0, pps:90, speed:1, playing:false, hands:{1:true, 2:true}, timer:null, raf:null, sched:0, acStart:0, songStart:0, savedId:null};
+const prItems = () => LIB.items.filter(i => i.kind === 'proll');
+async function unzipFiles(buf){
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), out = {};
+  let eocd = -1; for(let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--){ if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; } }
+  if(eocd < 0) throw new Error('קובץ ה־MXL פגום.');
+  const n = dv.getUint16(eocd + 10, true); let p = dv.getUint32(eocd + 16, true);
+  for(let k = 0; k < n; k++){
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), loff = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen));
+    const lnlen = dv.getUint16(loff + 26, true), lxlen = dv.getUint16(loff + 28, true), start = loff + 30 + lnlen + lxlen, data = u8.subarray(start, start + csize);
+    if(method === 0) out[name] = data;
+    else if(method === 8){ const ds = new DecompressionStream('deflate-raw'); out[name] = new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(ds)).arrayBuffer()); }
+    p += 46 + nlen + xlen + clen;
+  }
+  return out;
+}
+function tempoMapToSec(changes){ // changes: [{q, bpm}] sorted; returns fn q->sec
+  const cs = changes.length ? changes.slice().sort((a, b) => a.q - b.q) : [{q:0, bpm:100}];
+  if(cs[0].q > 0) cs.unshift({q:0, bpm:cs[0].bpm});
+  const acc = [0]; for(let i = 1; i < cs.length; i++) acc[i] = acc[i - 1] + (cs[i].q - cs[i - 1].q) * 60 / cs[i - 1].bpm;
+  return q => { let i = cs.length - 1; while(i > 0 && cs[i].q > q) i--; return acc[i] + (q - cs[i].q) * 60 / cs[i].bpm; };
+}
+function parseMusicXML(text){
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  if(doc.querySelector('parsererror')) throw new Error('הקובץ לא נקרא כ־MusicXML תקין.');
+  const title = (doc.querySelector('work-title') || doc.querySelector('movement-title') || {}).textContent || '';
+  const STEP = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
+  const notes = [], tempos = [], bars = new Set();
+  const parts = [...doc.querySelectorAll('part')];
+  parts.forEach((part, pi) => {
+    let div = 1, pos = 0, lastStart = 0, mStart = 0;
+    const open = {};
+    [...part.querySelectorAll(':scope > measure')].forEach(meas => {
+      mStart = pos; if(pi === 0) bars.add(Math.round(mStart * 1000) / 1000);
+      [...meas.children].forEach(el => {
+        const tag = el.tagName;
+        if(tag === 'attributes'){ const d = el.querySelector('divisions'); if(d) div = Number(d.textContent) || 1; }
+        else if(tag === 'backup'){ pos -= Number(el.querySelector('duration').textContent) / div; }
+        else if(tag === 'forward'){ pos += Number(el.querySelector('duration').textContent) / div; }
+        else if(tag === 'direction' || tag === 'sound'){ const snd = tag === 'sound' ? el : el.querySelector('sound'); if(snd && snd.getAttribute('tempo')) tempos.push({q:pos, bpm:Number(snd.getAttribute('tempo'))}); }
+        else if(tag === 'note'){
+          if(el.querySelector('grace')) return;
+          const dur = Number((el.querySelector(':scope > duration') || {}).textContent || 0) / div;
+          const isChord = !!el.querySelector(':scope > chord');
+          const start = isChord ? lastStart : pos;
+          if(!isChord){ lastStart = pos; pos += dur; }
+          const pitch = el.querySelector(':scope > pitch'); if(!pitch) return;
+          const midi = (Number(pitch.querySelector('octave').textContent) + 1) * 12 + STEP[pitch.querySelector('step').textContent.trim()] + Number((pitch.querySelector('alter') || {}).textContent || 0);
+          const staff = Number((el.querySelector(':scope > staff') || {}).textContent || 0);
+          const hand = staff ? (staff >= 2 ? 2 : 1) : (pi >= 1 ? 2 : 1);
+          const tieStop = [...el.querySelectorAll(':scope > tie')].some(t => t.getAttribute('type') === 'stop');
+          const tieStart = [...el.querySelectorAll(':scope > tie')].some(t => t.getAttribute('type') === 'start');
+          const key = midi + '_' + hand;
+          if(tieStop && open[key]){ open[key].dq += dur; if(!tieStart) delete open[key]; return; }
+          const n = {midi, q:start, dq:dur, hand, vel:.8};
+          notes.push(n); if(tieStart) open[key] = n;
+        }
+      });
+    });
+  });
+  if(!notes.length) throw new Error('לא נמצאו תווים בקובץ.');
+  const toSec = tempoMapToSec(tempos);
+  const out = notes.map(n => ({midi:n.midi, s:toSec(n.q), d:Math.max(.05, toSec(n.q + n.dq) - toSec(n.q)), hand:n.hand, vel:n.vel})).sort((a, b) => a.s - b.s);
+  return {title:title.trim(), notes:out, bars:[...bars].sort((a, b) => a - b).map(toSec), bpm:(tempos[0] || {bpm:100}).bpm};
+}
+function parseMIDI(buf){
+  const u8 = new Uint8Array(buf); let p = 0;
+  const str = n => { const s = String.fromCharCode(...u8.subarray(p, p + n)); p += n; return s; };
+  const u32 = () => { const v = (u8[p] << 24 | u8[p + 1] << 16 | u8[p + 2] << 8 | u8[p + 3]) >>> 0; p += 4; return v; };
+  const u16 = () => { const v = u8[p] << 8 | u8[p + 1]; p += 2; return v; };
+  const vlq = () => { let v = 0, b; do{ b = u8[p++]; v = (v << 7) | (b & 0x7f); }while(b & 0x80); return v; };
+  if(str(4) !== 'MThd') throw new Error('זה לא קובץ MIDI תקין.');
+  const hl = u32(); u16(); const ntr = u16(), division = u16(); p += hl - 6;
+  if(division & 0x8000) throw new Error('סוג תזמון ה־MIDI הזה לא נתמך.');
+  const tempos = [], tracks = [], timesig = [];
+  for(let t = 0; t < ntr && p < u8.length; t++){
+    if(str(4) !== 'MTrk'){ break; }
+    const len = u32(), end = p + len; let tick = 0, rs = 0; const on = {}, notes = [];
+    while(p < end){
+      tick += vlq(); let st = u8[p];
+      if(st & 0x80){ p++; if(st < 0xf0) rs = st; } else st = rs;
+      if(st === 0xff){ const type = u8[p++], l = vlq(); if(type === 0x51) tempos.push({tick, us:(u8[p] << 16) | (u8[p + 1] << 8) | u8[p + 2]}); if(type === 0x58) timesig.push({tick, num:u8[p], den:Math.pow(2, u8[p + 1])}); p += l; }
+      else if(st === 0xf0 || st === 0xf7){ p += vlq(); }
+      else {
+        const ty = st & 0xf0, ch = st & 0x0f, a = u8[p++], b = (ty === 0xc0 || ty === 0xd0) ? 0 : u8[p++];
+        if(ty === 0x90 && b > 0){ (on[ch + '_' + a] = on[ch + '_' + a] || []).push({tick, vel:b}); }
+        else if(ty === 0x80 || (ty === 0x90 && b === 0)){ const q = on[ch + '_' + a]; if(q && q.length){ const s = q.shift(); notes.push({midi:a, t0:s.tick, t1:tick, vel:s.vel / 127, ch}); } }
+      }
+    }
+    p = end; if(notes.length) tracks.push(notes);
+  }
+  if(!tracks.length) throw new Error('לא נמצאו תווים בקובץ.');
+  const toSec = tempoMapToSec(tempos.map(x => ({q:x.tick / division, bpm:60000000 / x.us})));
+  const all = [];
+  tracks.forEach((tr, ti) => tr.forEach(n => all.push({midi:n.midi, s:toSec(n.t0 / division), d:Math.max(.05, toSec(n.t1 / division) - toSec(n.t0 / division)), vel:n.vel, hand:tracks.length >= 2 ? (ti === 0 ? 1 : 2) : (n.midi >= 60 ? 1 : 2)})));
+  all.sort((a, b) => a.s - b.s);
+  const lastQ = Math.max(...tracks.flat().map(n => n.t1)) / division, ts = timesig[0] || {num:4, den:4}, barQ = ts.num * 4 / ts.den, bars = [];
+  for(let q = 0; q <= lastQ + .01; q += barQ) bars.push(toSec(q));
+  return {title:'', notes:all, bars, bpm:tempos.length ? Math.round(60000000 / tempos[0].us) : 120};
+}
+async function prLoadFile(f){
+  const name = f.name.toLowerCase(), msg = $('#pr-msg'); msg.textContent = 'קורא את הקובץ…';
+  try{
+    let piece;
+    if(/\.midi?$/.test(name)) piece = parseMIDI(await f.arrayBuffer());
+    else if(/\.mxl$/.test(name)){
+      const files = await unzipFiles(await f.arrayBuffer()), dec = b => new TextDecoder().decode(b);
+      let path = ''; if(files['META-INF/container.xml']){ const m = dec(files['META-INF/container.xml']).match(/full-path="([^"]+)"/); if(m) path = m[1]; }
+      if(!files[path]) path = Object.keys(files).find(k => /\.(xml|musicxml)$/i.test(k) && !k.startsWith('META-INF'));
+      if(!path) throw new Error('לא נמצא MusicXML בתוך הקובץ.');
+      piece = parseMusicXML(dec(files[path]));
+    }
+    else if(/\.(xml|musicxml)$/.test(name)) piece = parseMusicXML(await f.text());
+    else if(/\.pdf$|\.(png|jpe?g)$/.test(name)) throw new Error('זה דף תווים כתמונה או PDF. צריך קודם להמיר אותו ל־MusicXML, ההסבר למעלה.');
+    else throw new Error('סוג הקובץ לא נתמך. אפשר MusicXML (‎.mxl / .musicxml / .xml) או MIDI (‎.mid).');
+    piece.title = piece.title || f.name.replace(/\.[^.]+$/, '');
+    prOpen(piece, null); msg.textContent = '';
+  }catch(e){ msg.textContent = e.message; }
+}
+function prOpen(piece, savedId){
+  prStop(); PR.piece = piece; PR.savedId = savedId; PR.t = 0; PR.t0 = 0; PR.loop = {a:null, b:null, on:false};
+  piece.dur = Math.max(...piece.notes.map(n => n.s + n.d));
+  piece.lo = Math.min(...piece.notes.map(n => n.midi)); piece.hi = Math.max(...piece.notes.map(n => n.midi));
+  renderPiano();
+}
+function encodeNotes(ns){ return ns.map(n => [n.midi, Math.round(n.s * 100), Math.max(1, Math.round(n.d * 100)), n.hand, Math.round((n.vel || .8) * 9)].map(x => x.toString(36)).join(',')).join(';'); }
+function decodeNotes(s){ return String(s || '').split(';').filter(Boolean).map(t => { const [m, a, d, h, v] = t.split(',').map(x => parseInt(x, 36)); return {midi:m, s:a / 100, d:d / 100, hand:h, vel:(v || 7) / 9}; }); }
+function pnRoll(){
+  const P = PR.piece;
+  const saved = prItems().sort((a, b) => String(a.data.title).localeCompare(String(b.data.title), 'he'));
+  let h = `<div class="pr-intro">
+      <h3>Piano Roll</h3>
+      <p class="muted">טוענים יצירה כקובץ <b>MusicXML</b> (‎.mxl, .musicxml) או <b>MIDI</b> (‎.mid), ומקבלים תצוגת piano roll עם נגינה, האטה והפרדת ידיים.</p>
+      <details class="pr-help"><summary>יש לי רק דף תווים (PDF או צילום). מה עושים?</summary>
+        <p>קריאה של דף תווים מודפס דורשת זיהוי תווים אופטי (OMR). אין כרגע דרך אמינה לעשות את זה בתוך דפדפן, ולכן ממירים פעם אחת בכלי חיצוני ומייבאים לכאן:</p>
+        <ul><li><b>MuseScore</b> (חינם): באתר musescore.com יש "Import PDF". אחרי ההמרה מייצאים כ־MusicXML.</li>
+        <li><b>Audiveris</b> (חינם, קוד פתוח, למחשב): פותחים בו את ה־PDF ומייצאים כ־MusicXML.</li>
+        <li>אפליקציות טלפון כמו <b>PlayScore 2</b> או <b>Soundslice</b> מצלמות דף ומייצאות MusicXML או MIDI.</li></ul>
+        <p>ההמרה לא תמיד מושלמת, במיוחד בכתב יד או בסריקה לא חדה. כדאי להקשיב לתוצאה ולתקן בתוכנה לפני הייבוא.</p>
+      </details>
+      <div class="row"><button class="btn primary" data-pr="file">טעינת קובץ</button><input type="file" id="pr-file" accept=".mid,.midi,.mxl,.musicxml,.xml,.pdf,.png,.jpg,.jpeg" hidden><span class="muted" id="pr-msg"></span></div>
+      ${saved.length ? `<div class="chips" style="margin-top:8px">${saved.map(i => `<span class="chip pr-saved"><button class="lnk" data-pr="open" data-id="${esc(i.id)}">${esc(i.data.title)}</button><button class="lnk del" data-pr="del" data-id="${esc(i.id)}" aria-label="מחיקה">✕</button></span>`).join('')}</div>` : ''}
+    </div>`;
+  if(P){
+    const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    h += `<div class="sub-panel" style="margin-top:14px">
+      <div class="spread"><div><h3>${esc(P.title)}</h3><p class="muted">${P.notes.length} תווים, ${fmt(P.dur)}</p></div>
+        ${PR.savedId ? '' : '<button class="btn small" data-pr="save">שמירה ברשימה</button>'}</div>
+      <div class="row pr-ctl">
+        <button class="btn primary" data-pr="play" id="pr-play">${PR.playing ? 'השהיה' : 'נגינה'}</button>
+        <button class="btn" data-pr="restart">להתחלה</button>
+        <label class="row" style="gap:6px;font-weight:600">מהירות<select id="pr-speed">${[.5,.6,.75,.9,1,1.25,1.5].map(v => `<option value="${v}" ${v === PR.speed ? 'selected' : ''}>${Math.round(v * 100)}%</option>`).join('')}</select></label>
+        <label class="row pr-hand r" style="gap:6px;font-weight:600"><input type="checkbox" data-hand="1" ${PR.hands[1] ? 'checked' : ''}> יד ימין</label>
+        <label class="row pr-hand l" style="gap:6px;font-weight:600"><input type="checkbox" data-hand="2" ${PR.hands[2] ? 'checked' : ''}> יד שמאל</label>
+        <div class="seg"><button data-pr="zoom-out" aria-label="הקטנה">−</button><button data-pr="zoom-in" aria-label="הגדלה">+</button></div>
+        <span class="muted" id="pr-time" dir="ltr"></span>
+      </div>
+      <div class="row pr-loop">
+        <b>לולאה לתרגול</b>
+        <label class="row" style="gap:4px">מתיבה<input type="number" id="pr-la" min="1" max="${P.bars.length}" style="width:70px" value="${PR.loop.a != null ? prBarAt(PR.loop.a) : ''}"></label>
+        <label class="row" style="gap:4px">עד תיבה<input type="number" id="pr-lb" min="1" max="${P.bars.length}" style="width:70px" value="${PR.loop.b != null ? prBarAt(PR.loop.b - .001) : ''}"></label>
+        <button class="btn small" data-pr="loop-bars">קביעה</button>
+        <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-loop-on" ${PR.loop.on ? 'checked' : ''} ${PR.loop.a == null ? 'disabled' : ''}> לחזור שוב ושוב</label>
+        ${PR.loop.a != null ? '<button class="btn ghost small" data-pr="loop-clear">ביטול הלולאה</button>' : ''}
+        <span class="muted" id="pr-loop-txt">${PR.loop.a != null ? '' : 'או גוררים עם העכבר על התצוגה כדי לסמן קטע.'}</span>
+      </div>
+      <div class="pr-wrap" dir="ltr"><canvas id="pr-canvas" height="440"></canvas></div>
+      <input type="range" id="pr-scroll" min="0" max="${Math.ceil(P.dur * 10)}" value="0" dir="ltr" aria-label="גלילה ביצירה" style="width:100%">
+      <p class="hint">לחיצה על התצוגה מזיזה את נקודת הנגינה. גרירה מסמנת קטע ללולאה (נצמד לתחילת תיבה). גלגלת העכבר גוללת לאורך היצירה.</p>
+    </div>`;
+  }
+  $('#pn-main').innerHTML = h;
+  if(P){ prResize(); prDraw(); }
+}
+function prBarAt(t){ const B = PR.piece.bars; let i = 0; while(i + 1 < B.length && B[i + 1] <= t + 1e-6) i++; return i + 1; }
+function prBarTime(n){ const B = PR.piece.bars; return n - 1 < B.length ? B[Math.max(0, n - 1)] : PR.piece.dur; }
+function prSetLoop(a, b){ if(b - a < .1) return; PR.loop = {a, b, on:true}; const was = PR.playing; prStop(); PR.t = a; if(PR.t < PR.t0 || PR.t > PR.t0 + 1) PR.t0 = Math.max(0, a - .5); renderPiano(); if(was) prPlay(); }
+function prSnap(t){ const B = PR.piece.bars; if(!B.length) return t; let best = t, bd = .35 * 60 / (PR.piece.bpm || 100); B.concat([PR.piece.dur]).forEach(x => { if(Math.abs(x - t) < bd){ bd = Math.abs(x - t); best = x; } }); return best; }
+function prResize(){ const c = $('#pr-canvas'); if(!c) return; const w = c.parentElement.clientWidth, dpr = window.devicePixelRatio || 1; c.style.width = w + 'px'; c.style.height = '440px'; c.width = w * dpr; c.height = 440 * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
+const KBW = 46;
+function prDraw(){
+  const c = $('#pr-canvas'), P = PR.piece; if(!c || !P) return;
+  const ctx = c.getContext('2d'), W = c.clientWidth, H = 440, dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const lo = Math.max(21, P.lo - 2), hi = Math.min(108, P.hi + 2), rows = hi - lo + 1, rh = H / rows;
+  const view = (W - KBW) / PR.pps;
+  if(PR.playing && (PR.t > PR.t0 + view * .75 || PR.t < PR.t0)) PR.t0 = Math.max(0, PR.t - view * .2);
+  const x = s => KBW + (s - PR.t0) * PR.pps, y = m => (hi - m) * rh;
+  ctx.fillStyle = dark ? '#151a24' : '#ffffff'; ctx.fillRect(0, 0, W, H);
+  for(let m = lo; m <= hi; m++){ if(pIsBlack(m)){ ctx.fillStyle = dark ? '#1b2130' : '#f2f4f8'; ctx.fillRect(KBW, y(m), W - KBW, rh); } if(m % 12 === 0){ ctx.fillStyle = dark ? '#2b3345' : '#d7dce6'; ctx.fillRect(KBW, y(m) + rh - 1, W - KBW, 1); } }
+  ctx.strokeStyle = dark ? '#34405a' : '#c9d0dc'; ctx.lineWidth = 1;
+  P.bars.forEach((b, i) => { const bx = x(b); if(bx < KBW || bx > W) return; ctx.beginPath(); ctx.moveTo(bx + .5, 0); ctx.lineTo(bx + .5, H); ctx.stroke(); ctx.fillStyle = dark ? '#7d8aa5' : '#8a94a8'; ctx.font = '10px Assistant, Arial'; ctx.fillText(String(i + 1), bx + 3, 11); });
+  const sounding = new Set();
+  P.notes.forEach(n => {
+    const x0 = x(n.s), x1 = x(n.s + n.d); if(x1 < KBW || x0 > W) return;
+    const on = PR.t >= n.s && PR.t < n.s + n.d, vis = PR.hands[n.hand];
+    if(on && vis) sounding.add(n.midi);
+    const base = n.hand === 1 ? [49, 110, 230] : [32, 165, 120];
+    ctx.fillStyle = `rgba(${base.join(',')},${!vis ? .15 : on ? 1 : .78})`;
+    const yy = y(n.midi) + 1, hh = Math.max(2, rh - 2), xx = Math.max(KBW, x0), ww = Math.max(2, x1 - xx - 1);
+    ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(xx, yy, ww, hh, Math.min(3, hh / 2)); else ctx.rect(xx, yy, ww, hh); ctx.fill();
+    if(on && vis){ ctx.strokeStyle = '#FFC933'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1; }
+  });
+  for(let m = lo; m <= hi; m++){
+    const b = pIsBlack(m), act = sounding.has(m);
+    ctx.fillStyle = act ? '#FFC933' : b ? '#1E2330' : '#FFFFFF'; ctx.fillRect(0, y(m), b ? KBW * .62 : KBW, rh);
+    ctx.strokeStyle = '#9AA3B5'; ctx.strokeRect(.5, y(m) + .5, (b ? KBW * .62 : KBW) - 1, rh - 1);
+    if(m % 12 === 0 && rh >= 7){ ctx.fillStyle = '#5b667a'; ctx.font = `${Math.min(10, rh)}px Assistant, Arial`; ctx.fillText('C' + (Math.floor(m / 12) - 1), KBW * .64, y(m) + rh - 2); }
+  }
+  ctx.fillStyle = dark ? '#3a4560' : '#c9d0dc'; ctx.fillRect(KBW - 1, 0, 1, H);
+  const L = PR.drag ? {a:Math.min(PR.drag.a, PR.drag.b), b:Math.max(PR.drag.a, PR.drag.b)} : PR.loop;
+  if(L.a != null && L.b != null){ const la = Math.max(KBW, x(L.a)), lb = Math.min(W, x(L.b)); if(lb > la){ ctx.fillStyle = 'rgba(255,201,51,.18)'; ctx.fillRect(la, 0, lb - la, H); ctx.fillStyle = '#E0A400'; if(x(L.a) >= KBW) ctx.fillRect(x(L.a) - 1, 0, 3, H); if(x(L.b) <= W) ctx.fillRect(x(L.b) - 1, 0, 3, H); } }
+  const px = x(PR.t); if(px >= KBW && px <= W){ ctx.fillStyle = '#E8423F'; ctx.fillRect(px - 1, 0, 2, H); }
+  const tEl = $('#pr-time'); if(tEl) tEl.textContent = `${Math.floor(PR.t / 60)}:${String(Math.floor(PR.t % 60)).padStart(2, '0')} / ${Math.floor(P.dur / 60)}:${String(Math.floor(P.dur % 60)).padStart(2, '0')}`;
+  const sc = $('#pr-scroll'); if(sc && document.activeElement !== sc) sc.value = Math.round(PR.t0 * 10);
+}
+function prPlay(){
+  const P = PR.piece; if(!P) return;
+  if(PR.t >= P.dur) PR.t = 0;
+  if(PR.loop.on && PR.loop.a != null && (PR.t < PR.loop.a - .01 || PR.t >= PR.loop.b)) PR.t = PR.loop.a;
+  const ctx = ac(); PR.playing = true; PR.acStart = ctx.currentTime + .05; PR.songStart = PR.t; PR.sched = PR.t;
+  const tick = () => {
+    if(!PR.playing) return;
+    const now = ctx.currentTime, horizon = PR.songStart + (now + .25 - PR.acStart) * PR.speed;
+    const cap = PR.loop.on && PR.loop.a != null ? Math.min(horizon, PR.loop.b) : horizon;
+    P.notes.forEach(n => { if(n.s >= PR.sched && n.s < cap && PR.hands[n.hand]){ const at = PR.acStart + (n.s - PR.songStart) / PR.speed; pianoTone(n.midi, Math.max(now, at), Math.min(4, n.d / PR.speed + .3), .12 + .12 * (n.vel || .7)); } });
+    PR.sched = horizon;
+    if(PR.loop.on && PR.loop.a != null && PR.songStart + (now - PR.acStart) * PR.speed >= PR.loop.b){ prStop(); PR.t = PR.loop.a; if(PR.t < PR.t0) PR.t0 = Math.max(0, PR.t - .5); prPlay(); return; }
+    if(PR.songStart + (now - PR.acStart) * PR.speed > P.dur + .5){ prStop(); PR.t = P.dur; prDraw(); return; }
+    PR.timer = setTimeout(tick, 60);
+  };
+  tick();
+  const frame = () => { if(!PR.playing) return; PR.t = Math.max(PR.songStart, PR.songStart + (ctx.currentTime - PR.acStart) * PR.speed); prDraw(); PR.raf = requestAnimationFrame(frame); };
+  PR.raf = requestAnimationFrame(frame);
+  const b = $('#pr-play'); if(b) b.textContent = 'השהיה';
+}
+function prStop(){ PR.playing = false; clearTimeout(PR.timer); cancelAnimationFrame(PR.raf); const b = $('#pr-play'); if(b) b.textContent = 'נגינה'; }
+async function onRoll(e){
+  if(PN.tab !== 'roll') return false;
+  const cv = e.target.closest('#pr-canvas');
+  if(cv){ if(PR.justDragged){ PR.justDragged = false; return true; } const r = cv.getBoundingClientRect(), xx = e.clientX - r.left; if(xx > KBW){ const was = PR.playing; prStop(); PR.t = Math.max(0, PR.t0 + (xx - KBW) / PR.pps); prDraw(); if(was) prPlay(); } return true; }
+  const b = e.target.closest('[data-pr]'); if(!b) return false;
+  const act = b.dataset.pr;
+  if(act === 'file') $('#pr-file').click();
+  if(act === 'play') PR.playing ? prStop() : prPlay();
+  if(act === 'loop-bars'){
+    const a = Number($('#pr-la').value), b = Number($('#pr-lb').value), n = PR.piece.bars.length;
+    if(!a || !b || a < 1 || b < a || a > n){ $('#pr-loop-txt').textContent = `בחרו תיבות בין 1 ל־${n}.`; return true; }
+    prSetLoop(prBarTime(a), b + 1 <= n ? prBarTime(b + 1) : PR.piece.dur);
+  }
+  if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; renderPiano(); }
+  if(act === 'restart'){ const was = PR.playing; prStop(); PR.t = 0; PR.t0 = 0; prDraw(); if(was) prPlay(); }
+  if(act === 'zoom-in' || act === 'zoom-out'){ PR.pps = clamp(PR.pps * (act === 'zoom-in' ? 1.4 : 1 / 1.4), 15, 500); prDraw(); }
+  if(act === 'open'){ const it = prItems().find(i => i.id === b.dataset.id); prOpen({title:it.data.title, notes:decodeNotes(it.data.notes), bars:it.data.bars || [], bpm:it.data.bpm}, it.id); }
+  if(act === 'del'){ const it = prItems().find(i => i.id === b.dataset.id); if(!confirm(`למחוק את "${it.data.title}" מהרשימה?`)) return true; const r = await tCall('teacherDeleteContent', {id:it.id}); LIB.items = r.items; T.data.pvoices = r.items.filter(i => ['pvoice','pgrid','psong','plink','proll'].includes(i.kind)); if(PR.savedId === it.id) PR.savedId = null; renderPiano(); }
+  if(act === 'save'){
+    const P = PR.piece, enc = encodeNotes(P.notes), bars = P.bars.map(v => Math.round(v * 100) / 100);
+    if(enc.length + JSON.stringify(bars).length > 42000){ alert('היצירה ארוכה מדי לשמירה ברשימה. אפשר לטעון אותה מהקובץ בכל פעם.'); return true; }
+    try{ const r = await saveItems([{id:'', kind:'proll', data:{title:P.title, notes:enc, bars, bpm:P.bpm}}]); PR.savedId = r[0].id; toast('היצירה נשמרה ברשימה'); renderPiano(); }catch(err){ alert(err.message); }
+  }
+  return true;
+}
+
 /* ================== ניווט ================== */
 function renderHomeState(){
   const st = {teacher:typeof T !== 'undefined' && T.data ? 'מחובר' : '', student:typeof S !== 'undefined' && S.student ? 'מחובר/ת: ' + S.student.name : '', velvet:typeof B !== 'undefined' && B.member ? 'מחובר/ת: ' + B.member.name : '', youth:typeof Y !== 'undefined' && Y.me ? 'מחובר/ת: ' + Y.me.name : ''};
@@ -6661,6 +6943,29 @@ function init(){
   $('#pn-main').addEventListener('dragend', () => $$('#pn-main .dragging, #pn-main .drop-on').forEach(x => x.classList.remove('dragging', 'drop-on')));
   $('#pn-main').addEventListener('dragover', e => { const t = e.target.closest('.pg-cell'); if(!t) return; e.preventDefault(); $$('#pn-main .drop-on').forEach(x => x !== t && x.classList.remove('drop-on')); t.classList.add('drop-on'); });
   $('#pn-main').addEventListener('drop', e => { const t = e.target.closest('.pg-cell'); if(!t) return; e.preventDefault(); psMove(e.dataTransfer.getData('text/plain'), t.dataset.cell); });
+  $('#pn-main').addEventListener('click', async e => { if(await onRoll(e)) e.stopImmediatePropagation(); }, true);
+  $('#pn-main').addEventListener('change', e => {
+    if(e.target.id === 'pr-file' && e.target.files[0]){ prLoadFile(e.target.files[0]); e.target.value = ''; }
+    if(e.target.id === 'pr-speed'){ const was = PR.playing; prStop(); PR.speed = Number(e.target.value); if(was) prPlay(); }
+    const hc = e.target.closest('[data-hand]'); if(hc){ PR.hands[hc.dataset.hand] = hc.checked; prDraw(); }
+    if(e.target.id === 'pr-loop-on'){ PR.loop.on = e.target.checked; }
+  });
+  $('#pn-main').addEventListener('input', e => { if(e.target.id === 'pr-scroll'){ PR.t0 = Number(e.target.value) / 10; if(!PR.playing) prDraw(); else { const was = true; prStop(); PR.t = PR.t0; prDraw(); prPlay(); } } });
+  $('#pn-main').addEventListener('pointerdown', e => {
+    const cv = e.target.closest('#pr-canvas'); if(!cv || !PR.piece) return;
+    const r = cv.getBoundingClientRect(), xx = e.clientX - r.left; if(xx <= KBW) return;
+    const t = PR.t0 + (xx - KBW) / PR.pps; PR.drag = {a:t, b:t, x0:e.clientX};
+    const move = ev => { PR.drag.b = PR.t0 + (ev.clientX - r.left - KBW) / PR.pps; if(Math.abs(ev.clientX - PR.drag.x0) > 6) prDraw(); };
+    const up = ev => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+      const d = PR.drag; PR.drag = null;
+      if(Math.abs(ev.clientX - d.x0) > 6){ PR.justDragged = true; const a = prSnap(Math.max(0, Math.min(d.a, d.b))), b = prSnap(Math.min(PR.piece.dur, Math.max(d.a, d.b))); prSetLoop(a, b); }
+      else prDraw();
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+  });
+  $('#pn-main').addEventListener('wheel', e => { if(!e.target.closest('#pr-canvas') || !PR.piece) return; e.preventDefault(); PR.t0 = clamp(PR.t0 + (e.deltaY + e.deltaX) / PR.pps, 0, PR.piece.dur); prDraw(); }, {passive:false});
+  window.addEventListener('resize', () => { if(PN.tab === 'roll' && $('#pr-canvas')){ prResize(); prDraw(); } });
   $('#pn-main').addEventListener('click', onPiano);
   $('#pn-main').addEventListener('change', e => {
     if(e.target.id === 'pn-scale'){ PN.scale = e.target.value; renderPiano(); }
