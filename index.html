@@ -42,6 +42,22 @@ p{ margin:0; }
 .brand path{ fill:var(--amber); }
 nav.tabs{ display:flex; gap:2px; overflow-x:auto; scrollbar-width:none; flex:1; align-items:center; }
 nav.tabs::-webkit-scrollbar{ display:none; }
+.areas{ display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; flex:1; min-width:0; }
+.areas::-webkit-scrollbar{ display:none; }
+.area{ display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line) !important; padding:6px 12px !important; }
+.area .adot{ width:9px; height:9px; border-radius:50%; background:var(--line); flex:none; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
+.area.on .adot{ background:var(--green); box-shadow:0 0 0 3px color-mix(in srgb, var(--green) 25%, transparent); }
+.area .an{ font-size:.78rem; font-weight:600; color:var(--green); max-width:120px; overflow:hidden; text-overflow:ellipsis; }
+.area.on{ border-color:color-mix(in srgb, var(--green) 45%, var(--line)) !important; }
+.area[aria-current="page"] .an{ color:inherit; opacity:.85; }
+.area[aria-current="page"] .adot{ box-shadow:0 0 0 2px var(--bg); }
+.tools-bar{ border-top:1px solid var(--line); background:var(--surface-2); }
+.tools{ max-width:1180px; margin:0 auto; display:flex; justify-content:center; gap:4px; padding:5px 16px; overflow-x:auto; scrollbar-width:none; }
+.tools::-webkit-scrollbar{ display:none; }
+.tools .tab{ padding:6px 14px; font-size:.95rem; }
+@media (max-width: 700px){ .tools{ justify-content:flex-start; } .top-inner{ gap:8px; } .brand span{ display:none; } }
+.songs-back{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+.songs-locked{ width:100%; border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:var(--surface); }
 .tab{ appearance:none; border:0; background:transparent; color:var(--ink-2); font:600 1rem 'Assistant',Arial,sans-serif; padding:8px 13px; border-radius:999px; cursor:pointer; white-space:nowrap; }
 .tab:hover{ color:var(--ink); }
 .tab[aria-current="page"]{ background:var(--ink); color:var(--bg); }
@@ -795,22 +811,24 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
 <header class="top">
   <div class="top-inner">
     <div class="brand" id="brand-home" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer"><svg viewBox="0 0 24 26" aria-hidden="true"><path d="M12 1C20 1 23.5 4.5 22.6 9.6 21.6 15.3 15.6 22.4 12 25 8.4 22.4 2.4 15.3 1.4 9.6.5 4.5 4 1 12 1Z"/></svg><span id="app-name">פריטה</span></div>
-    <nav class="tabs" aria-label="ניווט">
+    <nav class="areas" aria-label="האזורים שלי">
+      <button class="area tab" data-view="teacher" data-area="teacher"><span class="adot"></span><span class="al">מורה</span><small class="an"></small></button>
+      <button class="area tab" data-view="student" data-area="student"><span class="adot"></span><span class="al">תלמיד</span><small class="an"></small></button>
+      <button class="area tab" data-view="youth" data-area="youth"><span class="adot"></span><span class="al">הרכבים צעירים</span><small class="an"></small></button>
+      <button class="area tab" data-view="velvet" data-area="velvet"><span class="adot"></span><span class="al">VELVET</span><small class="an"></small></button>
+      <button class="area tab" data-view="piano" data-area="piano" hidden><span class="adot"></span><span class="al">פסנתר</span><small class="an"></small></button>
+      <button class="area tab" data-view="links" data-area="links" hidden><span class="adot"></span><span class="al">קישורים</span><small class="an"></small></button>
+    </nav>
+    <button class="mini" id="metro-mini" hidden>עצור מטרונום</button>
+  </div>
+  <div class="tools-bar">
+    <nav class="tabs tools" aria-label="כלים">
       <button class="tab" data-view="metronome">מטרונום</button>
-      <button class="tab" data-view="tuner">טיונר</button>
       <button class="tab" data-view="chords">אקורדים</button>
       <button class="tab" data-view="fretboard">צוואר וסולמות</button>
       <button class="tab" data-view="theory">תיאוריה</button>
-      <button class="tab" data-view="songs">שירים</button>
-      <span class="sep" aria-hidden="true"></span>
-      <button class="tab" data-view="student">האזור שלי</button>
-      <button class="tab" data-view="teacher">מורה</button>
-      <button class="tab" data-view="velvet" id="tab-velvet" hidden>VELVET</button>
-      <button class="tab" data-view="youth" id="tab-youth" hidden>הרכבים צעירים</button>
-      <button class="tab" data-view="piano" id="tab-piano" hidden>פסנתר</button>
-      <button class="tab" data-view="links" id="tab-links" hidden>קישורים</button>
+      <button class="tab" data-view="tuner">טיונר</button>
     </nav>
-    <button class="mini" id="metro-mini" hidden>עצור מטרונום</button>
   </div>
 </header>
 
@@ -832,7 +850,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
       <button class="home-card hc-links" data-go="links" hidden><span class="hc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a3 3 0 1 1 4.2 4.2l-2 2a1 1 0 1 1-1.4-1.4l2-2a1 1 0 1 0-1.4-1.4l-3.5 3.5a1 1 0 0 1-1.4 0Zm2.8-2.8a1 1 0 0 1 0 1.4l-3.5 3.5a3 3 0 1 1-4.2-4.2l2-2a1 1 0 1 1 1.4 1.4l-2 2a1 1 0 1 0 1.4 1.4l3.5-3.5a1 1 0 0 1 1.4 0Z"/></svg></span><span class="hc-text"><b>קישורים</b><small>אזור פרטי: אתרים ותוכנות חשובים</small></span><span class="hc-state" data-state="links"></span></button>
     </div>
     <div class="home-tools"><span class="muted">כלים פתוחים לכולם:</span>
-      <button class="chip" data-go="metronome">מטרונום</button><button class="chip" data-go="tuner">טיונר</button><button class="chip" data-go="chords">אקורדים</button><button class="chip" data-go="fretboard">צוואר וסולמות</button><button class="chip" data-go="theory">תיאוריה</button><button class="chip" data-go="songs">שירים</button>
+      <button class="chip" data-go="metronome">מטרונום</button><button class="chip" data-go="tuner">טיונר</button><button class="chip" data-go="chords">אקורדים</button><button class="chip" data-go="fretboard">צוואר וסולמות</button><button class="chip" data-go="theory">תיאוריה</button>
     </div>
   </section>
 
@@ -965,8 +983,9 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
 
   <!-- Songs -->
   <section class="view" id="v-songs">
+    <div class="songs-back" id="sg-back"></div>
     <div class="view-head">
-      <h2>נגינה עם שירים</h2>
+      <h2 id="sg-head">נגינה עם שירים</h2>
       <p>מאטים את השיר לקצב שנוח לכם, חוזרים על קטע קשה, ומנגנים עם מטרונום שמתאים את עצמו למהירות.</p>
     </div>
     <div class="row" style="margin-bottom:14px;align-items:center">
@@ -1136,7 +1155,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
           <div class="sec-title"><h3>שיעורי הבית שלי</h3></div>
           <div class="tasks" id="stu-tasks"></div>
           <div id="stu-songs-wrap" hidden>
-            <div class="sec-title" style="margin-top:22px"><h3>השירים שלי</h3></div>
+            <div class="sec-title spread" style="margin-top:22px"><h3>השירים שלי</h3><button class="btn small primary" id="stu-open-songs">לטבלת השירים שלי</button></div>
             <div class="chips" id="stu-songs" style="gap:8px"></div>
           </div>
           <div id="stu-lessons-wrap" hidden>
@@ -2293,7 +2312,14 @@ function serverHandle(req, store, teacherPassword){
   const nLesson = l => ({id:String(l.id), studentId:String(l.studentId), date:String(l.date || ''), text:String(l.text || ''), createdAt:String(l.createdAt || '')});
   const settingsObj = () => { const o = {}; (store.all('Settings') || []).forEach(r => { o[String(r.key)] = String(r.value); }); return o; };
   const mail = (to, subject, body) => { if(to && typeof MailApp !== 'undefined'){ try{ MailApp.sendEmail(String(to), subject, body); }catch(e){} } };
-  const nTask = t => ({id:String(t.id), studentId:String(t.studentId), title:String(t.title || ''), description:String(t.description || ''), targetReps:num(t.targetReps), targetBpm:num(t.targetBpm), reps:num(t.reps), done:bool(t.done), dueDate:String(t.dueDate || ''), attachments:String(t.attachments || ''), createdAt:String(t.createdAt || ''), updatedAt:String(t.updatedAt || ''), doneAt:String(t.doneAt || '')});
+  const dateOnly = v => {
+    if(v instanceof Date && !isNaN(v)) return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-' + String(v.getDate()).padStart(2, '0');
+    const s = String(v || '').trim(); const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if(m) return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+    const m2 = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/); if(m2) return m2[3] + '-' + m2[2].padStart(2, '0') + '-' + m2[1].padStart(2, '0');
+    if(!s) return ''; const d = new Date(s); return isNaN(d) ? '' : d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  const nTask = t => ({id:String(t.id), studentId:String(t.studentId), title:String(t.title || ''), description:String(t.description || ''), targetReps:num(t.targetReps), targetBpm:num(t.targetBpm), reps:num(t.reps), done:bool(t.done), dueDate:dateOnly(t.dueDate), attachments:String(t.attachments || ''), createdAt:String(t.createdAt || ''), updatedAt:String(t.updatedAt || ''), doneAt:String(t.doneAt || '')});
   const nContent = c => { let d = {}; try{ d = typeof c.data === 'string' ? JSON.parse(c.data || '{}') : (c.data || {}); }catch(e){} return {id:String(c.id), kind:String(c.kind), data:d, updatedAt:String(c.updatedAt || '')}; };
   const nLog = l => ({id:String(l.id), studentId:String(l.studentId), taskId:String(l.taskId || ''), minutes:num(l.minutes), bpm:num(l.bpm), note:String(l.note || ''), date:String(l.date || '')});
 
@@ -2650,7 +2676,7 @@ function serverHandle(req, store, teacherPassword){
     if(a === 'teacherSaveTask'){
       const t = req.task || {}, title = String(t.title || '').trim();
       if(!title) throw new Error('צריך לכתוב מה לתרגל.');
-      const fields = {title, description:String(t.description || '').slice(0, 1000), targetReps:Math.max(0, Math.round(num(t.targetReps))), targetBpm:Math.max(0, Math.round(num(t.targetBpm))), dueDate:String(t.dueDate || ''), attachments:String(t.attachments || '').slice(0, 2000)};
+      const fields = {title, description:String(t.description || '').slice(0, 1000), targetReps:Math.max(0, Math.round(num(t.targetReps))), targetBpm:Math.max(0, Math.round(num(t.targetBpm))), dueDate:dateOnly(t.dueDate), attachments:String(t.attachments || '').slice(0, 2000)};
       if(t.id){
         const raw = store.all('Tasks').find(x => String(x.id) === String(t.id));
         if(!raw) throw new Error('המשימה לא נמצאה.');
@@ -2777,6 +2803,7 @@ function studentLogout(){
 function taskSort(a, b){ return (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || (b.createdAt || '').localeCompare(a.createdAt || ''); }
 function renderStudent(){
   const logged = !!S.student;
+  if(typeof updateAreas === 'function') updateAreas();
   if(currentView === 'home') renderHomeState();
   $('#stu-login').hidden = logged; $('#stu-dash').hidden = !logged;
   if(!logged) return;
@@ -2922,6 +2949,7 @@ function sStats(sid){
 let tMode = 'students';
 function renderTeacher(){
   const logged = !!T.data;
+  if(typeof updateAreas === 'function') updateAreas();
   if(typeof updateLinksTab === 'function') updateLinksTab();
   if(typeof updatePianoTab === 'function') updatePianoTab();
   if(typeof updateBandTab === 'function') updateBandTab();
@@ -3025,7 +3053,7 @@ function openTaskDlg(task, preselect){
   $('#ft-desc').value = task ? task.description : '';
   $('#ft-reps').value = task && task.targetReps ? task.targetReps : '';
   $('#ft-bpm').value = task && task.targetBpm ? task.targetBpm : '';
-  $('#ft-due').value = task ? task.dueDate : '';
+  $('#ft-due').value = task ? normDate(task.dueDate) : '';
   $('#ft-reset').checked = false;
   $('#ft-reset-wrap').hidden = !task;
   $('#ft-assign-wrap').hidden = !!task;
@@ -3470,6 +3498,8 @@ async function deleteShape(){
 const SG = {player:null, ready:false, song:null, orig:0, target:0, rate:1, sync:store.get('pritah.songSync') === '1', loop:{a:null, b:null, on:false}, poll:null, alignPending:false, taps:[], loading:null};
 function songModel(d){ return {fromBand:d.fromBand || '', id:d.id || '', name:d.name || '', url:d.url || '', bpm:Number(d.bpm) || 0, note:d.note || '', sheet:d.sheet || '', dir:d.dir || '', key:d.key || '', shape:d.shape || '', mode:d.mode || 'maj', genreId:d.genreId || '', loops:(d.loops || []).map(l => ({name:String(l.name || ''), a:Number(l.a) || 0, b:Number(l.b) || 0}))}; }
 function allSongs(){ return libOf('song').map(i => songModel(Object.assign({}, i.data, {id:i.id}))); }
+// מה שמוצג בלשונית "שירים": תלמיד מחובר רואה רק את השירים שלו, גם אם במכשיר מחובר גם המורה
+function viewSongs(){ if(S.student){ const ids = new Set((S.songs || []).map(i => i.id)); return allSongs().filter(x => ids.has(x.id)); } return T.data ? allSongs() : []; }
 function findSong(id){ return allSongs().find(s => s.id === id) || null; }
 function parseYouTube(u){
   u = String(u || '').trim();
@@ -3633,7 +3663,7 @@ function loopMark(which){
   renderLoop();
 }
 function renderSongList(){
-  const all = allSongs(), songs = all.filter(songMatches);
+  const all = viewSongs(), songs = all.filter(songMatches);
   $('#sg-list').innerHTML = songs.length
     ? songs.map(s => `<button class="song-item" data-id="${esc(s.id)}" aria-pressed="${SG.song && SG.song.id === s.id}"><span><b>${esc(s.name)}</b>${s.shape || genreName(s.genreId) ? `<span class="chips" style="margin-top:3px">${songTagChips(s)}</span>` : ''}</span>${s.bpm ? `<small>${s.bpm} BPM</small>` : ''}</button>`).join('')
     : `<p class="muted">${all.length ? 'אין שירים שמתאימים לחיפוש.' : T.data ? 'עוד אין שירים בספרייה.' : S.student ? 'המורה עוד לא נתן לך שירים. אפשר להדביק כאן למטה קישור לכל סרטון.' : 'כדי לראות את השירים שלך, היכנסו קודם ל"האזור שלי". אפשר גם להדביק כאן למטה קישור לכל סרטון.'}</p>`;
@@ -3650,7 +3680,7 @@ function playSongFromTask(id, bpm){ const s = findSong(id); if(!s) return; showV
 /* ניהול שירים אצל המורה */
 function renderTeacherSongs(){
   const songs = allSongs();
-  let h = `<div class="spread"><h2>שירים</h2><div class="row">${claptonImported() ? '' : '<button class="btn" data-act="clapton">הוספת רשימת Clapton</button>'}<button class="btn" data-act="my-table">סידור לפי הטבלה שלי</button><button class="btn" data-act="bulk-open">ייבוא רשימת שירים</button><button class="btn" data-act="sync-band">העתקת שירי VELVET לספרייה</button><button class="btn primary" data-act="new-song">שיר חדש</button></div></div>
+  let h = `<div class="spread"><h2>שירים</h2><div class="row">${claptonImported() ? '' : '<button class="btn" data-act="clapton">הוספת רשימת Clapton</button>'}<button class="btn" data-act="open-songs-view">פתיחת הנגן</button><button class="btn" data-act="my-table">סידור לפי הטבלה שלי</button><button class="btn" data-act="bulk-open">ייבוא רשימת שירים</button><button class="btn" data-act="sync-band">העתקת שירי VELVET לספרייה</button><button class="btn primary" data-act="new-song">שיר חדש</button></div></div>
     <p class="muted" style="margin-top:6px;max-width:62ch">הספרייה גלויה רק לך. תלמיד רואה רק שירים שצירפת אליו. השירים מסודרים לפי ז׳אנר, ובתוך כל ז׳אנר לפי צורת הנגינה C, A, G, E, D. לכל שיר אפשר להוסיף סרטון, מילים ואקורדים, או את שניהם. קטעים ללולאה שומרים מתוך הנגן: מסמנים התחלה וסוף ולוחצים "שמור את הקטע לשיר".</p>`;
   if(BULK.open) h += bulkHTML();
   h += songTagsAdminHTML();
@@ -4224,7 +4254,7 @@ async function bandLogin(pin, silent){
   finally{ $('#vb-go').disabled = false; }
 }
 function bandLogout(){ Object.assign(B, {pin:null, member:null, members:[], items:[], songId:null}); store.del('pritah.bandpin'); $('#vb-pin').value = ''; updateBandTab(); renderBand(); }
-function updateBandTab(){ $('#tab-velvet').hidden = !(B.member || T.data || currentView === 'velvet'); if(currentView === 'home') renderHomeState(); }
+function updateBandTab(){ updateAreas(); if(currentView === 'home') renderHomeState(); }
 
 function renderBand(){
   const logged = !!B.member;
@@ -4755,9 +4785,15 @@ function practiceStreak(logs){
   while(days.has(localDay(d))){ n++; d.setDate(d.getDate() - 1); }
   return n;
 }
+function normDate(v){
+  const s = String(v || '').trim(); const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+  if(!s) return ''; const d = new Date(s); return isNaN(d) ? '' : localDay(d);
+}
 function dueInfo(t){
-  if(t.done || !t.dueDate) return null;
-  const [y, m, d] = t.dueDate.split('-').map(Number), due = new Date(y, m - 1, d), today = new Date(); today.setHours(0, 0, 0, 0);
+  const dd = normDate(t.dueDate);
+  if(t.done || !dd) return null;
+  const [y, m, d] = dd.split('-').map(Number), due = new Date(y, m - 1, d), today = new Date(); today.setHours(0, 0, 0, 0);
   const diff = Math.round((due - today) / 86400000);
   if(diff < 0) return {cls:'late', text:diff === -1 ? 'באיחור של יום' : `באיחור של ${-diff} ימים`, diff};
   if(diff === 0) return {cls:'soon', text:'להיום', diff};
@@ -4930,7 +4966,7 @@ function renderSongFilters(){
   $$('#sg-view button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === SGF.view));
 }
 function renderShapeTable(){
-  const ml = minorLabels(), all = allSongs().filter(songMatches);
+  const ml = minorLabels(), all = viewSongs().filter(songMatches);
   const withShape = all.filter(s => s.shape), noShape = all.length - withShape.length;
   const gs = genres().filter(g => !SGF.genre || SGF.genre === g.id);
   const blocks = gs.map(g => ({name:g.data.name, list:withShape.filter(s => s.genreId === g.id)}));
@@ -4939,7 +4975,7 @@ function renderShapeTable(){
   const shapes = SGF.shape ? [SGF.shape] : SONG_SHAPES;
   const cell = (list, sh, mode) => { const ss = list.filter(s => s.shape === sh && (s.mode || 'maj') === mode); return `<td>${ss.map(s => `<button class="st-song" data-id="${esc(s.id)}">${esc(s.name)}</button>`).join('')}</td>`; };
   const shown = blocks.filter(b => b.list.length || !SGF.q);
-  $('#sg-table').innerHTML = `<div class="spread" style="margin-bottom:10px"><h3>טבלת צורות נגינה</h3><span class="muted">${noShape ? `${noShape} שירים בלי צורת נגינה לא מופיעים בטבלה.` : ''}</span></div>` +
+  $('#sg-table').innerHTML = `<div class="spread" style="margin-bottom:10px"><h3>${S.student ? 'השירים שלי' : 'טבלת צורות נגינה'}</h3><span class="muted">${S.student ? `${esc(S.student.name)}, אלה השירים שהמורה שיבץ לך.` : T.data ? 'כל הספרייה. רק אתה רואה אותה, כי אתה מחובר כמורה.' : ''}${noShape && !S.student ? ` ${noShape} שירים בלי צורת נגינה לא מופיעים בטבלה.` : ''}</span></div>` +
     (shown.length ? `<div class="scroll-x"><table class="shape-table">${shown.map(b => `
       <tbody>
         <tr class="sh-maj">${'<th rowspan="4" class="g-name">' + esc(b.name) + '</th>'}${shapes.map(sh => `<th>${sh}</th>`).join('')}</tr>
@@ -4951,7 +4987,7 @@ function renderShapeTable(){
 function applySongView(){
   const table = SGF.view === 'table';
   $('#v-songs .songs-grid').hidden = table; $('#sg-table').hidden = !table;
-  if(table) renderShapeTable(); else renderSongList();
+  renderShapeTable(); renderSongList();
   renderSongFilters();
 }
 /* מורה: ז׳אנרים ושמות המינור */
@@ -5022,7 +5058,7 @@ async function youthLogin(pin, silent){
   finally{ $('#yo-go').disabled = false; }
 }
 function youthLogout(){ $('#yo-fuck').hidden = true; Object.assign(Y, {pin:null, me:null, people:[], items:[], songId:null, rehId:null}); store.del('pritah.youthpin'); $('#yo-pin').value = ''; updateYouthTab(); renderYouth(); }
-function updateYouthTab(){ $('#tab-youth').hidden = !(Y.me || T.data || currentView === 'youth'); if(currentView === 'home') renderHomeState(); }
+function updateYouthTab(){ updateAreas(); if(currentView === 'home') renderHomeState(); }
 
 function renderYouth(){
   const logged = !!Y.me;
@@ -5871,7 +5907,7 @@ async function onPiano(e){
   }
 }
 function pnKeepFields(){ if(!PN.edit) return; const n = $('#pn-ed-name'), a = $('#pn-ed-all'), nt = $('#pn-ed-note'); if(n) PN.edit.name = n.value; if(a) PN.edit.all = a.checked; if(nt) PN.edit.note = nt.value; }
-function updatePianoTab(){ $('#tab-piano').hidden = !T.data; const c = $('.home-card[data-go="piano"]'); if(c) c.hidden = !T.data; }
+function updatePianoTab(){ updateAreas(); const c = $('.home-card[data-go="piano"]'); if(c) c.hidden = !T.data; }
 
 /* ================== ייבוא רשימת שירים ================== */
 const BULK = {open:false, text:'', rows:null, genre:'', newGenre:''};
@@ -6421,7 +6457,7 @@ async function onLinks(e){
     try{ await saveItems([{id, kind:'plink', data:Object.assign({}, old, {name:v('name') || lkDomain(url), url, cat:v('cat'), note:v('note')})}], err); LK.edit = null; renderLinks(); toast('הקישור נשמר'); }catch(x){}
   }
 }
-function updateLinksTab(){ $('#tab-links').hidden = !T.data; const c = $('.home-card[data-go="links"]'); if(c) c.hidden = !T.data; }
+function updateLinksTab(){ updateAreas(); const c = $('.home-card[data-go="links"]'); if(c) c.hidden = !T.data; }
 
 /* ================== צליל פסנתר אמיתי (דגימות Salamander Grand Piano) ================== */
 const PIANO_SAMPLES = (() => { const nm = ['C','Ds','Fs','A'], pc = [0,3,6,9], out = [{n:'A0', m:21}]; for(let o = 1; o <= 7; o++) nm.forEach((x, i) => out.push({n:x + o, m:(o + 1) * 12 + pc[i]})); out.push({n:'C8', m:108}); return out; })();
@@ -6922,6 +6958,27 @@ window.addEventListener('beforeunload', e => { if(REC.phase === 'recording' || R
 function recsForTask(list, taskId){ return (list || []).filter(r => r.taskId === taskId); }
 
 /* ================== ניווט ================== */
+function renderSongsBack(){
+  const el = $('#sg-back'); if(!el) return;
+  if(S.student) el.innerHTML = `<button class="btn ghost small" data-go-area="student">חזרה לאזור שלי</button><span class="muted">השירים של ${esc(S.student.name)}</span>`;
+  else if(T.data) el.innerHTML = `<button class="btn ghost small" data-go-area="teacher">חזרה לאזור המורה</button><span class="muted">כל הספרייה. רק אתה רואה אותה.</span>`;
+  else el.innerHTML = `<div class="songs-locked"><b>השירים נמצאים באזור האישי.</b> כדי לראות את השירים שלכם, היכנסו כתלמיד. אפשר גם להדביק כאן למטה קישור לסרטון ביוטיוב ולנגן איתו.<div class="row" style="margin-top:8px"><button class="btn small primary" data-go-area="student">כניסה כתלמיד</button><button class="btn small" data-go-area="teacher">כניסת מורה</button></div></div>`;
+  $('#sg-head').textContent = S.student ? 'השירים שלי' : T.data ? 'השירים (כל הספרייה)' : 'נגינה עם שירים';
+}
+function updateAreas(){
+  if(currentView === 'songs') renderSongsBack();
+  const st = {
+    teacher:typeof T !== 'undefined' && T.data ? 'מחובר' : '',
+    student:typeof S !== 'undefined' && S.student ? S.student.name : '',
+    youth:typeof Y !== 'undefined' && Y.me ? Y.me.name + (Y.me.staff ? ' · מנחה' : '') : '',
+    velvet:typeof B !== 'undefined' && B.member ? B.member.name : '',
+    piano:typeof T !== 'undefined' && T.data ? 'פתוח' : '',
+    links:typeof T !== 'undefined' && T.data ? 'פתוח' : ''
+  };
+  $$('.area').forEach(b => { const k = b.dataset.area, on = !!st[k]; b.classList.toggle('on', on); b.querySelector('.an').textContent = on && k !== 'piano' && k !== 'links' ? st[k] : ''; b.title = on ? 'מחובר' : 'לא מחובר. לחיצה לכניסה'; });
+  const tch = !!(typeof T !== 'undefined' && T.data);
+  $$('.area[data-area="piano"], .area[data-area="links"]').forEach(b => { b.hidden = !tch; });
+}
 function renderHomeState(){
   const st = {teacher:typeof T !== 'undefined' && T.data ? 'מחובר' : '', student:typeof S !== 'undefined' && S.student ? 'מחובר/ת: ' + S.student.name : '', velvet:typeof B !== 'undefined' && B.member ? 'מחובר/ת: ' + B.member.name : '', youth:typeof Y !== 'undefined' && Y.me ? 'מחובר/ת: ' + Y.me.name : ''};
   $$('.hc-state').forEach(el => { el.textContent = st[el.dataset.state] || ''; el.hidden = !st[el.dataset.state]; });
@@ -6936,13 +6993,16 @@ function showView(v){
   if(v === 'songs' && (T.data || S.student) && !SGF.userPicked && !SG.song){ SGF.view = 'table'; applySongView(); }
   currentView = v;
   $$('.view').forEach(el => el.classList.toggle('active', el.id === 'v-' + v));
-  $$('.tab').forEach(b => b.setAttribute('aria-current', b.dataset.view === v ? 'page' : 'false'));
+  const owner = v === 'songs' ? (S.student ? 'student' : 'teacher') : v;
+  $$('.tab').forEach(b => b.setAttribute('aria-current', b.dataset.view === owner ? 'page' : 'false'));
+  if(v === 'songs') renderSongsBack();
   if(v === 'student' && S.student) mountMetro($('#stu-metro-slot'));
   else if(v === 'metronome') mountMetro($('#metro-slot'));
   if(v !== 'tuner' && Tuner.running) Tuner.stop();
   if(typeof asStop === 'function' && AS.on) asStop();
   if(typeof updateBandTab === 'function') updateBandTab();
   if(typeof updateYouthTab === 'function') updateYouthTab();
+  if(typeof updateAreas === 'function') updateAreas();
   if(v !== 'songs' && SG.ready && SG.player.getPlayerState && SG.player.getPlayerState() === 1) SG.player.pauseVideo();
   if(v === 'fretboard' && !$('#q-answers').children.length) newQuestion();
   try{ history.replaceState(null, '', '#' + v); }catch(e){}
@@ -6967,6 +7027,8 @@ function init(){
   }
   $('#metro-slot').appendChild(MetroUI.build());
   $$('.tab').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
+  $('#sg-back').addEventListener('click', e => { const b = e.target.closest('[data-go-area]'); if(b) showView(b.dataset.goArea); });
+  $('#stu-open-songs').addEventListener('click', () => { SGF.view = 'table'; showView('songs'); applySongView(); });
   $('#metro-mini').addEventListener('click', () => Metro.stop());
   document.addEventListener('keydown', e => {
     if(e.code !== 'Space' || e.target.closest('input,textarea,select,button,dialog,summary')) return;
@@ -7117,6 +7179,7 @@ function init(){
     if(b.dataset.act === 'play-song'){ showView('songs'); SGF.view = 'list'; applySongView(); openSong(findSong(item.id)); renderSongList(); }
     if(/genre|minor/.test(b.dataset.act)) onSongTagsAdmin(b);
     if(b.dataset.act === 'my-table') applyMyTable(b);
+    if(b.dataset.act === 'open-songs-view'){ SGF.view = 'list'; showView('songs'); applySongView(); }
     if(b.dataset.act === 'clapton') importClapton(b);
     if(b.dataset.act === 'bulk-open'){ BULK.open = true; renderTeacher(); setTimeout(() => $('#bulk-text').focus(), 0); }
     if(b.dataset.act === 'bulk-close'){ BULK.open = false; renderTeacher(); }
