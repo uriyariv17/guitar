@@ -784,6 +784,41 @@ th.g-name:hover .pg-g-acts, .pg-g-acts:focus-within{ opacity:1; }
 .rec-inbox ul{ margin:6px 0; padding-inline-start:18px; display:grid; gap:3px; }
 .rec-inbox .lnk{ appearance:none; border:0; background:none; color:var(--blue); font:inherit; font-weight:700; cursor:pointer; padding:0; }
 
+/* Visual chord editor */
+.ied-ve-wrap{ position:relative; }
+.ied-ve{ border:1px solid var(--line); border-radius:14px; background:var(--surface); padding:18px 22px; font-size:18px; line-height:1.4; min-height:200px; }
+.ve-line{ display:flex; flex-wrap:wrap; align-items:flex-end; margin:2px 0 6px; }
+.ve-seg{ display:inline-flex; flex-direction:column; white-space:pre; }
+.ve-chs{ display:flex; gap:4px; min-height:1.3em; }
+.ve-ch{ font-weight:700; font-size:.86em; color:var(--chord); background:color-mix(in srgb, var(--chord) 10%, transparent); border-radius:5px; padding:0 4px; cursor:grab; user-select:none; touch-action:none; line-height:1.3; }
+.ve-ch:hover{ background:color-mix(in srgb, var(--chord) 22%, transparent); }
+.ve-ch.none{ background:none; cursor:default; padding:0; }
+.ve-ch.dragging{ opacity:.5; }
+.ve-ch.ve-hl, .ve-chip.ve-hl{ outline:2px solid var(--amber); }
+.ve-tx{ white-space:pre; }
+.ve-c{ cursor:pointer; border-radius:3px; }
+.ve-c:hover{ background:color-mix(in srgb, var(--amber) 30%, transparent); box-shadow:0 -3px 0 var(--amber); }
+.ve-c.ve-hl, .ve-c.drop{ background:color-mix(in srgb, var(--amber) 45%, transparent); box-shadow:0 -3px 0 var(--amber); }
+.ve-end{ opacity:.25; font-weight:700; padding:0 4px; }
+.ve-line:hover .ve-end{ opacity:.7; }
+.ve-cline{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 8px; align-items:center; }
+.ve-chip{ appearance:none; border:1px solid color-mix(in srgb, var(--chord) 35%, var(--line)); background:color-mix(in srgb, var(--chord) 8%, var(--surface)); color:var(--chord); font:700 .9em 'Assistant',Arial,sans-serif; border-radius:7px; padding:2px 10px; cursor:pointer; }
+.ve-chip.add{ color:var(--ink-2); border-style:dashed; background:none; }
+.ve-sec span{ display:inline-block; margin:8px 0 4px; padding:2px 12px; border-radius:7px; background:color-mix(in srgb, var(--blue) 11%, var(--surface)); color:var(--blue); font-weight:700; font-size:.8em; }
+.ve-gap{ height:.9em; }
+.ve-raw{ color:var(--ink-2); font-size:.9em; }
+.ve-pick{ position:absolute; z-index:30; width:min(560px, 100%); background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 12px 32px rgba(10,20,40,.18); padding:10px 12px; display:grid; gap:8px; }
+.ve-row{ display:grid; grid-template-columns:52px minmax(0,1fr); gap:6px; align-items:start; }
+.ve-lbl{ font-size:.82rem; font-weight:700; color:var(--ink-2); padding-top:5px; }
+.ve-opts{ display:flex; flex-wrap:wrap; gap:4px; }
+.ve-o{ appearance:none; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font:700 .85rem 'Assistant',Arial,sans-serif; border-radius:7px; padding:4px 8px; cursor:pointer; min-width:34px; }
+.ve-o:hover{ border-color:var(--chord); }
+.ve-o.on{ background:var(--chord); color:#fff; border-color:var(--chord); }
+.ve-o.used{ color:var(--chord); background:color-mix(in srgb, var(--chord) 10%, var(--surface)); }
+.ve-act{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.ve-in{ width:110px; min-height:34px; padding:3px 8px; font-weight:700; }
+.ve-in.bad{ border-color:var(--red); box-shadow:0 0 0 2px color-mix(in srgb, var(--red) 25%, transparent); }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -2422,7 +2457,11 @@ function serverHandle(req, store, teacherPassword){
       if(!list.length) throw new Error('אין מה לשמור.');
       list.forEach(it => {
         if(KINDS.indexOf(it.kind) < 0) throw new Error('סוג פריט לא מוכר.');
-        if(STAFF_ONLY.indexOf(it.kind) >= 0 && !me.staff) throw new Error('רק המנחים יכולים לערוך את זה.');
+        if(STAFF_ONLY.indexOf(it.kind) >= 0 && !me.staff){
+          let okSong = false;
+          if(it.kind === 'song'){ const ex = it.id ? store.all('Youth').find(x => String(x.id) === String(it.id)) : null, gid = ex ? String(ex.groupId) : String(it.groupId || ''); const g = store.all('Youth').map(nY).find(x => x.kind === 'group' && x.id === gid); okSong = !!(g && g.data.membersSongs && canGroup(gid)); }
+          if(!okSong) throw new Error('רק המנחים יכולים לערוך את זה.');
+        }
         const data = it.data || {};
         if((it.kind === 'rsvp' || it.kind === 'tdone') && !me.staff) data.personId = me.id;
         const json = JSON.stringify(data);
@@ -2447,6 +2486,7 @@ function serverHandle(req, store, teacherPassword){
       if(!raw) return {};
       if(!canGroup(String(raw.groupId))) throw new Error('אין הרשאה לפריט הזה.');
       if(!me.staff && String(raw.authorId) !== me.id) throw new Error('אפשר למחוק רק דברים שיצרת.');
+      if(!me.staff && String(raw.kind) === 'song') throw new Error('רק המנחים יכולים למחוק שירים.');
       if(me.staff && String(raw.kind) === 'ynote' && String(raw.authorId) !== me.id){ const nd = nY(raw).data; if(nd.visibility !== 'all' && !(nd.visibility === 'to' && (nd.to || []).indexOf(me.id) >= 0)) throw new Error('אין הרשאה להערה הזו.'); }
       if(String(raw.kind) === 'group'){
         store.remove('Youth', x => String(x.groupId) === id);
@@ -5032,6 +5072,7 @@ const yMembers = () => Y.people.filter(p => !p.staff && p.groupId === Y.gid).sor
 const yName = id => { if(Y.me && id === Y.me.id) return 'אני'; const p = Y.people.find(x => x.id === id); return p ? p.name : 'לא ידוע'; };
 const yRid = () => 'y' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
 const yStaff = () => !!(Y.me && Y.me.staff);
+const ySongEdit = () => yStaff() || !!((yGet(Y.gid) || {data:{}}).data.membersSongs);
 function rehStart(r){ const [y, m, d] = String(r.data.date || '').split('-').map(Number); const [hh, mm] = String(r.data.start || '00:00').split(':').map(Number); return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0); }
 function rehEnd(r){ const s = rehStart(r); if(r.data.end){ const [hh, mm] = r.data.end.split(':').map(Number); const e = new Date(s); e.setHours(hh, mm); if(e > s) return e; } return new Date(s.getTime() + 2 * 3600000); }
 const yRehs = () => yOf('rehearsal').sort((a, b) => rehStart(a) - rehStart(b));
@@ -5142,7 +5183,7 @@ function yHome(){
 /* שירים */
 function ySongsList(){
   const songs = yOf('song').sort((a, b) => String(a.data.name).localeCompare(String(b.data.name), 'he'));
-  $('#yo-main').innerHTML = `<div class="spread" style="margin-bottom:12px"><h2>שירים</h2>${yStaff() ? '<button class="btn primary" data-act="new-song">שיר חדש</button>' : ''}</div>
+  $('#yo-main').innerHTML = `<div class="spread" style="margin-bottom:12px"><h2>שירים</h2>${ySongEdit() ? '<button class="btn primary" data-act="new-song">שיר חדש</button>' : ''}</div>
     ${songs.length ? songs.map(s => { const st = SONG_STATUS.find(x => x.id === (s.data.status || 'learning')); const mine = (s.data.roles || {})[Y.me.id];
       return `<div class="t-task"><div><button class="sl-name" data-act="open-song" data-id="${esc(s.id)}"><b>${esc(s.data.name)}</b>${s.data.artist ? `<small>${esc(s.data.artist)}</small>` : ''}</button>
         <div class="chips" style="margin-top:4px"><span class="chip due ${st.cls}">${st.label}</span>${s.data.sheet ? '<span class="chip">אקורדים</span>' : ''}</div></div>
@@ -5154,7 +5195,7 @@ function ySongView(){
   const saved = Number(d.shift) || 0, k = bandKey(s, Y.shift), orig = bandKey(s, 0);
   let h = `<button class="btn ghost small" data-act="back">חזרה לרשימה</button>
     <div class="spread" style="margin:8px 0"><div><h2>${esc(d.name)}</h2>${d.artist ? `<p class="muted">${esc(d.artist)}</p>` : ''}</div>
-      <div class="row">${d.url ? `<button class="btn small media-link-btn" data-act="yt" data-id="${esc(s.id)}">השיר המקורי</button>` : ''}${yStaff() ? '<button class="btn small" data-act="edit-song">עריכה</button><button class="btn small danger" data-act="del-song">מחיקה</button>' : ''}</div></div>
+      <div class="row">${d.url ? `<button class="btn small media-link-btn" data-act="yt" data-id="${esc(s.id)}">השיר המקורי</button>` : ''}${ySongEdit() ? '<button class="btn small" data-act="edit-song">פרטי השיר</button>' : ''}${yStaff() ? '<button class="btn small danger" data-act="del-song">מחיקה</button>' : ''}</div></div>
     <div class="chips"><span class="chip due ${st.cls}">${st.label}</span></div>
     ${d.note ? `<p style="white-space:pre-line;margin-top:10px">${linkifyAnswer(d.note)}</p>` : ''}
 `;
@@ -5168,13 +5209,13 @@ function ySongView(){
           ${yStaff() && Y.shift !== saved ? '<button class="btn small primary" data-act="save-key">שמירה כסולם של ההרכב</button>' : ''}
           ${Y.shift !== saved ? '<button class="btn ghost small" data-act="key-group">לסולם של ההרכב</button>' : ''}
           <div class="seg"><button data-act="fs-down" aria-label="הקטנת טקסט">א−</button><button data-act="fs-up" aria-label="הגדלת טקסט">א+</button></div><button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>
-          <button class="btn small" data-print="1" type="button">הדפסה</button>${yStaff() ? '<button class="btn small primary" data-act="edit-sheet" type="button">עריכה</button>' : ''}
+          <button class="btn small" data-print="1" type="button">הדפסה</button>${ySongEdit() ? '<button class="btn small primary" data-act="edit-sheet" type="button">עריכה</button>' : ''}
         </div></div>
       <p class="muted">${saved ? `ההרכב מנגן ב־${esc(bandKey(s, saved))}. המקור ב־${esc(orig)}.` : `ההרכב מנגן בסולם המקורי${orig ? `, ${esc(orig)}` : ''}.`}</p>
       <div class="spread"><div class="seg" id="yo-nf">${[['all', 'כל ההערות'], ['mine', 'שלי'], ['pub', 'כלליות'], ['tome', 'אליי']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${(Y.noteF || 'all') === v}">${l}</button>`).join('')}</div><span class="hint">לחיצה על שורה בשיר מוסיפה לה הערה או מרקר.</span></div>
       <div class="att-chords" id="yo-chords"></div>
       <div class="sheet-wrap" id="yo-wrap"><div class="sheet bsheet" id="yo-sheet"></div><aside class="note-rail" id="yo-rail" aria-label="הערות"></aside></div></div>`;
-  } else if(yStaff()) h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>מילים ואקורדים</h3><button class="btn small primary" data-act="edit-sheet">הוספת מילים ואקורדים</button></div><p class="muted">עוד אין מילים ואקורדים לשיר.</p></div>`;
+  } else if(ySongEdit()) h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>מילים ואקורדים</h3><button class="btn small primary" data-act="edit-sheet">הוספת מילים ואקורדים</button></div><p class="muted">עוד אין מילים ואקורדים לשיר.</p></div>`;
   h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>הערות לשיר</h3><button class="btn small" data-act="new-ynote">הערה חדשה</button></div><div id="yo-song-notes" class="song-notes"></div></div>`;
   $('#yo-main').innerHTML = h;
   if(yEditing){
@@ -5331,7 +5372,9 @@ function yMembersView(){
     ${mem.length ? mem.map(m => `<div class="t-task"><div><b>${esc(m.name)}</b><div class="muted" style="font-size:.94rem">${m.role ? esc(m.role) : 'בלי תפקיד קבוע'}${yStaff() ? `, קוד: <span class="pin">${esc(m.pin)}</span>` : ''}</div></div>
       ${yStaff() ? `<div class="acts"><button class="btn ghost small" data-act="copy-invite" data-id="${esc(m.id)}">העתקת הזמנה</button><button class="btn ghost small" data-act="edit-person" data-id="${esc(m.id)}">עריכה</button><button class="btn ghost small danger" data-act="del-person" data-id="${esc(m.id)}">הסרה</button></div>` : ''}</div>`).join('')
       : `<p class="empty">${yStaff() ? 'עוד אין חברים. לחצו על "חבר חדש", ושלחו לכל אחד את הקוד שלו עם "העתקת הזמנה".' : 'עוד אין חברים בהרכב.'}</p>`}
-    ${yStaff() ? `<label class="row" style="gap:8px;font-weight:600;margin-top:18px"><input type="checkbox" data-act="fuck-toggle" ${g.data.fuckBtn ? 'checked' : ''}> להציג בהרכב הזה את כפתור Fuck!</label>` : ''}
+    ${yStaff() ? `<label class="row" style="gap:8px;font-weight:600;margin-top:18px"><input type="checkbox" data-act="fuck-toggle" ${g.data.fuckBtn ? 'checked' : ''}> להציג בהרכב הזה את כפתור Fuck!</label>
+    <label class="row" style="gap:8px;font-weight:600;margin-top:8px"><input type="checkbox" data-act="members-songs" ${g.data.membersSongs ? 'checked' : ''}> חברי ההרכב יכולים להוסיף שירים ולערוך מילים ואקורדים</label>
+    <p class="hint" style="margin:2px 0 0">מחיקת שירים נשארת רק אצל המנחים.</p>` : ''}
     <h3 style="margin:22px 0 6px">המנחים</h3><div class="chips">${staff.map(p => `<span class="chip">${esc(p.name)}</span>`).join('')}</div>
 `;
 }
@@ -5430,6 +5473,7 @@ async function onYouthChange(e){
       if(done) toast(taskDone(task) && isGroupTask(task) ? 'כל הכבוד! כל ההרכב השלים את המשימה' : 'כל הכבוד! סימנת שביצעת');
     }catch(err){ t.checked = !done; }
   }
+  if(t.dataset.act === 'members-songs'){ const g = yGet(Y.gid); ySave([{id:g.id, kind:'group', data:Object.assign({}, g.data, {membersSongs:t.checked})}]); }
   if(t.dataset.act === 'fuck-toggle'){ const g = yGet(Y.gid); ySave([{id:g.id, kind:'group', data:Object.assign({}, g.data, {fuckBtn:t.checked})}]); }
   if(t.dataset.act === 'song-done'){
     const r = yGet(Y.rehId), d = Object.assign({}, r.data.done || {}); if(t.checked) d[t.dataset.id] = true; else delete d[t.dataset.id];
@@ -5639,21 +5683,27 @@ if(window.speechSynthesis) speechSynthesis.onvoiceschanged = () => {};
 const INL = {ctx:'', id:'', text:'', dir:'', key:'', dirty:false, orig:''};
 const COMMON_CHORDS = ['C','D','E','F','G','A','B','Am','Dm','Em','Bm','C7','D7','E7','G7','A7'];
 function startInline(ctx, id, d){
-  Object.assign(INL, {ctx, id, text:d.sheet || '', dir:d.dir || '', key:d.key || '', dirty:false, orig:d.sheet || ''});
+  Object.assign(INL, {ctx, id, text:d.sheet || '', dir:d.dir || '', key:d.key || '', dirty:false, orig:d.sheet || '', mode:(d.sheet || '').trim() ? 'visual' : 'text'});
 }
 const inlineOn = (ctx, id) => INL.ctx === ctx && INL.id === id;
 function inlineEditorHTML(){
   const dir = INL.dir || (hasHebrew(INL.text) || !INL.text ? 'rtl' : 'ltr');
   return `<div class="ied" id="ied">
     <div class="ied-bar">
-      <div class="row" style="gap:10px"><h3>עריכת מילים ואקורדים</h3><span class="muted" id="ied-state">${INL.dirty ? 'יש שינויים שלא נשמרו' : ''}</span></div>
+      <div class="row" style="gap:10px"><h3>עריכת מילים ואקורדים</h3><div class="seg" id="ied-mode"><button type="button" data-v="visual" aria-pressed="${INL.mode !== 'text'}">עריכה בלחיצה</button><button type="button" data-v="text" aria-pressed="${INL.mode === 'text'}">טקסט</button></div><span class="muted" id="ied-state">${INL.dirty ? 'יש שינויים שלא נשמרו' : ''}</span></div>
       <div class="row">
         <label class="row" style="gap:6px;font-weight:600">סולם<select id="ied-key" style="width:auto;min-height:36px;padding:4px 8px">${keySelectHTML(INL.text, INL.key)}</select></label>
+        <div class="seg" title="העברת כל האקורדים בשיר"><button type="button" data-ie="tr-down" aria-label="כל האקורדים חצי טון למטה">−½</button><button type="button" data-ie="tr-up" aria-label="כל האקורדים חצי טון למעלה">+½</button></div>
         <div class="seg" id="ied-dir"><button type="button" data-v="rtl" aria-pressed="${dir === 'rtl'}">עברית</button><button type="button" data-v="ltr" aria-pressed="${dir === 'ltr'}">אנגלית</button></div>
         <button type="button" class="btn primary small" data-ie="save">שמירה</button>
         <button type="button" class="btn ghost small" data-ie="cancel">ביטול</button>
       </div>
     </div>
+    <div class="ied-visual" ${INL.mode === 'text' ? 'hidden' : ''}>
+      <p class="hint"><b>לחיצה על אות</b> מוסיפה אקורד מעליה. <b>לחיצה על אקורד</b> משנה, מזיזה או מוחקת אותו. במחשב אפשר גם <b>לגרור אקורד</b> למקום אחר. את המילים עצמן עורכים במצב "טקסט".</p>
+      <div class="ied-ve-wrap" id="ied-ve-wrap"><div class="ied-ve" id="ied-ve"></div></div>
+    </div>
+    <div class="ied-textmode" ${INL.mode === 'text' ? '' : 'hidden'}>
     <div class="ied-tools">
       <span class="muted">הוספת אקורד במקום הסמן:</span>
       <div class="ied-chips" id="ied-chips"></div>
@@ -5668,6 +5718,7 @@ function inlineEditorHTML(){
     <div class="ied-split">
       <div class="ied-col"><span class="ied-lbl">טקסט</span><textarea id="ied-ta" dir="${dir}" spellcheck="false">${esc(INL.text)}</textarea></div>
       <div class="ied-col"><span class="ied-lbl">כך זה ייראה</span><div class="sheet ied-prev" id="ied-prev" dir="${dir}"></div></div>
+    </div>
     </div>
   </div>`;
 }
@@ -5692,7 +5743,7 @@ function wireInline(onSave, onClose){
   let t; const ta = $('#ied-ta');
   ta.addEventListener('input', () => { clearTimeout(t); t = setTimeout(inlinePreview, 120); });
   $('#ied-key').addEventListener('change', () => { INL.key = $('#ied-key').value; INL.dirty = true; inlinePreview(); $('#ied-state').textContent = 'יש שינויים שלא נשמרו'; });
-  $('#ied-dir').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; INL.dir = b.dataset.v; $$('#ied-dir button').forEach(x => x.setAttribute('aria-pressed', x === b)); ta.dir = b.dataset.v; $('#ied-prev').dir = b.dataset.v; INL.dirty = true; $('#ied-state').textContent = 'יש שינויים שלא נשמרו'; });
+  $('#ied-dir').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; INL.dir = b.dataset.v; $$('#ied-dir button').forEach(x => x.setAttribute('aria-pressed', x === b)); ta.dir = b.dataset.v; $('#ied-prev').dir = b.dataset.v; INL.dirty = true; if(INL.mode === 'visual') veEnter(); $('#ied-state').textContent = 'יש שינויים שלא נשמרו'; });
   root.addEventListener('mousedown', e => { if(e.target.closest('.ied-chip')) e.preventDefault(); });
   root.addEventListener('click', async e => {
     const c = e.target.closest('.ied-chip'); if(c){ inlineInsert(c.dataset.chord); return; }
@@ -5701,6 +5752,7 @@ function wireInline(onSave, onClose){
     if(b.dataset.ie === 'cancel'){ if(INL.dirty && !confirm('לצאת בלי לשמור את השינויים?')) return; INL.ctx = ''; onClose(); }
     if(b.dataset.ie === 'save') doSave();
     if(b.dataset.ie === 'pdf') $('#ied-pdf').click();
+    if(b.dataset.ie === 'tr-up' || b.dataset.ie === 'tr-down'){ ta.value = transposeText(ta.value, b.dataset.ie === 'tr-up' ? 1 : -1); inlinePreview(); if(INL.mode === 'visual') veEnter(); const sel = $('#ied-key'), d = b.dataset.ie === 'tr-up' ? 1 : -1, cur = sel.value ? detectKey('', sel.value) : null; sel.innerHTML = keySelectHTML(ta.value, ''); if(cur){ const pc = (cur.pc + d + 12) % 12, opt = KEY_OPTIONS.find(o => { const k = detectKey('', o); return k.pc === pc && k.minor === cur.minor; }); sel.value = opt || ''; INL.key = sel.value; } }
     if(b.dataset.ie === 'pdf-rev' && INL.pdfLines){ INL.pdfRev = !INL.pdfRev; ta.value = buildSheetFromLines(INL.pdfLines, {reverse:INL.pdfRev}).sheet; inlinePreview(); }
   });
   const doSave = async () => {
@@ -5713,6 +5765,9 @@ function wireInline(onSave, onClose){
     if(e.key === 'Escape'){ e.preventDefault(); root.querySelector('[data-ie="cancel"]').click(); }
   });
   attachSmartPaste(ta);
+  wireVE(root);
+  const setMode = m => { INL.mode = m; $$('#ied-mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === m)); root.querySelector('.ied-visual').hidden = m !== 'visual'; root.querySelector('.ied-textmode').hidden = m === 'visual'; if(m === 'visual') veEnter(); };
+  $('#ied-mode').addEventListener('click', e => { const b = e.target.closest('button'); if(b) setMode(b.dataset.v); });
   $('#ied-pdf').addEventListener('change', async e => {
     const f = e.target.files[0]; e.target.value = ''; if(!f) return;
     if(ta.value.trim() && !confirm('להחליף את הטקסט שכבר כתוב בטקסט מהקובץ?')) return;
@@ -5720,12 +5775,13 @@ function wireInline(onSave, onClose){
     try{
       INL.pdfLines = await pdfLines(f); INL.pdfRev = false;
       if(!INL.pdfLines.some(Boolean)) throw new Error('לא נמצא טקסט בקובץ. כנראה שזה PDF סרוק.');
-      ta.value = buildSheetFromLines(INL.pdfLines, {}).sheet; inlinePreview();
+      ta.value = buildSheetFromLines(INL.pdfLines, {}).sheet; inlinePreview(); if(INL.mode === 'visual') veEnter();
       root.querySelector('[data-ie="pdf-rev"]').hidden = !INL.pdfLines.some(l => l && lineIsRTL(l));
       msg.textContent = 'נקלט. כדאי לעבור על התוצאה לפני השמירה.';
     }catch(err){ msg.textContent = err.message; }
   });
-  inlinePreview(); ta.focus();
+  inlinePreview();
+  if(INL.mode === 'visual') setTimeout(veEnter, 0); else ta.focus();
 }
 window.addEventListener('beforeunload', e => { if(INL.ctx && INL.dirty){ e.preventDefault(); e.returnValue = ''; } });
 
@@ -6956,6 +7012,211 @@ document.addEventListener('change', e => {
 }, true);
 window.addEventListener('beforeunload', e => { if(REC.phase === 'recording' || REC.phase === 'ready' || REC.phase === 'sending'){ e.preventDefault(); e.returnValue = ''; } });
 function recsForTask(list, taskId){ return (list || []).filter(r => r.taskId === taskId); }
+
+/* ================== עורך אקורדים ויזואלי (לחיצה על מילה) ================== */
+const VE = {model:null, dir:'rtl', pick:null, drag:null};
+const VE_QUALS = [['', 'מז׳ור'], ['m', 'm'], ['7', '7'], ['maj7', 'maj7'], ['m7', 'm7'], ['sus2', 'sus2'], ['sus4', 'sus4'], ['dim', 'dim'], ['aug', 'aug'], ['6', '6'], ['m6', 'm6'], ['9', '9'], ['add9', 'add9'], ['m7b5', 'm7b5']];
+const VE_ROOTS = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const INL_TOK = /\[([^\]\s]{1,14})\]/g;
+function veIsSection(line){ return /^\s*[^\s][^:]{0,28}:\s*$/.test(line) || /^\s*\[[^\]]{1,24}\]\s*$/.test(line) && !parseChord(line.trim().slice(1, -1)); }
+function veHasInline(line){ return [...line.matchAll(INL_TOK)].some(m => parseChord(m[1])); }
+function veParseInline(line){
+  let text = '', chords = [];
+  line.split(/(\[[^\]\s]{1,14}\])/).forEach(p => { const m = p.match(/^\[([^\]\s]{1,14})\]$/); if(m && parseChord(m[1])) chords.push({pos:text.length, name:m[1]}); else text += p; });
+  return {t:'lyric', text, chords};
+}
+function veMeasurePair(chordLine, lyricLine, width, dir, size){
+  const host = document.createElement('div');
+  host.className = 'sheet ve-measure'; host.dir = dir; host.style.cssText = `position:absolute;visibility:hidden;left:-9999px;top:0;width:${width}px;font-size:${size}px`;
+  host.innerHTML = renderSheetHTML(chordLine + '\n' + lyricLine, 0).html;
+  document.body.appendChild(host);
+  const out = {t:'lyric', text:lyricLine, chords:[]};
+  try{
+    const lyr = host.querySelectorAll('.ln')[1], tn = lyr && [...lyr.childNodes].find(n => n.nodeType === 3);
+    const edges = [];
+    if(tn){ const r = document.createRange(); for(let i = 0; i < tn.length; i++){ r.setStart(tn, i); r.setEnd(tn, i + 1); const b = r.getBoundingClientRect(); edges.push({i, s:dir === 'rtl' ? b.right : b.left, w:b.width}); } }
+    const lineRect = lyr ? lyr.getBoundingClientRect() : null;
+    host.querySelectorAll('.ln.chords [data-c]').forEach(c => {
+      const b = c.getBoundingClientRect(), anchor = dir === 'rtl' ? b.right : b.left;
+      let best = {i:lyricLine.length, d:Infinity};
+      edges.forEach(e => { if(!lyricLine[e.i].trim() && e.i + 1 < lyricLine.length) return; const d = Math.abs(e.s - anchor); if(d < best.d) best = {i:e.i, d}; });
+      if(edges.length){ const last = edges[edges.length - 1], endEdge = dir === 'rtl' ? last.s - last.w : last.s + last.w; if(Math.abs(endEdge - anchor) < best.d) best = {i:lyricLine.length, d:0}; }
+      out.chords.push({pos:best.i, name:c.dataset.c});
+    });
+  }finally{ host.remove(); }
+  return out;
+}
+function veParse(text, width, dir, size){
+  const lines = normSpaces(text || '').split('\n'), model = [];
+  for(let i = 0; i < lines.length; i++){
+    const l = lines[i], noLinks = l.replace(LINK_RE, '');
+    if(!l.trim()){ model.push({t:'empty'}); continue; }
+    if(noLinks !== l){ model.push({t:'raw', text:l}); continue; }
+    if(veHasInline(l)){ model.push(veParseInline(l)); continue; }
+    if(isChordLine(l)){
+      const nx = lines[i + 1];
+      if(nx != null && nx.trim() && !isChordLine(nx) && !veHasInline(nx) && !veIsSection(nx) && nx.replace(LINK_RE, '') === nx){ model.push(veMeasurePair(l, nx, width, dir, size)); i++; continue; }
+      model.push({t:'chords', toks:l.trim().split(/\s+/).map(x => ({name:x, chord:!!parseChord(x) && !NOISE_RE.test(x)}))});
+      continue;
+    }
+    if(veIsSection(l)){ model.push({t:'sec', text:l}); continue; }
+    model.push({t:'lyric', text:l, chords:[]});
+  }
+  return model;
+}
+function veSerialize(model){
+  return model.map(m => {
+    if(m.t === 'empty') return '';
+    if(m.t === 'raw' || m.t === 'sec') return m.text;
+    if(m.t === 'chords') return m.toks.map(x => x.name).join('   ');
+    const cs = m.chords.map((c, k) => Object.assign({k}, c)).sort((a, b) => a.pos - b.pos || a.k - b.k);
+    let out = '', j = 0;
+    for(let i = 0; i <= m.text.length; i++){ while(j < cs.length && cs[j].pos <= i){ out += `[${cs[j].name}]`; j++; } if(i < m.text.length) out += m.text[i]; }
+    return out.replace(/\s+$/, '');
+  }).join('\n').replace(/\s+$/, '');
+}
+function veRender(){
+  const el = $('#ied-ve'); if(!el || !VE.model) return;
+  el.dir = VE.dir;
+  el.innerHTML = VE.model.map((m, li) => {
+    if(m.t === 'empty') return '<div class="ve-gap"></div>';
+    if(m.t === 'raw') return `<div class="ve-raw">${esc(m.text)}</div>`;
+    if(m.t === 'sec') return `<div class="ve-sec"><span>${esc(m.text.trim().replace(/^\[|\]$/g, ''))}</span></div>`;
+    if(m.t === 'chords') return `<div class="ve-cline" data-li="${li}">${m.toks.map((x, ti) => x.chord ? `<button type="button" class="ve-chip" data-li="${li}" data-ti="${ti}" dir="ltr">${esc(x.name)}</button>` : `<span class="muted">${esc(x.name)}</span>`).join('')}<button type="button" class="ve-chip add" data-li="${li}" data-ti="new" aria-label="הוספת אקורד לשורה">+</button></div>`;
+    const cs = m.chords.map((c, ci) => Object.assign({ci}, c)).sort((a, b) => a.pos - b.pos || a.ci - b.ci);
+    const cuts = [...new Set([0].concat(cs.map(c => c.pos)))].sort((a, b) => a - b);
+    let h = '';
+    cuts.forEach((p, k) => {
+      const end = k + 1 < cuts.length ? cuts[k + 1] : m.text.length, here = cs.filter(c => c.pos === p);
+      const labels = here.length ? here.map(c => `<b class="ve-ch" data-li="${li}" data-ci="${c.ci}" dir="ltr" title="לחיצה לשינוי, גרירה להזזה">${esc(c.name)}</b>`).join('') : '<b class="ve-ch none">&nbsp;</b>';
+      let chars = ''; for(let i = p; i < end; i++) chars += `<span class="ve-c" data-li="${li}" data-i="${i}">${m.text[i] === ' ' ? '&nbsp;' : esc(m.text[i])}</span>`;
+      if(p === m.text.length && !chars) chars = '';
+      h += `<span class="ve-seg"><span class="ve-chs">${labels}</span><span class="ve-tx">${chars || '&nbsp;'}</span></span>`;
+    });
+    h += `<span class="ve-seg ve-endseg"><span class="ve-chs"><b class="ve-ch none">&nbsp;</b></span><span class="ve-tx"><span class="ve-c ve-end" data-li="${li}" data-i="${m.text.length}" title="אקורד בסוף השורה">+</span></span></span>`;
+    return `<div class="ve-line" data-li="${li}">${h}</div>`;
+  }).join('') || '<p class="muted">אין עדיין טקסט. כתבו או הדביקו את השיר במצב "טקסט", ואז חזרו לכאן.</p>';
+}
+function veCommit(){ const ta = $('#ied-ta'); ta.value = veSerialize(VE.model); inlinePreview(); veRender(); }
+function veUsed(){ const s = new Set(); VE.model.forEach(m => { if(m.t === 'lyric') m.chords.forEach(c => s.add(c.name)); if(m.t === 'chords') m.toks.forEach(x => x.chord && s.add(x.name)); }); return [...s]; }
+function vePickerHTML(cur){
+  const p = parseChord(cur || '') || {root:'', suf:'', bass:''};
+  return `<div class="ve-pick" role="dialog" aria-label="בחירת אקורד">
+    ${veUsed().length ? `<div class="ve-row"><span class="ve-lbl">בשיר:</span><div class="ve-opts" dir="ltr">${veUsed().map(n => `<button type="button" class="ve-o used" data-set="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>` : ''}
+    <div class="ve-row"><span class="ve-lbl">שורש:</span><div class="ve-opts" dir="ltr">${VE_ROOTS.map(r => `<button type="button" class="ve-o ${p.root === r ? 'on' : ''}" data-root="${r}">${r}</button>`).join('')}</div></div>
+    <div class="ve-row"><span class="ve-lbl">סוג:</span><div class="ve-opts" dir="ltr">${VE_QUALS.map(([q, l]) => `<button type="button" class="ve-o ${p.root && p.suf === q ? 'on' : ''}" data-suf="${q}">${l}</button>`).join('')}</div></div>
+    <div class="ve-row"><span class="ve-lbl">בס:</span><div class="ve-opts" dir="ltr"><button type="button" class="ve-o ${!p.bass ? 'on' : ''}" data-bass="">—</button>${VE_ROOTS.map(r => `<button type="button" class="ve-o ${p.bass === r ? 'on' : ''}" data-bass="${r}">/${r}</button>`).join('')}</div></div>
+    <div class="ve-row ve-act">
+      <input class="ve-in" dir="ltr" value="${esc(cur || '')}" placeholder="למשל Am7" aria-label="שם האקורד">
+      <button type="button" class="btn small primary" data-ve="ok">אישור</button>
+      ${VE.pick && VE.pick.edit ? `<button type="button" class="btn small ghost" data-ve="left" aria-label="הזזה שמאלה">◀</button><button type="button" class="btn small ghost" data-ve="right" aria-label="הזזה ימינה">▶</button><button type="button" class="btn small danger" data-ve="del">מחיקה</button>` : ''}
+      <button type="button" class="btn small ghost" data-ve="close">סגירה</button>
+    </div>
+  </div>`;
+}
+function veOpen(anchor, ctx){
+  VE.pick = ctx;
+  const host = $('#ied-ve-wrap'); host.querySelectorAll('.ve-pick').forEach(x => x.remove());
+  host.insertAdjacentHTML('beforeend', vePickerHTML(ctx.cur));
+  const pk = host.querySelector('.ve-pick'), hr = host.getBoundingClientRect(), ar = anchor.getBoundingClientRect();
+  let top = ar.bottom - hr.top + 6; const left = Math.max(0, Math.min(hr.width - pk.offsetWidth, ar.left - hr.left + ar.width / 2 - pk.offsetWidth / 2));
+  pk.style.top = top + 'px'; pk.style.left = left + 'px';
+  $$('.ve-hl').forEach(x => x.classList.remove('ve-hl')); anchor.classList.add('ve-hl');
+  const inp = pk.querySelector('.ve-in'); inp.focus(); inp.select();
+}
+function veClose(){ VE.pick = null; $$('#ied-ve-wrap .ve-pick').forEach(x => x.remove()); $$('.ve-hl').forEach(x => x.classList.remove('ve-hl')); }
+function veApply(name){
+  const pk = VE.pick; if(!pk) return;
+  name = String(name || '').trim(); if(!parseChord(name)){ const i = $('#ied-ve-wrap .ve-in'); if(i){ i.classList.add('bad'); i.focus(); } return; }
+  const m = VE.model[pk.li];
+  if(pk.kind === 'lyric'){ if(pk.edit) m.chords[pk.ci].name = name; else m.chords.push({pos:pk.pos, name}); }
+  else { if(pk.ti === 'new') m.toks.push({name, chord:true}); else m.toks[pk.ti].name = name; }
+  veClose(); veCommit();
+}
+function veMove(d){
+  const pk = VE.pick, m = VE.model[pk.li], c = m.chords[pk.ci];
+  const step = (VE.dir === 'rtl' ? -d : d);
+  c.pos = clamp(c.pos + step, 0, m.text.length);
+  veCommit();
+  const el = $(`#ied-ve .ve-ch[data-li="${pk.li}"][data-ci="${pk.ci}"]`); if(el) veOpen(el, Object.assign({}, pk, {cur:c.name}));
+}
+function transposeText(text, n){
+  if(!n) return text;
+  const sp = spellForKey(detectKey(text, ''), n);
+  return normSpaces(text).split('\n').map(line => {
+    if(veHasInline(line)) return line.replace(INL_TOK, (m, c) => parseChord(c) ? `[${trChord(c, n, sp)}]` : m);
+    if(isChordLine(line)){
+      let out = '', len = 0;
+      for(const m of line.matchAll(/\S+/g)){ const isC = !!parseChord(m[0]) && !NOISE_RE.test(m[0]); const txt = isC ? trChord(m[0], n, sp) : m[0]; const start = len ? Math.max(m.index, len + 1) : m.index; out += ' '.repeat(start - len) + txt; len = start + txt.length; }
+      return out;
+    }
+    return line;
+  }).join('\n');
+}
+function veEnter(){
+  const ta = $('#ied-ta'), wrap = $('#ied-ve'); if(!ta || !wrap) return;
+  VE.dir = INL.dir || (hasHebrew(ta.value) || !ta.value ? 'rtl' : 'ltr');
+  VE.model = veParse(ta.value, wrap.clientWidth || 600, VE.dir, 18);
+  const ser = veSerialize(VE.model);
+  if(ser !== ta.value.replace(/\s+$/, '')){ ta.value = ser; inlinePreview(); }
+  veRender();
+}
+function wireVE(root){
+  const wrap = $('#ied-ve-wrap');
+  wrap.addEventListener('pointerdown', e => {
+    const ch = e.target.closest('.ve-ch:not(.none)'); if(!ch || e.button) return;
+    VE.drag = {li:+ch.dataset.li, ci:+ch.dataset.ci, x:e.clientX, y:e.clientY, el:ch, moved:false};
+    const move = ev => { if(!VE.drag) return; if(Math.hypot(ev.clientX - VE.drag.x, ev.clientY - VE.drag.y) > 6){ VE.drag.moved = true; ch.classList.add('dragging'); const t = document.elementFromPoint(ev.clientX, ev.clientY); $$('.ve-c.drop').forEach(x => x.classList.remove('drop')); const c = t && t.closest('.ve-c'); if(c) c.classList.add('drop'); } };
+    const up = ev => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+      const d = VE.drag; VE.drag = null; ch.classList.remove('dragging'); $$('.ve-c.drop').forEach(x => x.classList.remove('drop'));
+      if(!d || !d.moved) return;
+      const t = document.elementFromPoint(ev.clientX, ev.clientY), c = t && t.closest('.ve-c');
+      if(c){ const src = VE.model[d.li], chord = src.chords.splice(d.ci, 1)[0], dst = VE.model[+c.dataset.li]; dst.chords.push({pos:+c.dataset.i, name:chord.name}); veClose(); veCommit(); }
+      VE.suppressClick = true; setTimeout(() => { VE.suppressClick = false; }, 50);
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+  });
+  wrap.addEventListener('click', e => {
+    if(VE.suppressClick) return;
+    const pk = e.target.closest('.ve-pick');
+    if(pk){
+      const b = e.target.closest('button'); if(!b) return;
+      const inp = pk.querySelector('.ve-in'), cur = parseChord(inp.value) || {root:'C', suf:'', bass:''};
+      if(b.dataset.set != null) return veApply(b.dataset.set);
+      if(b.dataset.root){ cur.root = b.dataset.root; }
+      if(b.dataset.suf != null) cur.suf = b.dataset.suf;
+      if(b.dataset.bass != null) cur.bass = b.dataset.bass;
+      if(b.dataset.root || b.dataset.suf != null || b.dataset.bass != null){
+        inp.value = cur.root + cur.suf + (cur.bass ? '/' + cur.bass : '');
+        pk.querySelectorAll('[data-root]').forEach(x => x.classList.toggle('on', x.dataset.root === cur.root));
+        pk.querySelectorAll('[data-suf]').forEach(x => x.classList.toggle('on', x.dataset.suf === cur.suf));
+        pk.querySelectorAll('[data-bass]').forEach(x => x.classList.toggle('on', x.dataset.bass === (cur.bass || '')));
+        if(b.dataset.suf != null && !VE.pick.edit) veApply(inp.value);
+        return;
+      }
+      if(b.dataset.ve === 'ok') return veApply(inp.value);
+      if(b.dataset.ve === 'close') return veClose();
+      if(b.dataset.ve === 'del'){ const m = VE.model[VE.pick.li]; if(VE.pick.kind === 'lyric') m.chords.splice(VE.pick.ci, 1); else m.toks.splice(VE.pick.ti, 1); veClose(); return veCommit(); }
+      if(b.dataset.ve === 'left') return veMove(-1);
+      if(b.dataset.ve === 'right') return veMove(1);
+      return;
+    }
+    const ch = e.target.closest('.ve-ch:not(.none)');
+    if(ch){ const m = VE.model[+ch.dataset.li]; return veOpen(ch, {kind:'lyric', li:+ch.dataset.li, ci:+ch.dataset.ci, edit:true, cur:m.chords[+ch.dataset.ci].name}); }
+    const c = e.target.closest('.ve-c');
+    if(c){ const li = +c.dataset.li, i = +c.dataset.i, m = VE.model[li], ex = m.chords.findIndex(x => x.pos === i); if(ex >= 0) return veOpen(c, {kind:'lyric', li, ci:ex, edit:true, cur:m.chords[ex].name}); return veOpen(c, {kind:'lyric', li, pos:i, edit:false, cur:veUsed().slice(-1)[0] || ''}); }
+    const chip = e.target.closest('.ve-chip');
+    if(chip){ const li = +chip.dataset.li, ti = chip.dataset.ti === 'new' ? 'new' : +chip.dataset.ti; return veOpen(chip, {kind:'chords', li, ti, edit:ti !== 'new', cur:ti === 'new' ? '' : VE.model[li].toks[ti].name}); }
+    if(!e.target.closest('.ve-pick')) veClose();
+  });
+  wrap.addEventListener('keydown', e => {
+    if(!e.target.closest('.ve-in')) return;
+    if(e.key === 'Enter'){ e.preventDefault(); veApply(e.target.value); }
+    if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); veClose(); }
+    e.target.classList.remove('bad');
+  });
+}
 
 /* ================== ניווט ================== */
 function renderSongsBack(){
