@@ -695,6 +695,13 @@ th.g-name:hover .pg-g-acts, .pg-g-acts:focus-within{ opacity:1; }
 .pg-h:hover{ background:rgba(255,255,255,.4); text-decoration:underline; }
 
 /* Payments & pricing */
+.lead-list{ display:grid; gap:8px; margin-top:8px; }
+.lead-item{ border:1px solid var(--line); border-radius:12px; padding:8px 12px; background:var(--surface); }
+.lead-item.new{ border-color:color-mix(in srgb, var(--orange) 55%, var(--line)); }
+.lead-item summary{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; cursor:pointer; }
+.lead-ans{ display:grid; grid-template-columns:max-content 1fr; gap:4px 14px; margin:10px 0; }
+.lead-ans dt{ font-weight:700; color:var(--ink-2); }
+.lead-ans dd{ margin:0; white-space:pre-line; }
 .pay-table{ border-collapse:collapse; min-width:100%; font-size:.92rem; }
 .pay-table th, .pay-table td{ border:1px solid var(--line); padding:4px 6px; text-align:center; white-space:nowrap; }
 .pay-table thead th{ background:var(--surface-2); font-weight:700; }
@@ -2363,7 +2370,7 @@ function serverHandle(req, store, teacherPassword){
 
   const nMember = m => ({id:String(m.id), name:String(m.name || ''), role:String(m.role || ''), pin:String(m.pin || ''), createdAt:String(m.createdAt || '')});
   const nBand = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
-  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => ['song','pvoice','pgrid','psong','plink','proll'].indexOf(c.kind) < 0)};
+  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => ['song','pvoice','pgrid','psong','plink','proll','landing'].indexOf(c.kind) < 0)};
   if(a === 'publicApplyForm' || a === 'publicApplySubmit'){
     const f = store.all('Band').map(nBand).find(x => x.kind === 'form');
     const d = f ? f.data : null;
@@ -2421,6 +2428,58 @@ function serverHandle(req, store, teacherPassword){
   const trashRec = raw => { try{ if(raw.fileId && typeof DriveApp !== 'undefined') DriveApp.getFileById(String(raw.fileId)).setTrashed(true); }catch(e){} };
 
   const nY = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), groupId:String(r.groupId || ''), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
+  // ===== דף הנחיתה של הרכב הנוער (ensemble.html) =====
+  const landingAuth = () => {
+    if(teacherPassword && String(req.password || '') === String(teacherPassword)) return 'teacher';
+    const p = String(req.pin || '').trim();
+    if(p && store.all('YouthPeople').map(nPerson).some(x => x.staff && x.pin === p)) return 'staff';
+    return '';
+  };
+  const landingItem = () => store.all('Content').find(c => String(c.kind) === 'landing');
+  if(a === 'publicLanding'){ const it = landingItem(); return {data:it ? nContent(it).data : null}; }
+  if(a === 'landingAuthCheck'){ const who = landingAuth(); if(!who) throw new Error('הסיסמה או הקוד לא נכונים.'); return {who}; }
+  if(a === 'landingSave'){
+    if(!landingAuth()) throw new Error('אין הרשאה לערוך את הדף.');
+    const json = JSON.stringify(req.data || {});
+    if(json.length > 45000) throw new Error('הדף ארוך מדי לשמירה. קצרו מעט את הטקסטים.');
+    const raw = landingItem();
+    if(raw){ raw.data = json; raw.updatedAt = now(); store.update('Content', raw); }
+    else store.insert('Content', {id:'landing', kind:'landing', data:json, updatedAt:now()});
+    return {ok2:true};
+  }
+  if(a === 'landingUploadImage'){
+    if(!landingAuth()) throw new Error('אין הרשאה.');
+    const mime = String(req.mime || '').toLowerCase(), data = String(req.data || '');
+    if(!/^image\/(jpeg|png|webp|gif)$/.test(mime)) throw new Error('אפשר להעלות רק תמונה.');
+    if(data.length > 11000000) throw new Error('התמונה גדולה מדי.');
+    if(typeof DriveApp === 'undefined'){
+      if(data.length > 2000000) throw new Error('במצב הדגמה אפשר לנסות רק תמונות קטנות.');
+      return {url:'data:' + mime + ';base64,' + data};
+    }
+    let folder = DriveApp.getRootFolder();
+    ['פריטה - תמונות לדף ההרכב'].forEach(n => { const it = folder.getFoldersByName(n); folder = it.hasNext() ? it.next() : folder.createFolder(n); });
+    const file = folder.createFile(Utilities.newBlob(Utilities.base64Decode(data), mime, String(req.name || 'image').slice(0, 80)));
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return {url:'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w1600', fileId:file.getId()};
+  }
+  if(a === 'publicLandingSubmit'){
+    if(String(req.website || '')) return {done:true};
+    const it = landingItem(), d = it ? nContent(it).data : {}, f = d.form || {};
+    if(f.open === false) throw new Error('ההרשמה סגורה כרגע.');
+    const qs = Array.isArray(f.questions) && f.questions.length ? f.questions : null;
+    const ans = Array.isArray(req.answers) ? req.answers.slice(0, 25) : [];
+    const answers = ans.map(x => ({label:String(x.label || '').slice(0, 120), value:String(x.value == null ? '' : x.value).slice(0, 3000)}));
+    if(qs) qs.forEach(q => { if(q.required && !answers.some(x => x.label === q.label && x.value.trim())) throw new Error('חסרה תשובה לשאלה: ' + q.label); });
+    if(!answers.some(x => x.value.trim())) throw new Error('הטופס ריק.');
+    const pick = re => (answers.find(x => re.test(x.label) && x.value.trim()) || {}).value || '';
+    const lead = {answers, name:pick(/שם/), phone:pick(/טלפון|נייד|וואטסאפ/), status:'new', createdAt:now()};
+    store.insert('Youth', {id:newId(), groupId:'', kind:'lead', data:JSON.stringify(lead), authorId:'form', updatedAt:now()});
+    const S = settingsObj();
+    const to = String(f.notifyEmail || '').split(/[\s,;]+/).concat(store.all('YouthPeople').map(nPerson).filter(p => p.staff && p.email).map(p => p.email)).filter(x => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+    const uniq = to.filter((x, i) => to.indexOf(x) === i).slice(0, 20).join(',');
+    if(uniq) mail(uniq, 'הרשמה חדשה להרכב: ' + (lead.name || 'בלי שם'), 'הגיעה הרשמה חדשה דרך דף ההרכב.\n\n' + answers.map(x => x.label + ': ' + (x.value || '-')).join('\n') + (S.siteUrl ? '\n\nלכל הפניות: ' + S.siteUrl + '#youth' : ''));
+    return {done:true, message:String(f.success || 'תודה! קיבלנו את ההרשמה ונחזור אליכם בהקדם.')};
+  }
   if(a.indexOf('youth') === 0){
     const pin = String(req.pin || '').trim();
     const me = pin ? store.all('YouthPeople').map(nPerson).find(p => p.pin === pin) : null;
@@ -2456,7 +2515,7 @@ function serverHandle(req, store, teacherPassword){
       trashRec(raw); store.remove('Recs', r => String(r.id) === String(req.id)); return {};
     }
     if(a === 'youthSave'){
-      const KINDS = ['group','song','task','rehearsal','post','rsvp','ynote','tdone','ledger','pricing'], STAFF_ONLY = ['group','song','rehearsal','ledger','pricing'], list = req.items || [], out = [];
+      const KINDS = ['group','song','task','rehearsal','post','rsvp','ynote','tdone','ledger','pricing','lead'], STAFF_ONLY = ['group','song','rehearsal','ledger','pricing','lead'], list = req.items || [], out = [];
       if(!list.length) throw new Error('אין מה לשמור.');
       list.forEach(it => {
         if(KINDS.indexOf(it.kind) < 0) throw new Error('סוג פריט לא מוכר.');
@@ -5395,6 +5454,8 @@ async function saveYPerson(e){
 }
 
 async function onYouthMain(e){
+  const ld = e.target.closest('[data-lead-del]');
+  if(ld){ if(!confirm('למחוק את ההרשמה?')) return; await yDel(ld.dataset.leadDel); return renderYouth(); }
   if(Y.tab === 'mgmt' && !Y.songId && !Y.rehId && ymClick(e)) return;
   const c = e.target.closest('[data-c]');
   if(c){ playChordName(c.dataset.c); c.classList.add('on'); setTimeout(() => c.classList.remove('on'), 500); return; }
@@ -5463,6 +5524,7 @@ async function onYouthMain(e){
 }
 async function onYouthChange(e){
   const t = e.target;
+  if(t.dataset.leadSt){ const l = yGet(t.dataset.leadSt); ySave([{id:l.id, kind:'lead', groupId:'', data:Object.assign({}, l.data, {status:t.value})}]); return; }
   if(t.dataset.act === 'task-done'){
     const task = yGet(t.dataset.id), done = t.checked;
     const ex = yAll('tdone').find(x => x.data.taskId === task.id && x.data.personId === Y.me.id);
@@ -6388,6 +6450,20 @@ function ymSave(kind, data){
   }, 600);
 }
 const nis = v => '₪' + (Math.round((Number(v) || 0) * 100) / 100).toLocaleString('he-IL');
+const LEAD_ST = [['new', 'חדש'], ['contacted', 'דיברנו'], ['trial', 'הוזמן לחזרת ניסיון'], ['joined', 'הצטרף'], ['no', 'לא רלוונטי']];
+function landingUrl(){ return siteBase() + 'ensemble.html'; }
+function yLeadsHTML(){
+  const leads = yAll('lead').sort((a, b) => String(b.data.createdAt).localeCompare(String(a.data.createdAt)));
+  const newCount = leads.filter(l => (l.data.status || 'new') === 'new').length;
+  return `<section class="sub-panel" style="margin-bottom:18px">
+    <div class="spread"><h3>הרשמות מדף ההרכב ${newCount ? `<span class="chip due soon">${newCount} חדשות</span>` : ''}</h3><div class="row"><a class="btn small" href="${esc(landingUrl())}" target="_blank" rel="noopener">לדף ההרכב</a><a class="btn small" href="${esc(landingUrl())}?edit" target="_blank" rel="noopener">עריכת הדף</a></div></div>
+    ${leads.length ? `<div class="lead-list">${leads.map(l => { const d = l.data; return `<details class="lead-item ${(d.status || 'new') === 'new' ? 'new' : ''}"><summary><b>${esc(d.name || 'בלי שם')}</b><span class="muted">${esc(d.phone || '')}${d.phone ? ', ' : ''}${fmtDate(d.createdAt)}</span><span class="chip">${esc((LEAD_ST.find(x => x[0] === (d.status || 'new')) || LEAD_ST[0])[1])}</span></summary>
+      <dl class="lead-ans">${(d.answers || []).map(x => `<dt>${esc(x.label)}</dt><dd>${esc(x.value || '-')}</dd>`).join('')}</dl>
+      <div class="row"><select data-lead-st="${esc(l.id)}" aria-label="סטטוס">${LEAD_ST.map(([v, t]) => `<option value="${v}" ${v === (d.status || 'new') ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      ${d.phone ? `<a class="btn small" href="https://wa.me/${esc(String(d.phone).replace(/\D/g, '').replace(/^0/, '972'))}" target="_blank" rel="noopener">וואטסאפ</a><a class="btn small" href="tel:${esc(String(d.phone).replace(/[^\d+]/g, ''))}">חיוג</a>` : ''}
+      <button class="btn small ghost danger" data-lead-del="${esc(l.id)}">מחיקה</button></div></details>`; }).join('')}</div>` : '<p class="muted">עוד לא הגיעו הרשמות. הטופס נמצא בתחתית דף ההרכב.</p>'}
+  </section>`;
+}
 function yMgmt(){
   if(!yStaff()){ $('#yo-main').innerHTML = '<p class="empty">האזור הזה פתוח רק למנחים.</p>'; return; }
   Y.season = Y.season || seasonStart();
@@ -6402,6 +6478,7 @@ function yMgmt(){
   $('#yo-main').innerHTML = `
     <div class="spread" style="margin-bottom:6px"><h2>ניהול ותמחור</h2><span class="muted" id="ym-msg"></span></div>
     <p class="muted" style="margin-bottom:14px">האזור הזה גלוי רק למנחים. בני הנוער לא רואים אותו, ופרטי התשלום לא נשלחים אליהם בכלל.</p>
+    ${yLeadsHTML()}
     <section class="sub-panel">
       <div class="spread"><h3>מעקב תשלומים</h3>
         <div class="row">
@@ -7046,7 +7123,7 @@ function veParseInline(line){
 }
 function veMeasurePair(chordLine, lyricLine, width, dir, size){
   const host = document.createElement('div');
-  host.className = 'sheet ve-measure'; host.dir = dir; host.style.cssText = `position:absolute;visibility:hidden;left:-9999px;top:0;width:${width}px;font-size:${size}px`;
+  host.className = 'sheet ve-measure'; host.dir = dir; host.style.cssText = `position:fixed;visibility:hidden;pointer-events:none;left:0;top:0;width:${width}px;font-size:${size}px`;
   host.innerHTML = renderSheetHTML(chordLine + '\n' + lyricLine, 0).html;
   document.body.appendChild(host);
   const out = {t:'lyric', text:lyricLine, chords:[]};
