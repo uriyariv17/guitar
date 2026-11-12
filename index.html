@@ -596,6 +596,9 @@ a.btn.wa{ background:#1F9D55; border-color:#1F9D55; color:#fff; }
 .ied-bar{ display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; position:sticky; top:calc(env(safe-area-inset-top, 0px) + 58px); z-index:5; background:var(--surface); padding:8px 0; border-bottom:1px solid var(--line); }
 .ied-tools{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 .ied-tools input{ width:120px; min-height:34px; padding:4px 10px; }
+.ied-paste{ border:2px solid var(--blue); border-radius:14px; padding:12px; margin-bottom:12px; display:grid; gap:8px; background:color-mix(in srgb, var(--blue) 4%, var(--surface)); }
+#sp-raw{ min-height:260px; font-family:'Assistant',Arial,sans-serif; font-size:15px; line-height:1.45; white-space:pre; overflow:auto; }
+.sp-opts{ gap:14px; font-size:.92rem; font-weight:600; }
 .ied-sep{ width:1px; height:24px; background:var(--line); margin:0 4px; }
 .ied-chips{ display:flex; flex-wrap:wrap; gap:4px; direction:ltr; }
 .ied-chip{ appearance:none; border:1px solid var(--line); background:var(--surface-2); color:var(--chord); font:700 .9rem 'Assistant',Arial,sans-serif; padding:3px 10px; border-radius:8px; cursor:pointer; }
@@ -5683,6 +5686,7 @@ if(window.speechSynthesis) speechSynthesis.onvoiceschanged = () => {};
 const INL = {ctx:'', id:'', text:'', dir:'', key:'', dirty:false, orig:''};
 const COMMON_CHORDS = ['C','D','E','F','G','A','B','Am','Dm','Em','Bm','C7','D7','E7','G7','A7'];
 function startInline(ctx, id, d){
+  SPASTE.open = false;
   Object.assign(INL, {ctx, id, text:d.sheet || '', dir:d.dir || '', key:d.key || '', dirty:false, orig:d.sheet || '', mode:(d.sheet || '').trim() ? 'visual' : 'text'});
 }
 const inlineOn = (ctx, id) => INL.ctx === ctx && INL.id === id;
@@ -5710,11 +5714,13 @@ function inlineEditorHTML(){
       <input id="ied-custom" dir="ltr" placeholder="אקורד אחר" maxlength="12" aria-label="אקורד אחר">
       <button type="button" class="btn small" data-ie="custom">הוספה</button>
       <span class="ied-sep"></span>
+      <button type="button" class="btn small primary" data-ie="spaste">הדבקה חכמה מאתר</button>
       <button type="button" class="btn small" data-ie="pdf">ייבוא מ־PDF</button><input type="file" id="ied-pdf" accept="application/pdf,.pdf" hidden>
       <button type="button" class="btn small ghost" data-ie="pdf-rev" hidden>העברית יצאה הפוכה</button>
       <span class="muted" id="ied-pdf-msg"></span>
     </div>
     <p class="hint">שמים את הסמן ממש לפני המילה, ולוחצים על אקורד. הוא ייכנס כך: [Am]מילה, ויוצג בדיוק מעליה. אפשר גם לכתוב אקורדים בשורה נפרדת מעל המילים. כותרת כמו "פזמון:" מסומנת אוטומטית. שמירה: Ctrl+S.</p>
+    <div id="ied-spaste-slot">${SPASTE.open ? spasteHTML() : ''}</div>
     <div class="ied-split">
       <div class="ied-col"><span class="ied-lbl">טקסט</span><textarea id="ied-ta" dir="${dir}" spellcheck="false">${esc(INL.text)}</textarea></div>
       <div class="ied-col"><span class="ied-lbl">כך זה ייראה</span><div class="sheet ied-prev" id="ied-prev" dir="${dir}"></div></div>
@@ -5752,6 +5758,7 @@ function wireInline(onSave, onClose){
     if(b.dataset.ie === 'cancel'){ if(INL.dirty && !confirm('לצאת בלי לשמור את השינויים?')) return; INL.ctx = ''; onClose(); }
     if(b.dataset.ie === 'save') doSave();
     if(b.dataset.ie === 'pdf') $('#ied-pdf').click();
+    if(b.dataset.ie === 'spaste'){ SPASTE.open = true; SPASTE.raw = ''; $('#ied-spaste-slot').innerHTML = spasteHTML(); attachSmartPaste($('#sp-raw')); spasteUpdate(); $('#sp-raw').focus(); }
     if(b.dataset.ie === 'tr-up' || b.dataset.ie === 'tr-down'){ ta.value = transposeText(ta.value, b.dataset.ie === 'tr-up' ? 1 : -1); inlinePreview(); if(INL.mode === 'visual') veEnter(); const sel = $('#ied-key'), d = b.dataset.ie === 'tr-up' ? 1 : -1, cur = sel.value ? detectKey('', sel.value) : null; sel.innerHTML = keySelectHTML(ta.value, ''); if(cur){ const pc = (cur.pc + d + 12) % 12, opt = KEY_OPTIONS.find(o => { const k = detectKey('', o); return k.pc === pc && k.minor === cur.minor; }); sel.value = opt || ''; INL.key = sel.value; } }
     if(b.dataset.ie === 'pdf-rev' && INL.pdfLines){ INL.pdfRev = !INL.pdfRev; ta.value = buildSheetFromLines(INL.pdfLines, {reverse:INL.pdfRev}).sheet; inlinePreview(); }
   });
@@ -5766,6 +5773,18 @@ function wireInline(onSave, onClose){
   });
   attachSmartPaste(ta);
   wireVE(root);
+  root.addEventListener('input', e => { if(e.target.id === 'sp-raw') spasteUpdate(); });
+  root.addEventListener('change', e => { const o = e.target.dataset.spo; if(o){ SPASTE[o] = e.target.checked; spasteUpdate(); } });
+  root.addEventListener('click', e => {
+    const b = e.target.closest('[data-sp]'); if(!b) return;
+    const act = b.dataset.sp;
+    if(act === 'close'){ SPASTE.open = false; $('#ied-spaste-slot').innerHTML = ''; return; }
+    spasteUpdate(); const txt = SPASTE.result || ''; if(!txt.trim()) return;
+    if(act === 'replace'){ if(ta.value.trim() && !confirm('להחליף את כל הטקסט הקיים בשיר שהודבק?')) return; ta.value = txt; }
+    if(act === 'append') ta.value = ta.value.replace(/\s+$/, '') + (ta.value.trim() ? '\n\n' : '') + txt;
+    SPASTE.open = false; $('#ied-spaste-slot').innerHTML = ''; inlinePreview(); toast('השיר נכנס. אפשר לתקן אקורדים ב"עריכה בלחיצה".');
+  });
+  if(SPASTE.open){ attachSmartPaste($('#sp-raw')); spasteUpdate(); }
   const setMode = m => { INL.mode = m; $$('#ied-mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === m)); root.querySelector('.ied-visual').hidden = m !== 'visual'; root.querySelector('.ied-textmode').hidden = m === 'visual'; if(m === 'visual') veEnter(); };
   $('#ied-mode').addEventListener('click', e => { const b = e.target.closest('button'); if(b) setMode(b.dataset.v); });
   $('#ied-pdf').addEventListener('change', async e => {
@@ -7055,8 +7074,8 @@ function veParse(text, width, dir, size){
     if(veHasInline(l)){ model.push(veParseInline(l)); continue; }
     if(isChordLine(l)){
       const nx = lines[i + 1];
-      if(nx != null && nx.trim() && !isChordLine(nx) && !veHasInline(nx) && !veIsSection(nx) && nx.replace(LINK_RE, '') === nx){ model.push(veMeasurePair(l, nx, width, dir, size)); i++; continue; }
-      model.push({t:'chords', toks:l.trim().split(/\s+/).map(x => ({name:x, chord:!!parseChord(x) && !NOISE_RE.test(x)}))});
+      if(nx != null && nx.trim() && !isChordLine(nx) && !veHasInline(nx) && !veIsSection(nx) && nx.replace(LINK_RE, '') === nx){ model.push(Object.assign(veMeasurePair(l, nx, width, dir, size), {orig:l + '\n' + nx})); i++; continue; }
+      model.push({t:'chords', toks:l.trim().split(/\s+/).map(x => ({name:x, chord:!!parseChord(x) && !NOISE_RE.test(x)})), orig:l});
       continue;
     }
     if(veIsSection(l)){ model.push({t:'sec', text:l}); continue; }
@@ -7066,6 +7085,7 @@ function veParse(text, width, dir, size){
 }
 function veSerialize(model){
   return model.map(m => {
+    if(m.orig != null && !m.dirty) return m.orig;
     if(m.t === 'empty') return '';
     if(m.t === 'raw' || m.t === 'sec') return m.text;
     if(m.t === 'chords') return m.toks.map(x => x.name).join('   ');
@@ -7128,13 +7148,13 @@ function veClose(){ VE.pick = null; $$('#ied-ve-wrap .ve-pick').forEach(x => x.r
 function veApply(name){
   const pk = VE.pick; if(!pk) return;
   name = String(name || '').trim(); if(!parseChord(name)){ const i = $('#ied-ve-wrap .ve-in'); if(i){ i.classList.add('bad'); i.focus(); } return; }
-  const m = VE.model[pk.li];
+  const m = VE.model[pk.li]; m.dirty = true;
   if(pk.kind === 'lyric'){ if(pk.edit) m.chords[pk.ci].name = name; else m.chords.push({pos:pk.pos, name}); }
   else { if(pk.ti === 'new') m.toks.push({name, chord:true}); else m.toks[pk.ti].name = name; }
   veClose(); veCommit();
 }
 function veMove(d){
-  const pk = VE.pick, m = VE.model[pk.li], c = m.chords[pk.ci];
+  const pk = VE.pick, m = VE.model[pk.li], c = m.chords[pk.ci]; m.dirty = true;
   const step = (VE.dir === 'rtl' ? -d : d);
   c.pos = clamp(c.pos + step, 0, m.text.length);
   veCommit();
@@ -7172,7 +7192,7 @@ function wireVE(root){
       const d = VE.drag; VE.drag = null; ch.classList.remove('dragging'); $$('.ve-c.drop').forEach(x => x.classList.remove('drop'));
       if(!d || !d.moved) return;
       const t = document.elementFromPoint(ev.clientX, ev.clientY), c = t && t.closest('.ve-c');
-      if(c){ const src = VE.model[d.li], chord = src.chords.splice(d.ci, 1)[0], dst = VE.model[+c.dataset.li]; dst.chords.push({pos:+c.dataset.i, name:chord.name}); veClose(); veCommit(); }
+      if(c){ const src = VE.model[d.li], chord = src.chords.splice(d.ci, 1)[0], dst = VE.model[+c.dataset.li]; src.dirty = true; dst.dirty = true; dst.chords.push({pos:+c.dataset.i, name:chord.name}); veClose(); veCommit(); }
       VE.suppressClick = true; setTimeout(() => { VE.suppressClick = false; }, 50);
     };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
@@ -7197,7 +7217,7 @@ function wireVE(root){
       }
       if(b.dataset.ve === 'ok') return veApply(inp.value);
       if(b.dataset.ve === 'close') return veClose();
-      if(b.dataset.ve === 'del'){ const m = VE.model[VE.pick.li]; if(VE.pick.kind === 'lyric') m.chords.splice(VE.pick.ci, 1); else m.toks.splice(VE.pick.ti, 1); veClose(); return veCommit(); }
+      if(b.dataset.ve === 'del'){ const m = VE.model[VE.pick.li]; m.dirty = true; if(VE.pick.kind === 'lyric') m.chords.splice(VE.pick.ci, 1); else m.toks.splice(VE.pick.ti, 1); veClose(); return veCommit(); }
       if(b.dataset.ve === 'left') return veMove(-1);
       if(b.dataset.ve === 'right') return veMove(1);
       return;
@@ -7216,6 +7236,69 @@ function wireVE(root){
     if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); veClose(); }
     e.target.classList.remove('bad');
   });
+}
+
+/* ================== הדבקה חכמה של שיר מאתר ================== */
+const SPASTE = {open:false, raw:'', spread:true, reverse:null, inline:true, clean:true};
+function chordGapsSquashed(line){ const m = [...line.matchAll(/\S+/g)]; if(m.length < 2) return false; for(let i = 1; i < m.length; i++){ if(m[i].index - (m[i - 1].index + m[i - 1][0].length) > 2) return false; } return true; }
+function spreadChords(chords, lyric){
+  const words = []; for(let i = 0; i < lyric.length; i++){ if(lyric[i] !== ' ' && (i === 0 || lyric[i - 1] === ' ')) words.push(i); }
+  if(!words.length) return chords.map(c => `[${c}]`).join('') + lyric;
+  const N = chords.length, W = words.length, pos = chords.map((c, k) => N === 1 ? 0 : Math.round(k * (W - 1) / (N - 1)));
+  const at = {}; chords.forEach((c, k) => { const w = Math.min(W - 1, pos[k]); (at[words[w]] = at[words[w]] || []).push(c); });
+  let out = ''; for(let i = 0; i <= lyric.length; i++){ if(at[i]){ const list = at[i], wEnd = (lyric.indexOf(' ', i) + 1 || lyric.length + 1) - 1, len = wEnd - i;
+      out += `[${list[0]}]`; list.slice(1).forEach((c, j) => { at[i + Math.max(1, Math.floor(len * (j + 1) / list.length))] = (at[i + Math.max(1, Math.floor(len * (j + 1) / list.length))] || []).concat([c]); }); }
+    if(i < lyric.length) out += lyric[i]; }
+  return out;
+}
+function smartSongFix(text, o){
+  let lines = normSpaces(text).split('\n');
+  if(o.clean) lines = lines.filter(l => !SITE_JUNK.test(l) || isChordLine(l));
+  const out = [], info = {squashed:0, hebrew:false, pairs:0};
+  for(let i = 0; i < lines.length; i++){
+    const l = lines[i], nx = lines[i + 1];
+    if(isChordLine(l) && nx != null && nx.trim() && !isChordLine(nx) && !veHasInline(nx) && !veIsSection(nx)){
+      info.pairs++;
+      const toks = l.trim().split(/\s+/), chords = toks.filter(t => parseChord(t) && !NOISE_RE.test(t)), heb = hasHebrew(nx);
+      if(heb) info.hebrew = true;
+      if(chordGapsSquashed(l) || chords.length === 1 && l.trim().length < 6 && nx.trim().split(/\s+/).length > 2){
+        if(chordGapsSquashed(l)) info.squashed++;
+        if(o.spread){ const rev = o.reverse == null ? heb : o.reverse; out.push(spreadChords(rev ? chords.slice().reverse() : chords, nx)); i++; continue; }
+      }
+      if(o.inline){ const dir = heb ? 'rtl' : 'ltr', m = veMeasurePair(l, nx, 700, dir, 18); out.push(veSerialize([m])); i++; continue; }
+      out.push(l, nx); i++; continue;
+    }
+    out.push(l);
+  }
+  let res = out.join('\n');
+  if(o.clean) res = res.replace(/\n{3,}/g, '\n\n').trim();
+  return {text:res, info};
+}
+function spasteHTML(){
+  return `<div class="ied-paste" id="ied-paste">
+    <div class="spread"><b>הדבקה חכמה של שיר מאתר</b><button type="button" class="btn ghost small" data-sp="close">סגירה</button></div>
+    <p class="hint">מעתיקים את השיר מהאתר, מדביקים כאן, ובודקים בתצוגה שמימין שהאקורדים במקום. אם משהו לא יושב, משנים את האפשרויות למטה.</p>
+    <div class="ied-split">
+      <div class="ied-col"><span class="ied-lbl">מה שהודבק</span><textarea id="sp-raw" dir="auto" spellcheck="false" placeholder="הדביקו כאן (Ctrl+V)">${esc(SPASTE.raw)}</textarea></div>
+      <div class="ied-col"><span class="ied-lbl">כך זה ייכנס לשיר</span><div class="sheet ied-prev" id="sp-prev"></div></div>
+    </div>
+    <div class="row sp-opts">
+      <label class="row" style="gap:6px"><input type="checkbox" data-spo="spread" ${SPASTE.spread ? 'checked' : ''}> פיזור אקורדים על המילים כשהרווחים ביניהם אבדו בהעתקה</label>
+      <label class="row" style="gap:6px"><input type="checkbox" data-spo="reverse" ${(SPASTE.reverse == null ? true : SPASTE.reverse) ? 'checked' : ''}> בעברית: סדר האקורדים התהפך</label>
+      <label class="row" style="gap:6px"><input type="checkbox" data-spo="clean" ${SPASTE.clean ? 'checked' : ''}> ניקוי שורות של האתר ושורות ריקות מיותרות</label>
+    </div>
+    <p class="muted" id="sp-info"></p>
+    <div class="row"><button type="button" class="btn primary" data-sp="replace">הכנסה במקום הטקסט</button><button type="button" class="btn" data-sp="append">הוספה בסוף</button></div>
+  </div>`;
+}
+function spasteUpdate(){
+  const raw = $('#sp-raw'); if(!raw) return;
+  SPASTE.raw = raw.value;
+  const r = smartSongFix(SPASTE.raw, SPASTE);
+  SPASTE.result = r.text;
+  $('#sp-prev').innerHTML = r.text.trim() ? renderSheetHTML(r.text, 0).html : '<p class="muted">כאן תופיע התצוגה.</p>';
+  $('#sp-prev').dir = hasHebrew(r.text) ? 'rtl' : 'ltr';
+  $('#sp-info').textContent = r.info.pairs ? `${r.info.pairs} שורות אקורדים מעל מילים${r.info.squashed ? `, מתוכן ${r.info.squashed} שהרווחים בהן אבדו והאקורדים פוזרו על המילים` : ''}. אחרי ההכנסה אפשר לתקן כל אקורד ב"עריכה בלחיצה".` : '';
 }
 
 /* ================== ניווט ================== */
