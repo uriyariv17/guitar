@@ -2980,8 +2980,9 @@ function renderStudent(){
   $('#stu-due').textContent = late.length ? `${late.length === 1 ? 'תאריך היעד של משימה אחת עבר' : `תאריך היעד של ${late.length} משימות עבר`}: ${late.map(t => t.title).join(', ')}.` : soon.length ? `צריך לסיים בקרוב: ${soon.map(t => `${t.title} (${dueInfo(t).text})`).join(', ')}.` : '';
   $('#stu-goal').innerHTML = goalHTML(S.logs, Number(S.student.weeklyGoal) || 0);
   const mySongs = (S.songs || []).map(i => songModel(Object.assign({}, i.data, {id:i.id})));
-  $('#stu-tab-songs').hidden = !mySongs.length;
-  $('#stu-songs').innerHTML = mySongs.map(x => `<button class="btn small" data-act="open-my-song" data-sid="${esc(x.id)}">${esc(x.name)}</button>`).join('');
+  $('#stu-tab-songs').hidden = false;
+  $('#stu-open-songs').hidden = !mySongs.length;
+  $('#stu-songs').innerHTML = mySongs.length ? mySongs.map(x => `<button class="btn small" data-act="open-my-song" data-sid="${esc(x.id)}">${esc(x.name)}</button>`).join('') : '<p class="empty" style="width:100%">עוד אין לך שירים. כשהמורה ישבץ לך שיר, הוא יופיע כאן עם האקורדים והנגן.</p>';
   const ls = (S.lessons || []).slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   $('#stu-tab-lessons').hidden = !ls.length;
   $('#stu-lessons').innerHTML = ls.map(l => `<article class="lesson"><div class="lesson-d">${fmtDate(l.date)}</div><p>${esc(l.text)}</p></article>`).join('');
@@ -3002,7 +3003,7 @@ function studentTaskHTML(t){
   const op = S.openCards || (S.openCards = new Set());
   return `<article class="task ${t.done ? 'done' : ''}" data-id="${esc(t.id)}">
     <div class="task-top"><h4>${esc(t.title)}</h4>${t.done ? '<span class="chip ok">הושלם</span>' : dueChip(t)}</div>
-    ${t.description ? `<p class="desc">${esc(t.description)}</p>` : ''}
+    ${t.description ? `<p class="desc">${linkifyAnswer(t.description)}</p>` : ''}
     ${att ? `<details class="task-more" data-more="att" ${op.has(t.id + ':att') ? 'open' : ''}><summary>חומרים למשימה (${nAtt})</summary>${att}</details>` : ''}
     ${(t.targetReps || t.targetBpm) ? `<div class="chips">${t.targetReps ? `<span class="chip">יעד: ${t.targetReps} פעמים</span>` : ''}${t.targetBpm ? `<span class="chip">קצב ${t.targetBpm}</span>` : ''}</div>` : ''}
     <div class="counter">
