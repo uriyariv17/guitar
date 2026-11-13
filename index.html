@@ -829,6 +829,17 @@ th.g-name:hover .pg-g-acts, .pg-g-acts:focus-within{ opacity:1; }
 .ve-in{ width:110px; min-height:34px; padding:3px 8px; font-weight:700; }
 .ve-in.bad{ border-color:var(--red); box-shadow:0 0 0 2px color-mix(in srgb, var(--red) 25%, transparent); }
 
+.fb-subtabs{ align-self:flex-start; }
+.fb-subtabs button{ font-size:1rem; padding:8px 18px; }
+.fb-count{ display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:var(--amber); color:var(--amber-ink); font-size:.75rem; margin-inline-start:4px; }
+.fb-count:empty{ display:none; }
+.shape-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:12px; margin:8px 0 16px; }
+.shape-card{ border:1px solid var(--line); border-radius:14px; padding:10px 12px; display:grid; gap:6px; background:var(--surface); align-content:start; }
+.fb-wrap.fbm{ overflow:hidden; padding-bottom:0; }
+svg.fb.fb-mini{ min-width:0; width:100%; height:auto; max-height:200px; direction:ltr; }
+svg.fb-mini .fb-note{ pointer-events:auto; cursor:pointer; }
+svg.fb-mini .fb-note:hover circle{ filter:brightness(1.15); }
+
 dialog{ border:1px solid var(--line); border-radius:18px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--surface); color:var(--ink); }
 dialog::backdrop{ background:rgba(10,15,30,.45); }
 dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px); overflow:auto; }
@@ -956,12 +967,12 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
       <p>בוחרים צליל בסיס וסולם, ורואים איפה כל התווים שלו על הצוואר. הצליל הצהוב הוא הבסיס. לחיצה על תו משמיעה אותו.</p>
     </div>
     <div class="stack">
-      <div class="panel stack" id="sp-panel" hidden>
-        <div><h3>צורות ופוזיציות מהמורה</h3><p class="muted">התו הצהוב הוא צליל הבסיס, והירוק הוא תו שהמורה הדגיש. לחיצה על תו משמיעה אותו.</p></div>
+      <div class="seg fb-subtabs" id="fb-tabs" role="tablist"><button data-v="scales" role="tab">סולמות ותרגול</button><button data-v="shapes" role="tab">צורות מהמורה <span class="fb-count" id="fb-shapes-count"></span></button></div>
+      <div class="panel stack" id="fs-panel" hidden>
+        <div class="spread"><div><h3>צורות ופוזיציות</h3><p class="muted">רק הסריגים של כל צורה מוצגים, כך שאפשר לראות כמה צורות יחד. התו הצהוב הוא צליל הבסיס, והירוק תו מודגש. לחיצה על תו משמיעה אותו.</p></div>
+          <div class="row" id="fs-admin" hidden><button class="btn" data-act="new-cat" data-kind="scat">קטגוריה חדשה</button><button class="btn primary" data-act="new-shape">צורה חדשה</button></div></div>
         <div class="seg" id="sp-cats"></div>
-        <div class="seg" id="sp-list"></div>
-        <div class="fb-wrap" id="sp-board"></div>
-        <div class="spread"><p class="muted" id="sp-desc" style="white-space:pre-line;max-width:62ch"></p><button class="btn" id="sp-play">נגן את הצורה</button></div>
+        <div id="fs-grid"></div>
       </div>
       <div class="panel stack">
         <div class="opt"><span class="opt-l">צליל בסיס</span><div class="seg" id="f-root" style="direction:ltr"></div></div>
@@ -1264,7 +1275,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
       <p class="err" id="t-err2"></p>
     </div>
     <div id="t-dash" hidden>
-      <div class="spread" style="margin-bottom:16px;align-items:flex-start"><div class="seg" id="t-mode" style="margin-bottom:0"><button data-v="students">תלמידים ומשימות</button><button data-v="chords">ספריית אקורדים</button><button data-v="shapes">צורות על הצוואר</button><button data-v="songs">שירים</button><button data-v="band">VELVET</button><button data-v="youth">הרכבים צעירים</button><button data-v="settings">הגדרות</button></div><button class="btn small" id="t-logout2">יציאה</button></div>
+      <div class="spread" style="margin-bottom:16px;align-items:flex-start"><div class="seg" id="t-mode" style="margin-bottom:0"><button data-v="students">תלמידים ומשימות</button><button data-v="chords">ספריית אקורדים</button><button data-v="songs">שירים</button><button data-v="band">VELVET</button><button data-v="youth">הרכבים צעירים</button><button data-v="settings">הגדרות</button></div><button class="btn small" id="t-logout2">יציאה</button></div>
       <div class="t-grid" id="t-students">
         <aside class="panel stack">
           <div class="spread"><h3>תלמידים</h3><button class="btn small primary" id="t-new-student">תלמיד חדש</button></div>
@@ -3264,6 +3275,32 @@ function shapeMarks(sh){
     return {s:m.s, f:m.f, text, cls:(isRoot ? 'root' : '') + (m.hl ? ' hl' : '')};
   });
 }
+/* צורה קומפקטית: רק הסריגים הרלוונטיים */
+function shapeRange(sh){
+  const fs = sh.marks.map(m => m.f), fretted = fs.filter(f => f > 0);
+  let lo = fretted.length ? Math.min(...fretted) : 1, hi = fs.length ? Math.max(...fs) : 4;
+  if(sh.band){ lo = Math.min(lo, Math.max(1, sh.band.from)); hi = Math.max(hi, sh.band.to); }
+  const open = fs.includes(0) || lo <= 2;
+  let from = open ? 0 : lo - 1, to = Math.max(hi, from + 4);
+  return {from, to};
+}
+function shapeMiniSVG(sh){
+  const {from, to} = shapeRange(sh), n = to - from, FW = 62, gap = 22, nutX = 42, top = 22, H = top + gap * 5 + 40;
+  const W = nutX + n * FW + 14, yOf = s => top + (5 - s) * gap, xOf = f => f === 0 ? nutX - 20 : nutX + (f - from - .5) * FW;
+  let s = `<svg class="fb fb-mini" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(sh.name || 'צורה')}">`;
+  s += `<rect class="fb-wood" x="${nutX}" y="${top - 10}" width="${n * FW}" height="${gap * 5 + 20}" rx="3"/>`;
+  if(sh.band){ const a = Math.max(from + 1, sh.band.from), b = Math.min(to, sh.band.to); if(b >= a) s += `<rect class="fb-band" x="${nutX + (a - from - 1) * FW}" y="${top - 10}" width="${(b - a + 1) * FW}" height="${gap * 5 + 20}" rx="3"/>`; }
+  for(let f = from + 1; f <= to; f++){
+    if([3,5,7,9,15,17,19,21].includes(f)) s += `<circle class="fb-inlay" cx="${xOf(f)}" cy="${top + gap * 2.5}" r="5"/>`;
+    if(f === 12 || f === 24) s += `<circle class="fb-inlay" cx="${xOf(f)}" cy="${top + gap * 1.5}" r="5"/><circle class="fb-inlay" cx="${xOf(f)}" cy="${top + gap * 3.5}" r="5"/>`;
+    s += `<line class="fb-fret" x1="${nutX + (f - from) * FW}" y1="${top - 10}" x2="${nutX + (f - from) * FW}" y2="${top + gap * 5 + 10}"/>`;
+    s += `<text class="fb-num" x="${xOf(f)}" y="${H - 8}" text-anchor="middle">${f}</text>`;
+  }
+  s += from === 0 ? `<rect class="fb-nut" x="${nutX - 4}" y="${top - 10}" width="6" height="${gap * 5 + 20}"/>` : `<line class="fb-fret" x1="${nutX}" y1="${top - 10}" x2="${nutX}" y2="${top + gap * 5 + 10}"/>`;
+  for(let st = 0; st < 6; st++) s += `<line class="fb-string" x1="${from === 0 ? nutX - 32 : nutX}" y1="${yOf(st)}" x2="${nutX + n * FW}" y2="${yOf(st)}" stroke-width="${(2.5 - st * .3).toFixed(2)}"/>`;
+  shapeMarks(sh).forEach(m => { if(m.f < from || m.f > to) return; s += `<g class="fb-note ${m.cls || ''}" data-s="${m.s}" data-f="${m.f}"><circle cx="${xOf(m.f)}" cy="${yOf(m.s)}" r="10"/><text x="${xOf(m.f)}" y="${yOf(m.s) + 4}" text-anchor="middle">${esc(m.text)}</text></g>`; });
+  return s + '</svg>';
+}
 function shapeSVG(sh, edit){ return fretboardSVG({frets:SHAPE_FRETS, marks:shapeMarks(sh), band:sh.band, edit, label:sh.name || 'צורה על הצוואר'}); }
 function playShape(sh){
   const notes = [...new Set(sh.marks.map(m => OPEN[m.s] + m.f))].sort((a, b) => a - b);
@@ -3302,23 +3339,33 @@ function spList(){
   const shapes = allShapes(), catIds = libOf('scat').map(c => c.id);
   return shapes.filter(s => SP.cat === 'all' || (SP.cat === 'none' ? !catIds.includes(s.categoryId) : s.categoryId === SP.cat));
 }
+const FBT = {tab:'scales'};
+function fbTab(t){
+  FBT.tab = t;
+  $$('#fb-tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === t));
+  $$('#fb-tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === t));
+  $$('#v-fretboard .stack > .panel').forEach(p => { p.hidden = (p.id === 'fs-panel') !== (t === 'shapes'); });
+  if(t === 'shapes') renderShapesPanel();
+}
 function renderShapesPanel(){
-  const shapes = allShapes();
-  $('#sp-panel').hidden = !shapes.length;
-  if(!shapes.length) return;
+  const shapes = allShapes(), tch = !!T.data;
+  $('#fb-shapes-count').textContent = shapes.length ? String(shapes.length) : '';
+  $('#fs-admin').hidden = !tch;
+  if(FBT.tab !== 'shapes') return;
   const catIds = libOf('scat').map(c => c.id);
-  const cats = libOf('scat').filter(c => shapes.some(s => s.categoryId === c.id));
+  const cats = libOf('scat').filter(c => tch || shapes.some(s => s.categoryId === c.id));
   const filters = [{id:'all', label:'הכול'}].concat(cats.map(c => ({id:c.id, label:c.data.name})));
   if(cats.length && shapes.some(s => !catIds.includes(s.categoryId))) filters.push({id:'none', label:'נוספות'});
   if(!filters.some(f => f.id === SP.cat)) SP.cat = 'all';
-  $('#sp-cats').hidden = !cats.length;
+  $('#sp-cats').hidden = filters.length < 2;
   $('#sp-cats').innerHTML = filters.map(f => `<button data-v="${esc(f.id)}" aria-pressed="${f.id === SP.cat}">${esc(f.label)}</button>`).join('');
-  const list = spList();
-  if(!list.some(s => s.id === SP.id)) SP.id = list[0] ? list[0].id : null;
-  $('#sp-list').innerHTML = list.map(s => `<button data-v="${esc(s.id)}" aria-pressed="${s.id === SP.id}">${esc(s.name)}</button>`).join('');
-  const sh = list.find(s => s.id === SP.id);
-  $('#sp-board').innerHTML = sh ? shapeSVG(sh) : '';
-  $('#sp-desc').textContent = sh ? sh.description : '';
+  const shown = SP.cat === 'all' ? shapes : SP.cat === 'none' ? shapes.filter(s => !catIds.includes(s.categoryId)) : shapes.filter(s => s.categoryId === SP.cat);
+  const card = sh => `<article class="shape-card"><div class="spread"><b>${esc(sh.name)}</b><div class="row" style="gap:2px"><button class="btn ghost small" data-fs-play="${esc(sh.id)}">נגן</button>${tch ? `<button class="btn ghost small" data-act="edit-shape" data-id="${esc(sh.id)}">עריכה</button>` : ''}</div></div><div class="fb-wrap fbm">${shapeMiniSVG(sh)}</div>${sh.description ? `<p class="muted" style="white-space:pre-line;margin:0;font-size:.9rem">${esc(sh.description)}</p>` : ''}</article>`;
+  let h = '';
+  if(!shapes.length && !cats.length) h = `<p class="empty">${tch ? 'עוד אין צורות. לחץ על "צורה חדשה", בחר צליל בסיס וטווח סריגים, ומלא אותם מסולם בלחיצה אחת.' : 'המורה עוד לא הוסיף צורות.'}</p>`;
+  else if(SP.cat === 'all') h = groupByCats(cats, shapes).filter(g => g.list.length || tch).map(g => `<section class="lib-group">${tch ? catHead(g, 'scat') : `<h3>${g.cat ? esc(g.cat.data.name) : 'נוספות'} <small class="muted">${g.list.length}</small></h3>`}${g.list.length ? `<div class="shape-grid">${g.list.map(card).join('')}</div>` : '<p class="empty">אין עדיין צורות כאן.</p>'}</section>`).join('');
+  else h = shown.length ? `<div class="shape-grid">${shown.map(card).join('')}</div>` : '<p class="empty">אין צורות בקטגוריה הזו.</p>';
+  $('#fs-grid').innerHTML = h;
 }
 
 /* צירופים למשימות */
@@ -3341,7 +3388,7 @@ function attachmentsHTML(t){
   a.shapes.forEach(sh => {
     const open = S.openShapes.has(t.id + ':' + sh.id);
     h += `<div><button class="btn small" data-act="shape" data-sid="${esc(sh.id)}" aria-expanded="${open}">${open ? 'הסתר' : 'הצג על הצוואר'}: ${esc(sh.name)}</button></div>`;
-    if(open) h += `<div class="fb-wrap">${shapeSVG(sh)}</div>${sh.description ? `<p class="muted" style="white-space:pre-line">${esc(sh.description)}</p>` : ''}`;
+    if(open) h += `<div class="fb-wrap fbm">${shapeMiniSVG(sh)}</div>${sh.description ? `<p class="muted" style="white-space:pre-line">${esc(sh.description)}</p>` : ''}`;
   });
   return h + '</div>';
 }
@@ -7409,6 +7456,7 @@ let currentView = 'home';
 function showView(v){
   if(!VIEWS.includes(v)) v = 'home';
   if(v === 'home') renderHomeState();
+  if(v === 'fretboard') fbTab(FBT.tab);
   if(v === 'piano'){ if(T.data && typeof loadPianoSamples === 'function') loadPianoSamples(); renderPiano(); }
   if(v === 'links') renderLinks();
   if(v === 'songs' && (T.data || S.student) && !SGF.userPicked && !SG.song){ SGF.view = 'table'; applySongView(); }
@@ -7567,9 +7615,12 @@ function init(){
   $('#se-del').addEventListener('click', deleteShape);
   $('#ft-att-list').addEventListener('change', updateAttSum);
   $('#sp-cats').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ SP.cat = b.dataset.v; SP.id = null; renderShapesPanel(); } });
-  $('#sp-list').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ SP.id = b.dataset.v; renderShapesPanel(); } });
-  $('#sp-board').addEventListener('click', e => { const n = e.target.closest('.fb-note'); if(n) pluck(midiFreq(OPEN[Number(n.dataset.s)] + Number(n.dataset.f)), 0, .35); });
-  $('#sp-play').addEventListener('click', () => { const sh = spList().find(s => s.id === SP.id); if(sh) playShape(sh); });
+  $('#fb-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(b) fbTab(b.dataset.v); });
+  $('#fs-panel').addEventListener('click', e => {
+    const n = e.target.closest('.fb-note'); if(n){ pluck(midiFreq(OPEN[Number(n.dataset.s)] + Number(n.dataset.f)), 0, .35); return; }
+    const pl = e.target.closest('[data-fs-play]'); if(pl){ const sh = allShapes().find(x => x.id === pl.dataset.fsPlay); if(sh) playShape(sh); return; }
+    if(T.data) onTeacherLib(e);
+  });
   // שירים
   $('#sg-list').addEventListener('click', e => { const b = e.target.closest('.song-item'); if(b){ openSong(findSong(b.dataset.id)); renderSongList(); } });
   $('#sg-open').addEventListener('click', () => { const u = $('#sg-url').value; openSong({name:'', url:u, bpm:0, loops:[]}); renderSongList(); });
