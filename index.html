@@ -233,6 +233,17 @@ pre.tab{ direction:ltr; text-align:left; font:15px/1.35 ui-monospace, Menlo, Con
 .task-more[open] > summary::before{ transform:rotate(90deg); }
 [dir="rtl"] .task-more > summary::before{ content:'◂'; }
 [dir="rtl"] .task-more[open] > summary::before{ transform:rotate(-90deg); }
+.th-edit{ cursor:pointer; position:relative; }
+.th-edit:hover{ filter:brightness(1.06); text-decoration:underline dotted; }
+.th-in{ width:100%; min-height:30px; padding:2px 6px; font:inherit; text-align:center; }
+.shape-pick{ display:grid; gap:6px; }
+.sp-row{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:4px; }
+.sp-row button, .sp-none{ appearance:none; border:1px solid var(--line); border-radius:8px; padding:7px 4px; font:700 .88rem 'Assistant',Arial,sans-serif; cursor:pointer; color:var(--ink); line-height:1.2; }
+.sp-row.maj button{ background:color-mix(in srgb, #7FBFA5 35%, var(--surface)); }
+.sp-row.min button{ background:color-mix(in srgb, #E9BDBF 45%, var(--surface)); }
+.sp-row button[aria-pressed="true"], .sp-none[aria-pressed="true"]{ outline:3px solid var(--ink); outline-offset:-1px; }
+.sp-none{ background:var(--surface-2); justify-self:start; padding:6px 12px; }
+@media (max-width: 520px){ .sp-row{ grid-template-columns:repeat(3, minmax(0,1fr)); } }
 .ft-sec{ font-weight:800; color:var(--blue); font-size:.9rem; margin:10px 0 2px; padding-top:8px; border-top:1px solid var(--line); }
 .ft-sec:first-of-type{ border-top:0; padding-top:0; }
 .ft-quick{ gap:6px; margin-top:-4px; }
@@ -1407,8 +1418,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
     <label class="field">הקצב המקורי (BPM) <small>אפשר גם להקיש אותו בנגן ולעדכן כאן</small><input type="number" id="fso-bpm" min="0" max="400"></label>
     <div class="row" style="align-items:end">
       <label class="field" style="min-width:180px">ז׳אנר<select id="fso-genre"></select></label>
-      <div class="opt"><span class="opt-l">צורת נגינה</span><div class="seg" id="fso-shape" style="direction:ltr"></div></div>
-      <div class="opt"><span class="opt-l">מז׳ור או מינור</span><div class="seg" id="fso-mode"><button type="button" data-v="maj">מז׳ור</button><button type="button" data-v="min">מינור</button></div></div>
+      <div class="opt" style="flex-basis:100%"><span class="opt-l">מקום בטבלה</span><div class="shape-pick" id="fso-shape"></div><div id="fso-mode" hidden></div></div>
     </div>
     <label class="field">הערה לתלמידים <small>(לא חובה)</small><textarea id="fso-note" maxlength="400" placeholder="למשל: הפתיחה היא על Am ו־G"></textarea></label>
     <div class="field">
@@ -3938,8 +3948,10 @@ function openSongDlg(item, attachToTask, preset){
   $('#dlg-song').showModal(); $('#fso-name').focus();
 }
 function syncSongTags(){
-  $('#fso-shape').innerHTML = `<button type="button" data-v="" aria-pressed="${!editSong.shape}">ללא</button>` + SONG_SHAPES.map(x => `<button type="button" data-v="${x}" aria-pressed="${editSong.shape === x}">${x}</button>`).join('');
-  $$('#fso-mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === editSong.mode));
+  const mj = majorLabels(), mn = minorLabels(), on = (sh, m) => editSong.shape === sh && (editSong.mode || 'maj') === m;
+  $('#fso-shape').innerHTML = `<div class="sp-row maj">${SONG_SHAPES.map(x => `<button type="button" data-v="${x}" data-m="maj" aria-pressed="${on(x, 'maj')}" dir="ltr">${esc(mj[x])}</button>`).join('')}</div>
+    <div class="sp-row min">${SONG_SHAPES.map(x => `<button type="button" data-v="${x}" data-m="min" aria-pressed="${on(x, 'min')}" dir="ltr">${esc(mn[x])}</button>`).join('')}</div>
+    <button type="button" class="sp-none" data-v="" aria-pressed="${!editSong.shape}">בלי מקום בטבלה</button>`;
 }
 function syncSheetDir(){
   const d = editSong.dir || (hasHebrew($('#fso-sheet').value) || !$('#fso-sheet').value ? 'rtl' : 'ltr');
@@ -5168,8 +5180,16 @@ async function saveTeacherSettings(){
 const SONG_SHAPES = ['C','A','G','E','D'];
 const DEFAULT_MINOR = {C:'Am (C)', A:'Em (A) - גשר', G:'Em (G) - פתוח', E:'Em פתוח', D:'Dm'};
 const SGF = {q:'', genre:'', shape:'', mode:'', view:'list'};
-function minorLabels(){ const c = LIB.items.find(i => i.kind === 'songcfg'); return Object.assign({}, DEFAULT_MINOR, c && c.data.minor || {}); }
-function shapeLabel(shape, mode){ return !shape ? '' : mode === 'min' ? minorLabels()[shape] : shape; }
+function songCfg(){ const c = LIB.items.find(i => i.kind === 'songcfg'); return c ? c.data : {}; }
+function minorLabels(){ return Object.assign({}, DEFAULT_MINOR, songCfg().minor || {}); }
+function majorLabels(){ const d = {}; SONG_SHAPES.forEach(x => { d[x] = x; }); return Object.assign(d, songCfg().major || {}); }
+function shapeLabel(shape, mode){ return !shape ? '' : mode === 'min' ? minorLabels()[shape] : majorLabels()[shape]; }
+async function saveShapeLabel(mode, shape, val){
+  const cfg = Object.assign({}, songCfg()), key = mode === 'min' ? 'minor' : 'major';
+  cfg[key] = Object.assign({}, cfg[key] || {}); const v = String(val || '').trim();
+  if(v) cfg[key][shape] = v.slice(0, 40); else delete cfg[key][shape];
+  await saveItems([{id:'songcfg', kind:'songcfg', data:cfg}]);
+}
 const genres = () => libOf('genre');
 const genreName = id => { const g = genres().find(x => x.id === id); return g ? g.data.name : ''; };
 function songMatches(s){
@@ -5207,7 +5227,7 @@ function renderShapeTable(){
   $('#sg-table').innerHTML = `<div class="spread" style="margin-bottom:10px"><h3>${S.student ? 'השירים שלי' : 'טבלת צורות נגינה'}</h3><span class="muted">${S.student ? `${esc(S.student.name)}, אלה השירים שהמורה שיבץ לך.` : T.data ? 'כל הספרייה. רק אתה רואה אותה, כי אתה מחובר כמורה.' : ''}${noShape && !S.student ? ` ${noShape} שירים בלי צורת נגינה לא מופיעים בטבלה.` : ''}</span></div>` +
     (shown.length ? `<div class="scroll-x"><table class="shape-table">${shown.map(b => `
       <tbody>
-        <tr class="sh-maj">${'<th rowspan="4" class="g-name">' + esc(b.name) + '</th>'}${shapes.map(sh => `<th>${sh}</th>`).join('')}</tr>
+        <tr class="sh-maj">${'<th rowspan="4" class="g-name">' + esc(b.name) + '</th>'}${shapes.map(sh => `<th dir="ltr">${esc(majorLabels()[sh])}</th>`).join('')}</tr>
         ${SGF.mode === 'min' ? '<tr></tr>' : `<tr>${shapes.map(sh => cell(b.list, sh, 'maj')).join('')}</tr>`}
         <tr class="sh-min">${shapes.map(sh => `<th dir="ltr">${esc(ml[sh])}</th>`).join('')}</tr>
         ${SGF.mode === 'maj' ? '<tr></tr>' : `<tr>${shapes.map(sh => cell(b.list, sh, 'min')).join('')}</tr>`}
@@ -5245,7 +5265,7 @@ async function onSongTagsAdmin(b){
   }
   if(act === 'save-minor'){
     const minor = {}; $$('#t-songs [data-ml]').forEach(i => { minor[i.dataset.ml] = i.value.trim() || DEFAULT_MINOR[i.dataset.ml]; });
-    await saveItems([{id:'songcfg', kind:'songcfg', data:{minor}}]); $('#ml-msg').textContent = 'נשמר.';
+    await saveItems([{id:'songcfg', kind:'songcfg', data:Object.assign({}, songCfg(), {minor})}]); $('#ml-msg').textContent = 'נשמר.';
   }
 }
 
@@ -6273,7 +6293,7 @@ function teacherSongsGroupedHTML(songs){
 
 /* טבלת השירים במסך המורה (עם גרירה ושיבוץ) */
 function teacherSongsTableHTML(songs){
-  const ml = minorLabels(), gs = genres().map(g => ({id:g.id, name:g.data.name}));
+  const ml = minorLabels(), mjl = majorLabels(), gs = genres().map(g => ({id:g.id, name:g.data.name}));
   const ids = gs.map(g => g.id);
   if(songs.some(s => s.shape && !ids.includes(s.genreId))) gs.push({id:'', name:'ללא ז׳אנר'});
   const chip = s => `<span role="button" tabindex="0" class="tt-song" draggable="true" data-song="${esc(s.id)}" title="לחיצה לעריכה, גרירה להעברה">${esc(s.name)}${s.sheet ? '<span class="tt-dot" title="יש מילים ואקורדים"></span>' : ''}</span>`;
@@ -6283,13 +6303,13 @@ function teacherSongsTableHTML(songs){
   };
   const table = gs.length ? `<div class="scroll-x"><table class="shape-table teacher-table">${gs.map(g => `
     <tbody>
-      <tr class="sh-maj"><th rowspan="4" class="g-name">${esc(g.name)}</th>${SONG_SHAPES.map(sh => `<th>${sh}</th>`).join('')}</tr>
+      <tr class="sh-maj"><th rowspan="4" class="g-name">${esc(g.name)}</th>${SONG_SHAPES.map(sh => `<th class="th-edit" data-lbl="maj:${sh}" tabindex="0" title="לחיצה לשינוי השם"><span dir="ltr">${esc(mjl[sh])}</span></th>`).join('')}</tr>
       <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'maj')).join('')}</tr>
-      <tr class="sh-min">${SONG_SHAPES.map(sh => `<th dir="ltr">${esc(ml[sh])}</th>`).join('')}</tr>
+      <tr class="sh-min">${SONG_SHAPES.map(sh => `<th class="th-edit" data-lbl="min:${sh}" tabindex="0" title="לחיצה לשינוי השם"><span dir="ltr">${esc(ml[sh])}</span></th>`).join('')}</tr>
       <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'min')).join('')}</tr>
     </tbody>`).join('')}</table></div>` : '<p class="empty">עוד אין ז׳אנרים. הוסף ז׳אנר כדי לבנות את הטבלה.</p>';
   const loose = songs.filter(s => !s.shape).sort((a, b) => a.name.localeCompare(b.name, 'he'));
-  return `<p class="hint" style="margin:12px 0 8px">לחיצה על שיר פותחת אותו לעריכה. במחשב אפשר לגרור שיר לתא אחר בטבלה כדי לשנות ז׳אנר או צורה. ה־+ בכל תא מוסיף שיר ישר אליו.</p>
+  return `<p class="hint" style="margin:12px 0 8px">לחיצה על כותרת ירוקה או אדומה משנה את השם שלה. לחיצה על שיר פותחת אותו לעריכה. במחשב אפשר לגרור שיר לתא אחר בטבלה כדי לשנות ז׳אנר או צורה. ה־+ בכל תא מוסיף שיר ישר אליו.</p>
     ${table}
     <div class="tt-loose" data-loose="1">
       <div class="spread"><h3>שירים שעוד לא שובצו בטבלה <small class="muted">${loose.length}</small></h3><input type="search" id="tt-q" placeholder="חיפוש" style="max-width:200px" aria-label="חיפוש בשירים שלא שובצו"></div>
@@ -6312,7 +6332,19 @@ function wireTeacherTable(){
     const id = e.dataTransfer.getData('text/plain'); t.classList.remove('drop-on');
     if(t.dataset.loose) ttAssign(id, '', '', 'maj'); else ttAssign(id, t.dataset.g, t.dataset.sh, t.dataset.mode);
   });
+  const editTh = th => {
+    if(th.querySelector('input')) return;
+    const [mode, sh] = th.dataset.lbl.split(':'), cur = shapeLabel(sh, mode);
+    th.innerHTML = `<input class="th-in" dir="ltr" value="${esc(cur)}" maxlength="40" aria-label="שם הצורה">`;
+    const inp = th.querySelector('input'); inp.focus(); inp.select();
+    let done = false;
+    const finish = async save => { if(done) return; done = true; if(save && inp.value.trim() !== cur){ try{ await saveShapeLabel(mode, sh, inp.value); toast('השם עודכן בכל הטבלאות'); }catch(err){} } renderTeacher(); };
+    inp.addEventListener('keydown', ev => { if(ev.key === 'Enter'){ ev.preventDefault(); finish(true); } if(ev.key === 'Escape'){ ev.preventDefault(); finish(false); } });
+    inp.addEventListener('blur', () => finish(true));
+  };
+  root.addEventListener('keydown', e => { const th = e.target.closest('.th-edit'); if(th && e.key === 'Enter' && !e.target.closest('input')){ e.preventDefault(); editTh(th); } });
   root.addEventListener('click', e => {
+    const th = e.target.closest('.th-edit'); if(th && !e.target.closest('input')){ editTh(th); return; }
     const c = e.target.closest('.tt-song'); if(c){ openSongDlg(LIB.items.find(i => i.id === c.dataset.song)); return; }
     const a = e.target.closest('[data-act="tt-add"]'); if(a){ const td = a.closest('.tt-cell'); openSongDlg(null, false, {genreId:td.dataset.g, shape:td.dataset.sh, mode:td.dataset.mode}); }
   });
@@ -6337,7 +6369,7 @@ function studentTableHTML(s){
   const count = lib.filter(mine).length;
   return `<p class="hint" style="margin:0 0 8px">${count ? `משובצים ${count} שירים.` : 'עוד לא שובצו שירים.'} לחיצה על שיר בטבלה משבצת אותו ל${esc(s.name)} או מוציאה אותו. השירים המודגשים הם מה שהתלמיד רואה, בטבלה משלו.</p>
     ${gs.length ? `<div class="scroll-x"><table class="shape-table student-table">${gs.map(g => `<tbody>
-      <tr class="sh-maj"><th rowspan="4" class="g-name">${esc(g.name)}</th>${SONG_SHAPES.map(sh => `<th>${sh}</th>`).join('')}</tr>
+      <tr class="sh-maj"><th rowspan="4" class="g-name">${esc(g.name)}</th>${SONG_SHAPES.map(sh => `<th dir="ltr">${esc(majorLabels()[sh])}</th>`).join('')}</tr>
       <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'maj')).join('')}</tr>
       <tr class="sh-min">${SONG_SHAPES.map(sh => `<th dir="ltr">${esc(ml[sh])}</th>`).join('')}</tr>
       <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'min')).join('')}</tr></tbody>`).join('')}</table></div>` : '<p class="muted">עוד אין ז׳אנרים בספרייה.</p>'}`;
@@ -7781,7 +7813,7 @@ function init(){
   $('#ft-quick').addEventListener('click', e => { const b = e.target.closest('[data-due]'); if(!b) return; const n = Number(b.dataset.due); $('#ft-due').value = n ? localDay(new Date(Date.now() + n * 86400000)) : ''; });
   $('#ft-att-q').addEventListener('input', e => { const q = e.target.value.trim().toLowerCase(); $$('#ft-att-list label').forEach(l => { l.hidden = q && !l.textContent.toLowerCase().includes(q); }); $$('#ft-att-list b').forEach(h => { let n = h.nextElementSibling, any = false; while(n && n.tagName === 'LABEL'){ if(!n.hidden) any = true; n = n.nextElementSibling; } h.hidden = !any; }); });
   $('#ft-new-song').addEventListener('click', () => openSongDlg(null, true));
-  $('#fso-shape').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ editSong.shape = b.dataset.v; syncSongTags(); } });
+  $('#fso-shape').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ editSong.shape = b.dataset.v; if(b.dataset.m) editSong.mode = b.dataset.m; syncSongTags(); } });
   $('#fso-mode').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ editSong.mode = b.dataset.v; syncSongTags(); } });
   $('#sg-q').addEventListener('input', e => { SGF.q = e.target.value; SGF.view === 'table' ? renderShapeTable() : renderSongList(); });
   $('#sg-g').addEventListener('change', e => { SGF.genre = e.target.value; applySongView(); });
