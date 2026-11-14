@@ -907,6 +907,22 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
 .ss-top input.ss-in{max-width:360px;font-size:1.05rem;padding:10px 14px;border:2px solid #f5b400}
 .ss-hit{outline:2px solid #f5b400;outline-offset:1px;border-radius:6px}
 [data-ss-scope] [hidden]{display:none!important}
+.ve-tools{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:4px 0 10px; }
+.ve-tools [aria-pressed="true"]{ background:var(--blue); color:#fff; border-color:var(--blue); }
+.ve-tmsg{ color:var(--blue); font-weight:600; font-size:.92rem; }
+.ve-slot{ display:block; width:100%; margin:3px 0; padding:2px 8px; border:1.5px dashed var(--blue); border-radius:8px; background:color-mix(in srgb, var(--blue) 7%, transparent); color:var(--blue); font:600 13px/1.4 inherit; font-family:inherit; cursor:pointer; text-align:center; }
+.ve-slot:hover{ background:color-mix(in srgb, var(--blue) 16%, transparent); }
+.ve-sb{ display:inline-block; margin:8px 0 4px; padding:2px 12px; border-radius:7px; border:1px dashed transparent; background:color-mix(in srgb, var(--blue) 11%, var(--surface)); color:var(--blue); font-weight:700; font-size:.8em; font-family:inherit; cursor:pointer; }
+.ve-sb:hover, .ve-nb:hover{ border-color:var(--blue); }
+.ve-nb{ display:inline-block; margin:2px 0; padding:1px 10px; border-radius:7px; border:1px dashed transparent; background:#fff3d6; color:#8a5a00; font-style:italic; font-size:.85em; font-family:inherit; cursor:pointer; }
+.ve-nb.link{ background:transparent; color:var(--ink-2); font-style:normal; direction:ltr; }
+.ln.cm .cm-in{ display:inline-block; padding:0 10px; border-radius:7px; background:#fff3d6; color:#8a5a00; font-style:italic; font-size:.85em; }
+dialog.inl-dlg{ position:static; display:block; width:100%; max-width:none; margin:10px 0 14px; border:2px solid var(--blue); border-radius:16px; box-shadow:0 10px 28px rgba(10,20,40,.14); font-size:16px; line-height:1.5; white-space:normal; font-family:inherit; text-align:start; }
+dialog.inl-dlg form{ max-height:none; overflow:visible; }
+#dlg-note.inl-dlg{ max-width:620px; }
+.ln.ln-edit{ outline:2px solid var(--blue); outline-offset:2px; border-radius:6px; }
+.sd-card .two{ margin-top:10px; }
+.sd-card{ display:grid; gap:12px; margin-top:12px; padding:16px 18px; border:2px solid color-mix(in srgb, var(--blue) 35%, var(--line)); }
 </style>
 </head>
 <body>
@@ -3149,6 +3165,7 @@ function sStats(sid){
 }
 let tMode = 'students';
 function renderTeacher(){
+  inlHome();
   const logged = !!T.data;
   if(typeof updateAreas === 'function') updateAreas();
   if(typeof updateLinksTab === 'function') updateLinksTab();
@@ -3951,7 +3968,9 @@ function openSongDlg(item, attachToTask, preset){
   $('#fso-play').hidden = !item;
   editSong.attachToTask = !!attachToTask;
   renderSongDlgLoops();
-  $('#dlg-song').showModal(); $('#fso-name').focus();
+  const host = !attachToTask && currentView === 'teacher' && !$('#t-songs').hidden && $('#t-songs > .spread');
+  if(host) inlDlg($('#dlg-song'), host); else $('#dlg-song').showModal();
+  $('#fso-name').focus({preventScroll:!!host});
 }
 function syncSongTags(){
   const mj = majorLabels(), mn = minorLabels(), on = (sh, m) => editSong.shape === sh && (editSong.mode || 'maj') === m;
@@ -3994,6 +4013,18 @@ async function deleteSongDlg(){
   const it = editSong.item; if(!it || !confirm(`למחוק את השיר "${it.data.name}"?`)) return;
   try{ const r = await tCall('teacherDeleteContent', {id:it.id}, $('#fso-err')); LIB.items = r.items; if(T.data) T.data.songs = (T.data.songs || []).filter(x => x.id !== it.id); refreshLib(); $('#dlg-song').close(); }catch(err){}
 }
+
+/* חלונות שנפתחים בתוך הדף, במקום חלון קופץ */
+function inlDlg(dlg, anchor, where){
+  if(!dlg || !anchor){ if(dlg) dlg.showModal(); return; }
+  if(dlg.open) dlg.close();
+  anchor.insertAdjacentElement(where || 'afterend', dlg);
+  dlg.classList.add('inl-dlg'); dlg.setAttribute('dir', 'rtl');
+  dlg.show();
+  setTimeout(() => { try{ dlg.scrollIntoView({block:'nearest', behavior:'smooth'}); }catch(e){} }, 30);
+}
+function inlHome(){ $$('dialog.inl-dlg').forEach(d => { if(d.open) d.close(); d.classList.remove('inl-dlg'); document.body.appendChild(d); }); $$('.ln-edit').forEach(x => x.classList.remove('ln-edit')); }
+document.addEventListener('close', e => { const d = e.target; if(d && d.classList && d.classList.contains('inl-dlg')){ d.classList.remove('inl-dlg'); document.body.appendChild(d); $$('.ln-edit').forEach(x => x.classList.remove('ln-edit')); } }, true);
 
 /* ================== מילים ואקורדים + טרנספוזיציה ================== */
 const NOTE_IDX = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,Fb:4,'E#':5,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11,Cb:11,'B#':0};
@@ -4083,6 +4114,7 @@ function firstChord(text){
 const LINK_RE = /\{\{([^|{}]{0,60})\|\s*(https?:\/\/[^\s{}]+)\s*\}\}|(https?:\/\/[^\s{}]+)/g;
 const PH_RE = /\u0000(\d+)\u0000/g;
 const chordSpan = name => `<b class="ch" data-c="${esc(name)}">${esc(name)}</b>`;
+var VE_NOTE_RE = /^\s*\((?!\s*[A-G][#b]?[^)]{0,8}\)\s*$)[^()]{1,120}\)\s*$/;
 function renderSheetHTML(text, n, manualKey){
   text = normSpaces(text || '');
   const used = [], sp = spellForKey(detectKey(text, manualKey), n);
@@ -4120,6 +4152,7 @@ function renderSheetHTML(text, n, manualKey){
       return `<div class="ln chords" data-l="${li}">${out}${tail}</div>`;
     }
     const sec = /^\s*[^\s][^:]{0,28}:\s*$/.test(line) || /^\s*\[[^\]]{1,24}\]\s*$/.test(line);
+    if(!sec && VE_NOTE_RE.test(line)) return `<div class="ln cm" data-l="${li}"><span class="cm-in">${wl(esc(line.trim().slice(1, -1)))}</span></div>`;
     return `<div class="ln${sec ? ' sec' : ''}" data-l="${li}">${wl(esc(line.trim() && sec ? line.trim().replace(/^\[|\]$/g, '') : line))}</div>`;
   });
   const EMPTY = '<div class="ln">&nbsp;</div>';
@@ -4504,13 +4537,14 @@ function bandLogout(){ Object.assign(B, {pin:null, member:null, members:[], item
 function updateBandTab(){ updateAreas(); if(currentView === 'home') renderHomeState(); }
 
 function renderBand(){
+  inlHome();
   const logged = !!B.member;
   $('#vb-login').hidden = logged; $('#vb-dash').hidden = !logged;
   $('#vb-user').textContent = logged ? B.member.name + (B.member.role ? ', ' + B.member.role : '') : '';
   if(!logged) return;
   if(B.songId && !bGet(B.songId)) B.songId = null;
   $$('#vb-tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === B.tab));
-  if(B.songId) return renderBandSong();
+  if(B.songId || B.newSong) return renderBandSong();
   if(B.tab === 'setlist') renderSetlist();
   else if(B.tab === 'songs') renderBandSongs();
   else if(B.tab === 'form') renderFormBuilder();
@@ -4574,9 +4608,69 @@ function noteHTML_old(n){
     <div class="bnote-t">${esc(n.data.text)}</div></div>`;
 }
 const plainLine = t => String(t || '').replace(/\{\{[^{}]*\}\}/g, '').replace(/https?:\/\/\S+/g, '').replace(/\[([^\]\s]{1,14})\]/g, '').trim();
+function bandDetailsHTML(d, isNew){
+  const rec = d.recordings || {};
+  const part = pt => `<div class="part-row"><input class="pt-label" list="role-list" maxlength="30" placeholder="כלי, למשל בס" value="${esc(pt.label || '')}" aria-label="כלי"><input class="pt-url" dir="ltr" placeholder="https://drive.google.com/..." value="${esc(pt.url || '')}" aria-label="קישור להקלטה"><button type="button" class="btn ghost small danger" data-sd="del-part" aria-label="הסרה">✕</button></div>`;
+  return `<div class="sub-panel sd-card" id="sd-card">
+    <div class="spread"><h3>${isNew ? 'שיר חדש' : 'פרטי השיר'}</h3><div class="row"><button type="button" class="btn small primary" data-sd="save">שמירה</button><button type="button" class="btn small ghost" data-sd="cancel">ביטול</button></div></div>
+    <div class="two">
+      <label class="field">שם השיר<input id="sd-name" maxlength="80" value="${esc(d.name || '')}"></label>
+      <label class="field">אמן <small>(לא חובה)</small><input id="sd-artist" maxlength="80" value="${esc(d.artist || '')}"></label>
+    </div>
+    <div class="row" style="align-items:end">
+      <label class="field" style="width:120px">קצב (BPM)<input type="number" id="sd-bpm" min="0" max="400" value="${d.bpm || ''}"></label>
+      <label class="field" style="width:120px">אורך<input id="sd-dur" placeholder="3:45" dir="ltr" maxlength="6" value="${d.duration ? fmtDur(d.duration) : ''}"></label>
+      <label class="field" style="flex:1;min-width:220px">קישור ליוטיוב <small>(לא חובה)</small><input id="sd-url" dir="ltr" placeholder="https://youtu.be/..." value="${esc(d.url || '')}"></label>
+    </div>
+    <details class="field" ${rec.band || (rec.parts || []).length ? 'open' : ''}><summary>הקלטות של הלהקה</summary>
+      <label class="field" style="font-weight:400;margin-top:8px">הקלטה של כל הלהקה<input id="sd-rec" dir="ltr" placeholder="https://drive.google.com/..." value="${esc(rec.band || '')}"></label>
+      <div id="sd-parts" class="stack" style="gap:8px;margin-top:8px">${(rec.parts || []).map(part).join('')}</div>
+      <div style="margin-top:8px"><button type="button" class="btn small" data-sd="add-part">הוספת הקלטה של כלי</button></div>
+    </details>
+    ${isNew ? '<label class="row" style="gap:8px;font-weight:600"><input type="checkbox" id="sd-set"> להוסיף לסוף הסטליסט</label>' : ''}
+    <p class="err" id="sd-err"></p>
+  </div>`;
+}
+function wireDetails(){
+  const card = $('#sd-card'); if(!card) return;
+  card.addEventListener('input', () => { INL.dirty = true; const st = $('#ied-state'); if(st) st.textContent = 'יש שינויים שלא נשמרו'; });
+  card.addEventListener('click', e => {
+    const b = e.target.closest('[data-sd]'); if(!b) return;
+    if(b.dataset.sd === 'save' || b.dataset.sd === 'cancel'){ const x = $(`#ied [data-ie="${b.dataset.sd}"]`); if(x) x.click(); }
+    if(b.dataset.sd === 'del-part') b.closest('.part-row').remove();
+    if(b.dataset.sd === 'add-part'){ $('#sd-parts').insertAdjacentHTML('beforeend', `<div class="part-row"><input class="pt-label" list="role-list" maxlength="30" placeholder="כלי, למשל בס" aria-label="כלי"><input class="pt-url" dir="ltr" placeholder="https://drive.google.com/..." aria-label="קישור להקלטה"><button type="button" class="btn ghost small danger" data-sd="del-part" aria-label="הסרה">✕</button></div>`); $('#sd-parts .part-row:last-child .pt-label').focus(); }
+  });
+}
+function sdFail(msg){ $('#sd-err').textContent = msg; $('#sd-card').scrollIntoView({block:'start', behavior:'smooth'}); throw new Error(msg); }
+function bandDetailsRead(){
+  $('#sd-err').textContent = '';
+  const name = $('#sd-name').value.trim(); if(!name) sdFail('צריך לתת לשיר שם.');
+  const url = $('#sd-url').value.trim(); if(url && !parseYouTube(url)) sdFail('הקישור לא נראה כמו קישור ליוטיוב.');
+  const durRaw = $('#sd-dur').value.trim(), duration = parseDur(durRaw); if(durRaw && !duration) sdFail('אורך השיר צריך להיות בצורה 3:45.');
+  const parts = $$('#sd-parts .part-row').map(r => ({label:$('.pt-label', r).value.trim(), url:$('.pt-url', r).value.trim()})).filter(x => x.url);
+  const band = $('#sd-rec').value.trim();
+  if([band].concat(parts.map(x => x.url)).some(u => u && !/^https?:\/\//i.test(u))) sdFail('קישור להקלטה צריך להתחיל ב־https://');
+  return {name, artist:$('#sd-artist').value.trim(), url, duration, bpm:Math.max(0, Math.round(Number($('#sd-bpm').value) || 0)), recordings:{band, parts:parts.map(x => ({label:x.label || 'כלי', url:x.url}))}};
+}
+function startBandEdit(isNew){
+  if(isNew){ B.newSong = true; B.songId = null; startInline('band', '', {}); }
+  else startInline('band', B.songId, bGet(B.songId).data);
+  renderBand(); window.scrollTo(0, 0);
+}
 function renderBandSong(){
-  const s = bGet(B.songId), d = s.data, pos = setlistOrder().indexOf(s.id), saved = Number(d.shift) || 0;
+  const s = B.newSong ? {id:'', data:{shift:0}} : bGet(B.songId), d = s.data, pos = setlistOrder().indexOf(s.id), saved = Number(d.shift) || 0;
   const k = bandKey(s, B.viewShift), orig = bandKey(s, 0);
+  if(inlineOn('band', s.id)){
+    $('#vb-main').innerHTML = `<button class="btn ghost small" data-act="back">חזרה לרשימה</button>${bandDetailsHTML(d, !s.id)}<div class="sub-panel" style="margin-top:16px">${inlineEditorHTML()}</div>`;
+    wireDetails();
+    wireInline(async f => {
+      const det = bandDetailsRead(), cur = s.id ? bGet(s.id) : null;
+      const saved2 = await bSave([{id:s.id, kind:'bsong', data:Object.assign({}, cur ? cur.data : {shift:0}, det, f)}]);
+      loadLibrary();
+      if(!s.id){ const nid = saved2[0].id, add = $('#sd-set') && $('#sd-set').checked; B.newSong = false; B.songId = nid; B.viewShift = 0; if(add) await saveSetlist(setlistOrder().concat([nid])); }
+    }, () => { if(B.newSong){ B.newSong = false; B.songId = null; } renderBand(); });
+    return;
+  }
   let h = `<button class="btn ghost small" data-act="back">חזרה לרשימה</button>
     <div class="spread" style="margin:8px 0"><div><h2>${esc(d.name)}</h2>${d.artist ? `<p class="muted">${esc(d.artist)}</p>` : ''}</div>
       <div class="row">${d.url ? '<button class="btn small" data-act="player">פתיחה בנגן</button>' : ''}<button class="btn small" data-act="toggle-set">${pos >= 0 ? 'הוצאה מהסטליסט' : 'הוספה לסטליסט'}</button><button class="btn small" data-act="edit-song">עריכה</button><button class="btn small danger" data-act="del-song">מחיקה</button></div></div>
@@ -4585,9 +4679,8 @@ function renderBandSong(){
   if(rec.band || parts.length){
     h += `<div class="sub-panel" style="margin-top:16px"><h3>הקלטות</h3><div class="recs">${rec.band ? linkChip({label:'הלהקה כולה', url:rec.band}) : ''}${parts.map(pt => linkChip({label:pt.label, url:pt.url}).replace('class="media-link"', 'class="media-link part"')).join('')}</div></div>`;
   }
-  const bEditing = inlineOn('band', s.id);
-  if(bEditing) h += `<div class="sub-panel" style="margin-top:16px">${inlineEditorHTML()}</div>`;
-  else if(d.sheet && d.sheet.trim()){
+  const bEditing = false;
+  if(d.sheet && d.sheet.trim()){
     const dirty = B.viewShift !== saved;
     h += `<div class="sub-panel" style="margin-top:16px">
       <div class="spread"><h3>מילים ואקורדים</h3>
@@ -4603,7 +4696,7 @@ function renderBandSong(){
       <div class="att-chords" id="vb-chords"></div>
       <div class="sheet-wrap" id="vb-wrap"><div class="sheet bsheet" id="vb-sheet"></div><aside class="note-rail" id="vb-rail" aria-label="הערות"></aside></div>
     </div>`;
-  } else h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>מילים ואקורדים</h3><button class="btn small primary" data-act="edit-sheet">הוספת מילים ואקורדים</button></div><p class="muted">עוד אין מילים ואקורדים. אפשר לכתוב אותם כאן, או לייבא מ־PDF דרך "עריכה" למעלה.</p></div>`;
+  } else h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>מילים ואקורדים</h3><button class="btn small primary" data-act="edit-sheet">הוספת מילים ואקורדים</button></div><p class="muted">עוד אין מילים ואקורדים. לוחצים על "עריכה", ומדביקים מאתר או מייבאים מ־PDF.</p></div>`;
   h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>הערות לשיר</h3><button class="btn small" data-act="new-note">הערה חדשה</button></div><div id="vb-song-notes" class="song-notes"></div></div>`;
   $('#vb-main').innerHTML = h;
   const notes = visibleNotes(s.id), lines = String(d.sheet || '').split('\n');
@@ -4613,9 +4706,7 @@ function renderBandSong(){
     if(plainLine(lines[n.data.line]) === n.data.lineText) n._at = n.data.line;
     else { const j = lines.findIndex(l => plainLine(l) === n.data.lineText); n._at = j; if(j < 0) n.data.orphan = true; }
   });
-  if(bEditing){
-    wireInline(async f => { const cur = bGet(s.id); await bSave([{id:s.id, kind:'bsong', data:Object.assign({}, cur.data, f)}]); loadLibrary(); }, () => renderBand());
-  } else if(d.sheet && d.sheet.trim()){
+  if(d.sheet && d.sheet.trim()){
     const {html, used} = renderSheetHTML(d.sheet, B.viewShift, d.key);
     const el = $('#vb-sheet');
     el.innerHTML = html; el.dir = d.dir || (hasHebrew(d.sheet) ? 'rtl' : 'ltr'); el.style.fontSize = SH.size + 'px';
@@ -4661,13 +4752,12 @@ async function onBandMain(e){
   if(/^(fm-|fq-)/.test(act)) return onFormAct(act, btn);
   const order = setlistOrder();
   if(act === 'open') return openBandSong(id);
-  if(act === 'back'){ if(INL.ctx === 'band' && INL.dirty && !confirm('לצאת בלי לשמור את המילים והאקורדים?')) return; INL.ctx = ''; B.songId = null; return renderBand(); }
-  if(act === 'edit-sheet'){ startInline('band', B.songId, bGet(B.songId).data); renderBand(); return; }
+  if(act === 'back'){ if(INL.ctx === 'band' && INL.dirty && !confirm('לצאת בלי לשמור את השינויים?')) return; INL.ctx = ''; B.songId = null; B.newSong = false; return renderBand(); }
+  if(act === 'edit-sheet' || act === 'edit-song') return startBandEdit(false);
   if(act === 'up' || act === 'down'){ const i = order.indexOf(id), j = act === 'up' ? i - 1 : i + 1; if(j < 0 || j >= order.length) return; [order[i], order[j]] = [order[j], order[i]]; return saveSetlist(order); }
   if(act === 'out') return saveSetlist(order.filter(x => x !== id));
   if(act === 'toggle-set') return saveSetlist(order.includes(id) ? order.filter(x => x !== id) : order.concat([id]));
-  if(act === 'new-song') return openBandSongDlg(null);
-  if(act === 'edit-song') return openBandSongDlg(bGet(B.songId));
+  if(act === 'new-song') return startBandEdit(true);
   if(act === 'del-song'){
     const s = bGet(B.songId); if(!confirm(`למחוק את השיר "${s.data.name}"? גם ההערות שלו יימחקו.`)) return;
     await bCall('bandDelete', {id:s.id});
@@ -4710,7 +4800,12 @@ function openNoteDlg(n, line, lineText){
   $$('#nt-vis button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === vis));
   $('#nt-err').textContent = '';
   if(typeof syncNoteTo === 'function') syncNoteTo();
-  $('#dlg-note').showModal(); $('#nt-text').focus();
+  const yo = NOTE_CTX === 'youth', sheet = $(yo ? '#yo-sheet' : '#vb-sheet');
+  let anchor = line >= 0 && sheet ? sheet.querySelector(`.ln[data-l="${line}"]`) : null;
+  if(anchor) anchor.classList.add('ln-edit');
+  if(!anchor){ const box = $(yo ? '#yo-song-notes' : '#vb-song-notes'); anchor = box ? box.previousElementSibling : null; }
+  inlDlg($('#dlg-note'), anchor);
+  $('#nt-text').focus({preventScroll:true});
 }
 async function saveNote(e){
   e.preventDefault();
@@ -5317,6 +5412,7 @@ function youthLogout(){ $('#yo-fuck').hidden = true; Object.assign(Y, {pin:null,
 function updateYouthTab(){ updateAreas(); if(currentView === 'home') renderHomeState(); }
 
 function renderYouth(){
+  inlHome();
   const logged = !!Y.me;
   $('#yo-login').hidden = logged; $('#yo-dash').hidden = !logged;
   $('#yo-user').textContent = logged ? Y.me.name + (Y.me.staff ? ', מנחה' : (Y.me.role ? ', ' + Y.me.role : '')) : '';
@@ -5337,7 +5433,7 @@ function renderYouth(){
     $('#yo-main').innerHTML = yStaff() ? `<h2>ברוכים הבאים</h2><p class="empty" style="margin-top:10px">עוד אין הרכבים. לחצו על "הרכב חדש" כדי ליצור את הראשון, ואז הוסיפו אליו את החברים.</p>` : '<p class="empty">ההרכב שלך לא נמצא. פנו למנחים.</p>';
     return;
   }
-  if(Y.songId && yGet(Y.songId)) return ySongView();
+  if(Y.newSong || (Y.songId && yGet(Y.songId))) return ySongView();
   if(Y.rehId && yGet(Y.rehId)) return yRehView();
   Y.songId = null; Y.rehId = null;
   if(Y.tab === 'mgmt' && !yStaff()) Y.tab = 'home';
@@ -5406,18 +5502,53 @@ function ySongsList(){
         <div class="acts"><button class="btn ghost small" data-act="open-song" data-id="${esc(s.id)}">פתיחה</button></div></div>`; }).join('')
     : `<p class="empty">${yStaff() ? 'עוד אין שירים. לחצו על "שיר חדש". אפשר גם לייבא מילים ואקורדים מ־PDF.' : 'המנחים עוד לא הוסיפו שירים.'}</p>`}</div>`;
 }
+function youthDetailsHTML(d, isNew){
+  return `<div class="sub-panel sd-card" id="sd-card">
+    <div class="spread"><h3>${isNew ? 'שיר חדש' : 'פרטי השיר'}</h3><div class="row"><button type="button" class="btn small primary" data-sd="save">שמירה</button><button type="button" class="btn small ghost" data-sd="cancel">ביטול</button></div></div>
+    <div class="two">
+      <label class="field">שם השיר<input id="sd-name" maxlength="80" value="${esc(d.name || '')}"></label>
+      <label class="field">אמן <small>(לא חובה)</small><input id="sd-artist" maxlength="80" value="${esc(d.artist || '')}"></label>
+    </div>
+    <div class="two">
+      <label class="field">מצב<select id="sd-status">${SONG_STATUS.map(x => `<option value="${x.id}" ${x.id === (d.status || 'learning') ? 'selected' : ''}>${x.label}</option>`).join('')}</select></label>
+      <label class="field">קישור לשיר המקורי <small>(יוטיוב או דרייב)</small><input id="sd-url" dir="ltr" placeholder="https://youtu.be/..." value="${esc(d.url || '')}"></label>
+    </div>
+    <label class="field">הערות להרכב <small>(לא חובה)</small><textarea id="sd-note" maxlength="1500" placeholder="למשל: מבנה השיר, מי פותח, איפה עוצרים">${esc(d.note || '')}</textarea></label>
+    <p class="err" id="sd-err"></p>
+  </div>`;
+}
+function youthDetailsRead(){
+  $('#sd-err').textContent = '';
+  const name = $('#sd-name').value.trim(); if(!name) sdFail('צריך לתת לשיר שם.');
+  const url = $('#sd-url').value.trim(); if(url && !/^https?:\/\//i.test(url)) sdFail('הקישור צריך להתחיל ב־https://');
+  return {name, artist:$('#sd-artist').value.trim(), url, note:$('#sd-note').value.trim(), status:$('#sd-status').value};
+}
+function startYouthEdit(isNew){
+  if(isNew){ Y.newSong = true; Y.songId = null; Y.rehId = null; startInline('youth', '', {}); }
+  else startInline('youth', Y.songId, yGet(Y.songId).data);
+  renderYouth(); window.scrollTo(0, 0);
+}
 function ySongView(){
-  const s = yGet(Y.songId), d = s.data, st = SONG_STATUS.find(x => x.id === (d.status || 'learning')), mem = yMembers(), roles = d.roles || {};
+  const s0 = Y.newSong ? {id:'', data:{shift:0, roles:{}}} : yGet(Y.songId);
+  if(inlineOn('youth', s0.id)){
+    $('#yo-main').innerHTML = `<button class="btn ghost small" data-act="back">חזרה לרשימה</button>${youthDetailsHTML(s0.data, !s0.id)}<div class="sub-panel" style="margin-top:16px">${inlineEditorHTML()}</div>`;
+    wireDetails();
+    wireInline(async f => {
+      const det = youthDetailsRead(), cur = s0.id ? yGet(s0.id) : null;
+      const r = await ySave([{id:s0.id, kind:'song', groupId:Y.gid, data:Object.assign({}, cur ? cur.data : {shift:0, roles:{}}, det, f)}]);
+      if(!s0.id){ Y.newSong = false; Y.songId = r[0].id; Y.shift = 0; }
+    }, () => { if(Y.newSong){ Y.newSong = false; Y.songId = null; } renderYouth(); });
+    return;
+  }
+  const s = s0, d = s.data, st = SONG_STATUS.find(x => x.id === (d.status || 'learning')), mem = yMembers(), roles = d.roles || {};
   const saved = Number(d.shift) || 0, k = bandKey(s, Y.shift), orig = bandKey(s, 0);
   let h = `<button class="btn ghost small" data-act="back">חזרה לרשימה</button>
     <div class="spread" style="margin:8px 0"><div><h2>${esc(d.name)}</h2>${d.artist ? `<p class="muted">${esc(d.artist)}</p>` : ''}</div>
-      <div class="row">${d.url ? `<button class="btn small media-link-btn" data-act="yt" data-id="${esc(s.id)}">השיר המקורי</button>` : ''}${ySongEdit() ? '<button class="btn small" data-act="edit-song">פרטי השיר</button>' : ''}${yStaff() ? '<button class="btn small danger" data-act="del-song">מחיקה</button>' : ''}</div></div>
+      <div class="row">${d.url ? `<button class="btn small media-link-btn" data-act="yt" data-id="${esc(s.id)}">השיר המקורי</button>` : ''}${ySongEdit() ? '<button class="btn small" data-act="edit-song">עריכה</button>' : ''}${yStaff() ? '<button class="btn small danger" data-act="del-song">מחיקה</button>' : ''}</div></div>
     <div class="chips"><span class="chip due ${st.cls}">${st.label}</span></div>
     ${d.note ? `<p style="white-space:pre-line;margin-top:10px">${linkifyAnswer(d.note)}</p>` : ''}
 `;
-  const yEditing = inlineOn('youth', s.id);
-  if(yEditing) h += `<div class="sub-panel" style="margin-top:16px">${inlineEditorHTML()}</div>`;
-  else if(d.sheet && d.sheet.trim()){
+  if(d.sheet && d.sheet.trim()){
     h += `<div class="sub-panel" style="margin-top:16px">
       <div class="spread"><h3>מילים ואקורדים</h3>
         <div class="row">
@@ -5434,9 +5565,7 @@ function ySongView(){
   } else if(ySongEdit()) h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>מילים ואקורדים</h3><button class="btn small primary" data-act="edit-sheet">הוספת מילים ואקורדים</button></div><p class="muted">עוד אין מילים ואקורדים לשיר.</p></div>`;
   h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>הערות לשיר</h3><button class="btn small" data-act="new-ynote">הערה חדשה</button></div><div id="yo-song-notes" class="song-notes"></div></div>`;
   $('#yo-main').innerHTML = h;
-  if(yEditing){
-    wireInline(async f => { const cur = yGet(s.id); await ySave([{id:s.id, kind:'song', groupId:Y.gid, data:Object.assign({}, cur.data, f)}]); }, () => renderYouth());
-  } else if(d.sheet && d.sheet.trim()){
+  if(d.sheet && d.sheet.trim()){
     const {html, used} = renderSheetHTML(d.sheet, Y.shift, d.key), el = $('#yo-sheet');
     el.innerHTML = html; el.dir = d.dir || (hasHebrew(d.sheet) ? 'rtl' : 'ltr'); el.style.fontSize = SH.size + 'px';
     $('#yo-chords').innerHTML = chordStripHTML(used);
@@ -5626,8 +5755,8 @@ async function onYouthMain(e){
   const btn = e.target.closest('[data-act]'); if(!btn) return;
   const act = btn.dataset.act, id = btn.dataset.id;
   if(act === 'tab'){ Y.tab = btn.dataset.v; return renderYouth(); }
-  if(act === 'back'){ if(INL.ctx === 'youth' && INL.dirty && !confirm('לצאת בלי לשמור את המילים והאקורדים?')) return; INL.ctx = ''; Y.songId = null; Y.rehId = null; return renderYouth(); }
-  if(act === 'edit-sheet'){ startInline('youth', Y.songId, yGet(Y.songId).data); renderYouth(); return; }
+  if(act === 'back'){ if(INL.ctx === 'youth' && INL.dirty && !confirm('לצאת בלי לשמור את המילים והאקורדים?')) return; INL.ctx = ''; Y.songId = null; Y.newSong = false; Y.rehId = null; return renderYouth(); }
+  if(act === 'edit-sheet' || act === 'edit-song') return startYouthEdit(false);
   if(act === 'new-ynote') return openYNoteDlg(null, -1, '');
   if(act === 'edit-ynote'){ const n = yGet(id); return openYNoteDlg(n, n.data.line, n.data.lineText || ''); }
   if(act === 'del-ynote'){ if(!confirm('למחוק את ההערה?')) return; await yDel(id); return renderYouth(); }
@@ -5649,8 +5778,7 @@ async function onYouthMain(e){
   if(act === 'cal-google') return rehGoogle(yGet(id));
   if(act === 'cal-ics'){ const r = yGet(id); return downloadIcs([rehIcsEvent(r)], 'rehearsal.ics'); }
   if(act === 'cal-all') return downloadIcs(upcomingRehs().map(rehIcsEvent), 'rehearsals.ics');
-  if(act === 'new-song') return openYSongDlg(null);
-  if(act === 'edit-song') return openYSongDlg(yGet(Y.songId));
+  if(act === 'new-song') return startYouthEdit(true);
   if(act === 'del-song'){ const s = yGet(Y.songId); if(!confirm(`למחוק את השיר "${s.data.name}"?`)) return; await yDel(s.id); Y.songId = null; return renderYouth(); }
   if(act === 'yt'){ const s = yGet(id); return openMedia(s.data.url, s.data.name); }
   if(act === 'save-roles'){ const s = yGet(Y.songId), roles = {}; $$('#yo-main [data-role]').forEach(i => { if(i.value.trim()) roles[i.dataset.role] = i.value.trim(); }); await ySave([{id:s.id, kind:'song', groupId:Y.gid, data:Object.assign({}, s.data, {roles})}]); return toast('התפקידים נשמרו'); }
@@ -5920,7 +6048,8 @@ function inlineEditorHTML(){
       </div>
     </div>
     <div class="ied-visual" ${INL.mode === 'text' ? 'hidden' : ''}>
-      <p class="hint"><b>לחיצה על אות</b> מוסיפה אקורד מעליה. <b>לחיצה על אקורד</b> משנה, מזיזה או מוחקת אותו. במחשב אפשר גם <b>לגרור אקורד</b> למקום אחר. את המילים עצמן עורכים במצב "טקסט".</p>
+      <p class="hint"><b>לחיצה על אות</b> מוסיפה אקורד מעליה. <b>לחיצה על אקורד</b> משנה, מזיזה או מוחקת אותו. במחשב אפשר גם <b>לגרור אקורד</b> למקום אחר. <b>לחיצה על שם של חלק או על הערה</b> משנה או מוחקת אותם. את המילים עצמן עורכים במצב "טקסט".</p>
+      <div class="ve-tools" id="ve-tools"><button type="button" class="btn small" data-vt="sec">+ חלק בשיר</button><button type="button" class="btn small" data-vt="txt">+ הערה בתוך השיר</button><button type="button" class="btn small" data-vt="link">+ קישור להקלטה</button><span class="ve-tmsg" id="ve-tmsg"></span></div>
       <div class="ied-ve-wrap" id="ied-ve-wrap"><div class="ied-ve" id="ied-ve"></div></div>
     </div>
     <div class="ied-textmode" ${INL.mode === 'text' ? '' : 'hidden'}>
@@ -7298,7 +7427,9 @@ window.addEventListener('beforeunload', e => { if(REC.phase === 'recording' || R
 function recsForTask(list, taskId){ return (list || []).filter(r => r.taskId === taskId); }
 
 /* ================== עורך אקורדים ויזואלי (לחיצה על מילה) ================== */
-const VE = {model:null, dir:'rtl', pick:null, drag:null};
+const VE = {model:null, dir:'rtl', pick:null, drag:null, place:null};
+const VE_SECS_HE = ['פתיחה', 'בית', 'בית 1', 'בית 2', 'קדם פזמון', 'פזמון', 'גשר', 'סולו', 'מעבר', 'סיום'];
+const VE_SECS_EN = ['Intro', 'Verse', 'Verse 1', 'Verse 2', 'Pre-Chorus', 'Chorus', 'Bridge', 'Solo', 'Interlude', 'Outro'];
 const VE_QUALS = [['', 'מז׳ור'], ['m', 'm'], ['7', '7'], ['maj7', 'maj7'], ['m7', 'm7'], ['sus2', 'sus2'], ['sus4', 'sus4'], ['dim', 'dim'], ['aug', 'aug']];
 const VE_MORE = ['5','6','m6','9','m9','maj9','add9','11','m11','13','7sus4','7sus2','dim7','m7b5','7b9','7#9','7#5','7b5','6/9','mmaj7','add11','sus4add9'];
 const veCustom = () => { try{ return JSON.parse(localStorage.getItem('pritah.customQuals') || '[]'); }catch(e){ return []; } };
@@ -7339,10 +7470,11 @@ function veParse(text, width, dir, size){
     const l = lines[i], noLinks = l.replace(LINK_RE, '');
     if(!l.trim()){ model.push({t:'empty'}); continue; }
     if(noLinks !== l){ model.push({t:'raw', text:l}); continue; }
+    if(VE_NOTE_RE.test(l) && !veHasInline(l)){ model.push({t:'raw', text:l, note:true}); continue; }
     if(veHasInline(l)){ model.push(veParseInline(l)); continue; }
     if(isChordLine(l)){
       const nx = lines[i + 1];
-      if(nx != null && nx.trim() && !isChordLine(nx) && !veHasInline(nx) && !veIsSection(nx) && nx.replace(LINK_RE, '') === nx){ model.push(Object.assign(veMeasurePair(l, nx, width, dir, size), {orig:l + '\n' + nx})); i++; continue; }
+      if(nx != null && nx.trim() && !isChordLine(nx) && !veHasInline(nx) && !veIsSection(nx) && !VE_NOTE_RE.test(nx) && nx.replace(LINK_RE, '') === nx){ model.push(Object.assign(veMeasurePair(l, nx, width, dir, size), {orig:l + '\n' + nx})); i++; continue; }
       model.push({t:'chords', toks:l.trim().split(/\s+/).map(x => ({name:x, chord:!!parseChord(x) && !NOISE_RE.test(x)})), orig:l});
       continue;
     }
@@ -7366,10 +7498,12 @@ function veSerialize(model){
 function veRender(){
   const el = $('#ied-ve'); if(!el || !VE.model) return;
   el.dir = VE.dir;
-  el.innerHTML = VE.model.map((m, li) => {
+  const slot = at => VE.place ? `<button type="button" class="ve-slot" data-at="${at}">+ כאן</button>` : '';
+  el.classList.toggle('placing', !!VE.place);
+  el.innerHTML = VE.model.map((m, li) => slot(li) + (() => {
     if(m.t === 'empty') return '<div class="ve-gap"></div>';
-    if(m.t === 'raw') return `<div class="ve-raw">${esc(m.text)}</div>`;
-    if(m.t === 'sec') return `<div class="ve-sec"><span>${esc(m.text.trim().replace(/^\[|\]$/g, ''))}</span></div>`;
+    if(m.t === 'raw') return m.note ? `<div class="ve-raw ve-note"><button type="button" class="ve-nb" data-raw="${li}" title="לחיצה לשינוי או מחיקה">${esc(m.text.trim().slice(1, -1))}</button></div>` : `<div class="ve-raw"><button type="button" class="ve-nb link" data-raw="${li}" title="לחיצה למחיקה">${esc(m.text)}</button></div>`;
+    if(m.t === 'sec') return `<div class="ve-sec"><button type="button" class="ve-sb" data-sec="${li}" title="לחיצה לשינוי השם או מחיקה">${esc(veSecName(m.text))}</button></div>`;
     if(m.t === 'chords') return `<div class="ve-cline" data-li="${li}">${m.toks.map((x, ti) => x.chord ? `<button type="button" class="ve-chip" data-li="${li}" data-ti="${ti}" dir="ltr">${esc(x.name)}</button>` : `<span class="muted">${esc(x.name)}</span>`).join('')}<button type="button" class="ve-chip add" data-li="${li}" data-ti="new" aria-label="הוספת אקורד לשורה">+</button></div>`;
     const cs = m.chords.map((c, ci) => Object.assign({ci}, c)).sort((a, b) => a.pos - b.pos || a.ci - b.ci);
     const cuts = [...new Set([0].concat(cs.map(c => c.pos)))].sort((a, b) => a - b);
@@ -7383,7 +7517,64 @@ function veRender(){
     });
     h += `<span class="ve-seg ve-endseg"><span class="ve-chs"><b class="ve-ch none">&nbsp;</b></span><span class="ve-tx"><span class="ve-c ve-end" data-li="${li}" data-i="${m.text.length}" title="אקורד בסוף השורה">+</span></span></span>`;
     return `<div class="ve-line" data-li="${li}">${h}</div>`;
-  }).join('') || '<p class="muted">אין עדיין טקסט. כתבו או הדביקו את השיר במצב "טקסט", ואז חזרו לכאן.</p>';
+  })()).join('') + slot(VE.model.length) || '<p class="muted">אין עדיין טקסט. כתבו או הדביקו את השיר במצב "טקסט", ואז חזרו לכאן.</p>';
+}
+function veSecName(t){ return String(t || '').trim().replace(/^\[|\]$/g, '').replace(/:\s*$/, ''); }
+function veToolHTML(ctx){
+  const he = VE.dir === 'rtl', list = he ? VE_SECS_HE.concat(VE_SECS_EN) : VE_SECS_EN.concat(VE_SECS_HE);
+  const btns = (ctx.edit ? '<button type="button" class="btn small danger" data-vt-do="del">מחיקה</button>' : '') + '<button type="button" class="btn small ghost" data-vt-do="close">סגירה</button>';
+  if(ctx.kind === 'sec') return `<div class="ve-pick" data-kind="sec" role="dialog" aria-label="חלק בשיר">
+    <div class="ve-row"><span class="ve-lbl">חלק:</span><div class="ve-opts">${list.map(n => `<button type="button" class="ve-o ${ctx.cur === n ? 'on' : ''}" data-secname="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>
+    <div class="ve-row ve-act"><input class="ve-tin" value="${esc(ctx.cur || '')}" placeholder="או שם משלכם" maxlength="28" aria-label="שם החלק"><button type="button" class="btn small primary" data-vt-do="ok">אישור</button>${btns}</div></div>`;
+  if(ctx.kind === 'txt') return `<div class="ve-pick" data-kind="txt" role="dialog" aria-label="הערה בתוך השיר">
+    <div class="ve-row"><span class="ve-lbl">הערה:</span><div class="ve-opts">${['x2', 'x3', 'עצירה', 'שקט', 'רק גיטרה', 'כולם נכנסים', 'לאט', 'חזרה לפזמון'].map(n => `<button type="button" class="ve-o" data-quick="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>
+    <div class="ve-row ve-act"><input class="ve-tin" value="${esc(ctx.cur || '')}" placeholder="מה לכתוב, למשל: רק תופים" maxlength="110" aria-label="ההערה"><button type="button" class="btn small primary" data-vt-do="ok">אישור</button>${btns}</div>
+    <span class="hint">ההערה מופיעה בתוך השיר, לכולם, בשורה משלה.</span></div>`;
+  return `<div class="ve-pick" data-kind="link" role="dialog" aria-label="קישור להקלטה">
+    <div class="ve-row ve-act"><input class="ve-tin" placeholder="שם, למשל סולו" maxlength="40" aria-label="שם הקישור"><input class="ve-tin2" dir="ltr" placeholder="https://drive.google.com/..." aria-label="קישור"><button type="button" class="btn small primary" data-vt-do="ok">אישור</button>${btns}</div>
+    <span class="hint">בשיר יופיע כפתור שפותח את ההקלטה בתוך האפליקציה.</span></div>`;
+}
+function veToolOpen(anchor, ctx){
+  VE.pick = ctx;
+  const host = $('#ied-ve-wrap'); host.querySelectorAll('.ve-pick').forEach(x => x.remove());
+  host.insertAdjacentHTML('beforeend', veToolHTML(ctx));
+  const pk = host.querySelector('.ve-pick'), hr = host.getBoundingClientRect(), ar = anchor.getBoundingClientRect();
+  pk.style.top = (ar.bottom - hr.top + 6) + 'px';
+  pk.style.left = Math.max(0, Math.min(hr.width - pk.offsetWidth, ar.left - hr.left + ar.width / 2 - pk.offsetWidth / 2)) + 'px';
+  $$('.ve-hl').forEach(x => x.classList.remove('ve-hl')); anchor.classList.add('ve-hl');
+  const inp = pk.querySelector('.ve-tin'); inp.focus(); inp.select();
+}
+function vePlace(kind){
+  VE.place = VE.place === kind ? null : kind; veClose();
+  $$('#ve-tools [data-vt]').forEach(b => b.setAttribute('aria-pressed', b.dataset.vt === VE.place));
+  $('#ve-tmsg').textContent = VE.place ? 'לחצו על אחד מסימוני "+ כאן" בשיר, במקום שבו להוסיף.' : '';
+  veRender();
+  if(VE.place){ const first = $('#ied-ve .ve-slot'); if(first) first.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+}
+function veToolApply(val, val2){
+  const pk = VE.pick; if(!pk) return;
+  val = String(val || '').trim();
+  if(pk.kind === 'sec'){
+    val = val.replace(/[:\[\]]/g, '').trim(); if(!val) return;
+    if(pk.edit){ const m = VE.model[pk.li]; m.text = val + ':'; m.dirty = true; }
+    else { const add = []; if(pk.at > 0 && VE.model[pk.at - 1].t !== 'empty') add.push({t:'empty'}); add.push({t:'sec', text:val + ':', dirty:true}); VE.model.splice(pk.at, 0, ...add); }
+  } else if(pk.kind === 'txt'){
+    val = val.replace(/[()]/g, '').trim(); if(!val) return;
+    if(pk.edit){ const m = VE.model[pk.li]; m.text = '(' + val + ')'; m.dirty = true; }
+    else VE.model.splice(pk.at, 0, {t:'raw', note:true, text:'(' + val + ')', dirty:true});
+  } else {
+    const url = String(val2 || '').trim();
+    if(!/^https?:\/\//i.test(url)){ const i = $('#ied-ve-wrap .ve-tin2'); if(i){ i.classList.add('bad'); i.focus(); } return; }
+    VE.model.splice(pk.at, 0, {t:'raw', text:`{{${val.replace(/[|{}]/g, '') || 'הקלטה'}|${url}}}`, dirty:true});
+  }
+  VE.place = null; $$('#ve-tools [data-vt]').forEach(b => b.setAttribute('aria-pressed', 'false')); $('#ve-tmsg').textContent = '';
+  veClose(); veCommit();
+}
+function veToolDel(){
+  const pk = VE.pick; if(!pk || !pk.edit) return;
+  VE.model.splice(pk.li, 1);
+  if(pk.kind === 'sec' && pk.li > 0 && VE.model[pk.li - 1] && VE.model[pk.li - 1].t === 'empty' && (!VE.model[pk.li] || VE.model[pk.li].t === 'empty')) VE.model.splice(pk.li - 1, 1);
+  veClose(); veCommit();
 }
 function veCommit(){ const ta = $('#ied-ta'); ta.value = veSerialize(VE.model); inlinePreview(); veRender(); }
 function veUsed(){ const s = new Set(); VE.model.forEach(m => { if(m.t === 'lyric') m.chords.forEach(c => s.add(c.name)); if(m.t === 'chords') m.toks.forEach(x => x.chord && s.add(x.name)); }); return [...s]; }
@@ -7469,8 +7660,26 @@ function wireVE(root){
     };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   });
+  root.addEventListener('click', e => { const t = e.target.closest('[data-vt]'); if(t) vePlace(t.dataset.vt); });
   wrap.addEventListener('click', e => {
     if(VE.suppressClick) return;
+    const tp = e.target.closest('.ve-pick[data-kind]');
+    if(tp){
+      const b = e.target.closest('button'); if(!b) return;
+      const inp = tp.querySelector('.ve-tin');
+      if(b.dataset.secname) return veToolApply(b.dataset.secname);
+      if(b.dataset.quick){ inp.value = b.dataset.quick; return veToolApply(inp.value); }
+      if(b.dataset.vtDo === 'ok') return veToolApply(inp.value, (tp.querySelector('.ve-tin2') || {}).value);
+      if(b.dataset.vtDo === 'del') return veToolDel();
+      if(b.dataset.vtDo === 'close') return veClose();
+      return;
+    }
+    const sl = e.target.closest('.ve-slot');
+    if(sl) return veToolOpen(sl, {kind:VE.place, at:+sl.dataset.at, edit:false, cur:''});
+    const sb = e.target.closest('.ve-sb');
+    if(sb){ const li = +sb.dataset.sec; return veToolOpen(sb, {kind:'sec', li, edit:true, cur:veSecName(VE.model[li].text)}); }
+    const nb = e.target.closest('.ve-nb');
+    if(nb){ const li = +nb.dataset.raw, m = VE.model[li]; if(m.note) return veToolOpen(nb, {kind:'txt', li, edit:true, cur:m.text.trim().slice(1, -1)}); if(confirm('למחוק את הקישור מהשיר?')){ VE.model.splice(li, 1); veClose(); veCommit(); } return; }
     const pk = e.target.closest('.ve-pick');
     if(pk){
       const b = e.target.closest('button'); if(!b) return;
@@ -7513,6 +7722,12 @@ function wireVE(root){
   });
   wrap.addEventListener('toggle', e => { if(e.target.matches && e.target.matches('.ve-more')) VE.moreOpen = e.target.open; }, true);
   wrap.addEventListener('keydown', e => {
+    if(e.target.closest('.ve-tin, .ve-tin2')){
+      e.target.classList.remove('bad');
+      if(e.key === 'Enter'){ e.preventDefault(); const tp = e.target.closest('.ve-pick'); veToolApply(tp.querySelector('.ve-tin').value, (tp.querySelector('.ve-tin2') || {}).value); }
+      if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); veClose(); }
+      return;
+    }
     if(e.target.closest('.ve-newq') && e.key === 'Enter'){ e.preventDefault(); e.target.closest('.ve-more').querySelector('[data-addq]').click(); return; }
     if(!e.target.closest('.ve-in')) return;
     if(e.key === 'Enter'){ e.preventDefault(); veApply(e.target.value); }
@@ -7877,8 +8092,8 @@ function init(){
   $('#yo-logout').addEventListener('click', youthLogout);
   $('#yo-fuck').addEventListener('click', e => shoutFuck(e.currentTarget));
   $('#yo-refresh').addEventListener('click', () => youthLogin(Y.pin));
-  $('#yo-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ Y.tab = b.dataset.v; Y.songId = null; Y.rehId = null; renderYouth(); } });
-  $('#yo-group').addEventListener('change', e => { Y.gid = e.target.value; store.set('pritah.ygid', Y.gid); Y.songId = null; Y.rehId = null; renderYouth(); });
+  $('#yo-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ Y.tab = b.dataset.v; Y.songId = null; Y.newSong = false; Y.rehId = null; if(INL.ctx === 'youth') INL.ctx = ''; renderYouth(); } });
+  $('#yo-group').addEventListener('change', e => { Y.gid = e.target.value; store.set('pritah.ygid', Y.gid); Y.songId = null; Y.newSong = false; Y.rehId = null; if(INL.ctx === 'youth') INL.ctx = ''; renderYouth(); });
   $('#yo-new-group').addEventListener('click', async () => { const name = prompt('שם ההרכב:'); if(!name || !name.trim()) return; const r = await ySave([{id:yRid(), kind:'group', data:{name:name.trim()}}]); Y.gid = r[0].id; store.set('pritah.ygid', Y.gid); Y.tab = 'members'; renderYouth(); });
   $('#yo-main').addEventListener('click', onYouthMain);
   $('#yo-main').addEventListener('change', onYouthChange);
@@ -7902,7 +8117,7 @@ function init(){
   $('#vb-pin').addEventListener('keydown', e => { if(e.key === 'Enter') $('#vb-go').click(); });
   $('#vb-logout').addEventListener('click', bandLogout);
   $('#vb-refresh').addEventListener('click', () => bandLogin(B.pin));
-  $('#vb-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; if(B.tab === 'form' && B.formDirty && b.dataset.v !== 'form' && bGet('appform') && !confirm('יש בטופס שינויים שלא נשמרו. לצאת בלי לשמור?')) return; if(b.dataset.v !== 'form'){ B.formDraft = null; B.formDirty = false; } B.tab = b.dataset.v; B.songId = null; renderBand(); });
+  $('#vb-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; if(B.tab === 'form' && B.formDirty && b.dataset.v !== 'form' && bGet('appform') && !confirm('יש בטופס שינויים שלא נשמרו. לצאת בלי לשמור?')) return; if(b.dataset.v !== 'form'){ B.formDraft = null; B.formDirty = false; } B.tab = b.dataset.v; B.songId = null; B.newSong = false; if(INL.ctx === 'band') INL.ctx = ''; renderBand(); });
   $('#vb-main').addEventListener('click', onBandMain);
   $('#vb-main').addEventListener('input', e => { if(B.tab === 'form' && onFormInput(e)) return; });
   $('#vb-main').addEventListener('change', e => { if(B.tab === 'form') onFormInput(e); });
