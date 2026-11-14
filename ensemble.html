@@ -170,6 +170,11 @@ body.editing .ed-flex{ display:flex !important; }
 .modal{ position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.7); display:grid; place-items:center; padding:20px; }
 .modal-box{ background:#111622; border:1px solid var(--line); border-radius:20px; padding:24px; width:min(420px, 100%); display:grid; gap:12px; }
 .toast{ position:fixed; z-index:80; inset:auto 0 90px; margin:0 auto; width:max-content; max-width:90vw; background:#1B2230; border:1px solid rgba(232,85,154,.5); padding:10px 18px; border-radius:999px; }
+.reg-cta{ display:flex; align-items:center; justify-content:space-between; gap:14px; max-width:760px; margin-top:16px; padding:18px 22px; border-radius:20px; border:1px solid rgba(255,138,36,.45); background:linear-gradient(90deg, rgba(180,92,255,.10), rgba(255,138,36,.10)); color:var(--ink); text-decoration:none; transition:border-color .2s, transform .2s; }
+.reg-cta:hover{ border-color:var(--orange); transform:translateY(-1px); }
+.reg-cta b{ display:block; font-size:1.1rem; }
+.reg-cta small{ color:var(--ink2); }
+.reg-cta .arr{ font-size:1.6rem; color:var(--orange); }
 </style>
 </head>
 <body>
@@ -251,6 +256,7 @@ body.editing .ed-flex{ display:flex !important; }
     <p class="lead rv" data-k="formIntro" data-ph="פתיח לטופס" style="margin-top:12px"></p>
     <div class="form-box rv" id="formBox"></div>
     <div class="fb edit-only" id="formBuilder"></div>
+    <a class="reg-cta rv" href="register.html"><span><b>כבר החלטתם להצטרף?</b><small>להרשמה מלאה, אישור התקנון ותשלום</small></span><span class="arr" aria-hidden="true">←</span></a>
   </div>
 </section>
 
