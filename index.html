@@ -903,6 +903,9 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
 @media (prefers-reduced-motion: reduce){
   *{ animation:none !important; transition:none !important; }
 }
+.ss-row input.ss-in{max-width:280px}
+.ss-hit{outline:2px solid #f5b400;outline-offset:1px;border-radius:6px}
+[data-ss-scope] [hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -1264,7 +1267,8 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
       <section class="stab" data-tab="songs" hidden>
         <div id="stu-songs-wrap">
           <div class="sec-title spread"><h3>השירים שלי</h3><button class="btn small primary" id="stu-open-songs">לטבלת השירים והנגן</button></div>
-          <div class="chips" id="stu-songs" style="gap:8px"></div>
+          <div class="row ss-row" id="stu-ss" style="margin-bottom:10px" hidden><input type="search" class="ss-in" data-ss="mysongs" placeholder="חיפוש שיר לפי שם" aria-label="חיפוש שיר לפי שם" autocomplete="off"><span class="muted ss-count" data-ss="mysongs"></span></div>
+          <div class="chips" id="stu-songs" style="gap:8px" data-ss-scope="mysongs" data-ss-items="[data-act=open-my-song]"></div>
         </div>
       </section>
       <section class="stab stab-grid" data-tab="practice" hidden>
@@ -2991,7 +2995,7 @@ function renderStudent(){
   $('#stu-goal').innerHTML = goalHTML(S.logs, Number(S.student.weeklyGoal) || 0);
   const mySongs = (S.songs || []).map(i => songModel(Object.assign({}, i.data, {id:i.id})));
   $('#stu-tab-songs').hidden = false;
-  $('#stu-open-songs').hidden = !mySongs.length;
+  $('#stu-open-songs').hidden = !mySongs.length; $('#stu-ss').hidden = mySongs.length < 2;
   $('#stu-songs').innerHTML = mySongs.length ? mySongs.map(x => `<button class="btn small" data-act="open-my-song" data-sid="${esc(x.id)}">${esc(x.name)}</button>`).join('') : '<p class="empty" style="width:100%">עוד אין לך שירים. כשהמורה ישבץ לך שיר, הוא יופיע כאן עם האקורדים והנגן.</p>';
   const ls = (S.lessons || []).slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   $('#stu-tab-lessons').hidden = !ls.length;
@@ -5393,11 +5397,12 @@ function yHome(){
 function ySongsList(){
   const songs = yOf('song').sort((a, b) => String(a.data.name).localeCompare(String(b.data.name), 'he'));
   $('#yo-main').innerHTML = `<div class="spread" style="margin-bottom:12px"><h2>שירים</h2>${ySongEdit() ? '<button class="btn primary" data-act="new-song">שיר חדש</button>' : ''}</div>
-    ${songs.length ? songs.map(s => { const st = SONG_STATUS.find(x => x.id === (s.data.status || 'learning')); const mine = (s.data.roles || {})[Y.me.id];
+    ${songs.length > 1 ? `<div class="row ss-row" style="margin-bottom:10px">${ssBox('ys', 'חיפוש שיר לפי שם או אמן')}<span class="muted ss-count" data-ss="ys"></span></div>` : ''}
+    <div data-ss-scope="ys" data-ss-items=".t-task">${songs.length ? songs.map(s => { const st = SONG_STATUS.find(x => x.id === (s.data.status || 'learning')); const mine = (s.data.roles || {})[Y.me.id];
       return `<div class="t-task"><div><button class="sl-name" data-act="open-song" data-id="${esc(s.id)}"><b>${esc(s.data.name)}</b>${s.data.artist ? `<small>${esc(s.data.artist)}</small>` : ''}</button>
         <div class="chips" style="margin-top:4px"><span class="chip due ${st.cls}">${st.label}</span>${s.data.sheet ? '<span class="chip">אקורדים</span>' : ''}</div></div>
         <div class="acts"><button class="btn ghost small" data-act="open-song" data-id="${esc(s.id)}">פתיחה</button></div></div>`; }).join('')
-    : `<p class="empty">${yStaff() ? 'עוד אין שירים. לחצו על "שיר חדש". אפשר גם לייבא מילים ואקורדים מ־PDF.' : 'המנחים עוד לא הוסיפו שירים.'}</p>`}`;
+    : `<p class="empty">${yStaff() ? 'עוד אין שירים. לחצו על "שיר חדש". אפשר גם לייבא מילים ואקורדים מ־PDF.' : 'המנחים עוד לא הוסיפו שירים.'}</p>`}</div>`;
 }
 function ySongView(){
   const s = yGet(Y.songId), d = s.data, st = SONG_STATUS.find(x => x.id === (d.status || 'learning')), mem = yMembers(), roles = d.roles || {};
@@ -6309,12 +6314,14 @@ function teacherSongsTableHTML(songs){
       <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'min')).join('')}</tr>
     </tbody>`).join('')}</table></div>` : '<p class="empty">עוד אין ז׳אנרים. הוסף ז׳אנר כדי לבנות את הטבלה.</p>';
   const loose = songs.filter(s => !s.shape).sort((a, b) => a.name.localeCompare(b.name, 'he'));
-  return `<p class="hint" style="margin:12px 0 8px">לחיצה על כותרת ירוקה או אדומה משנה את השם שלה. לחיצה על שיר פותחת אותו לעריכה. במחשב אפשר לגרור שיר לתא אחר בטבלה כדי לשנות ז׳אנר או צורה. ה־+ בכל תא מוסיף שיר ישר אליו.</p>
+  return `<div class="row ss-row" style="margin-top:14px">${ssBox('tt')}<span class="muted ss-count" data-ss="tt"></span></div>
+    <div data-ss-scope="tt" data-ss-items=".tt-song" data-ss-groups="tbody, .ab-grp">
+    <p class="hint" style="margin:12px 0 8px">לחיצה על כותרת ירוקה או אדומה משנה את השם שלה. לחיצה על שיר פותחת אותו לעריכה. במחשב אפשר לגרור שיר לתא אחר בטבלה כדי לשנות ז׳אנר או צורה. ה־+ בכל תא מוסיף שיר ישר אליו.</p>
     ${table}
     <div class="tt-loose" data-loose="1">
-      <div class="spread"><h3>שירים שעוד לא שובצו בטבלה <small class="muted">${loose.length}</small></h3><input type="search" id="tt-q" placeholder="חיפוש" style="max-width:200px" aria-label="חיפוש בשירים שלא שובצו"></div>
+      <div class="spread"><h3>שירים שעוד לא שובצו בטבלה <small class="muted">${loose.length}</small></h3></div>
       <div class="tt-loose-list ab-list" id="tt-loose-list">${loose.length ? abListHTML(loose, chip) : '<span class="muted">כל השירים משובצים. גרירת שיר לכאן מוציאה אותו מהטבלה.</span>'}</div>
-    </div>`;
+    </div></div>`;
 }
 async function ttAssign(id, genreId, shape, mode){
   const it = LIB.items.find(i => i.id === id); if(!it) return;
@@ -6367,12 +6374,12 @@ function studentTableHTML(s){
   const chip = x => `<span role="button" tabindex="0" class="st-chip ${mine(x) ? 'on' : ''} ${fromTasks.has(x.id) && !direct.has(x.id) ? 'task' : ''}" data-assign="${esc(x.id)}" title="${fromTasks.has(x.id) && !direct.has(x.id) ? 'מצורף דרך משימה' : mine(x) ? 'לחיצה מוציאה מהתלמיד' : 'לחיצה משבצת לתלמיד'}">${esc(x.name)}</span>`;
   const cell = (g, sh, mode) => `<td>${placed.filter(x => (x.genreId || '') === g.id && x.shape === sh && (x.mode || 'maj') === mode).map(chip).join('')}</td>`;
   const count = lib.filter(mine).length;
-  return `<p class="hint" style="margin:0 0 8px">${count ? `משובצים ${count} שירים.` : 'עוד לא שובצו שירים.'} לחיצה על שיר בטבלה משבצת אותו ל${esc(s.name)} או מוציאה אותו. השירים המודגשים הם מה שהתלמיד רואה, בטבלה משלו.</p>
+  return `<div class="row ss-row" style="margin-bottom:8px">${ssBox('st')}<span class="muted ss-count" data-ss="st"></span></div><div data-ss-scope="st" data-ss-items=".st-chip" data-ss-groups="tbody"><p class="hint" style="margin:0 0 8px">${count ? `משובצים ${count} שירים.` : 'עוד לא שובצו שירים.'} לחיצה על שיר בטבלה משבצת אותו ל${esc(s.name)} או מוציאה אותו. השירים המודגשים הם מה שהתלמיד רואה, בטבלה משלו.</p>
     ${gs.length ? `<div class="scroll-x"><table class="shape-table student-table">${gs.map(g => `<tbody>
       <tr class="sh-maj"><th rowspan="4" class="g-name">${esc(g.name)}</th>${SONG_SHAPES.map(sh => `<th dir="ltr">${esc(majorLabels()[sh])}</th>`).join('')}</tr>
       <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'maj')).join('')}</tr>
       <tr class="sh-min">${SONG_SHAPES.map(sh => `<th dir="ltr">${esc(ml[sh])}</th>`).join('')}</tr>
-      <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'min')).join('')}</tr></tbody>`).join('')}</table></div>` : '<p class="muted">עוד אין ז׳אנרים בספרייה.</p>'}`;
+      <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'min')).join('')}</tr></tbody>`).join('')}</table></div>` : '<p class="muted">עוד אין ז׳אנרים בספרייה.</p>'}</div>`;
 }
 const CLAPTON_LIST = 'Clapton\nTHE YARDBIRDS - LOUISE ( JULY \'64 ) G\ngood morning little school girl \nSunshine of your love original \nSunshine of your love alan cambell show \nCREAM - SUNSHINE OF YOUR LOVE - LOS ANGELES 17.5.1968\nSunshine of your love at the Revolution club \nCrossroads Wheels of fire\nits too late\ncrossroads 1993 \nlayla 1999 MSG \ndon’t thing twice it’s all right \nFinale Performance of "Sweet Home Chicago" at the 2000 Rock & Roll Hall of Fame Induction Ceremony \nEric Clapton performs "Further On Up the Road" 2000 Rock & Roll Hall of Fame Induction Ceremony\nlayla japan 2001 \nconcert for george\n‘while my guitar gently weeps 2001 \n2003\nTalk to your daughter liverpool 2003 \nI’m tore down (John Mayall 70th birthday) \nhideaway - john mayall 70th birthday\nhave you heard - john mayall 70th birthday\n2004\ni shot the sheriff 2004\ncocaine crossroads 2004 \nrock me baby crossroads 2004 \nlayla crossroads 2004 \nzucherro hey man\ncream reunion / 2005\ncrossroads cream 2005\nstormy monday 2005\nsleepy time time 2005 \nsleepy time time alternate take 2005 \npolitician 2005 \nwhite room 2005 \nbadge 2005 \nI\'m So Glad (Royal Albert Hall 2005) (1 of 22)\nsunshine of your love 2005 \nSunshine of your love 2005 alternate \nspoonful 2005 \noutside woman blues 2005 \nborn under bad sign 2005 \nsitting on top of the world 2005 \ncrossroads 2005 \nCream - Sweet Wine (Royal Albert Hall 2005) (9 of 22)\nEric Clapton & Band Du Lac - Stormy Monday\nEric Clapton & Band du Lac - I Can\'t Dance \n2009\nLayla 2009 japan \ncrossroads 2010\nshake your money maker crossroads 2010\nthe thrill is gone crossroads 2010 \n2011\ni shot the sheriff crossroads 2004\ni shot the sheriff crossroads 2010\ni shot the sheriff 17/5/11\ni shot the sheriff 21/5/11\ni shot the sheriff belfast\nold love 17/5/11\nold love 21/5/11\nwith Wynton Marsalis\nforty four \ncareless love \nkidman blues';
 function claptonImported(){ return allSongs().some(x => /^Clapton/.test(x.note || '')); }
@@ -6386,6 +6393,26 @@ async function importClapton(btn){
   try{ for(let i = 0; i < items.length; i += 40) await saveItems(items.slice(i, i + 40)); toast(`נוספו ${items.length} שירים. הם מחכים מתחת לטבלה.`); renderTeacher(); setTimeout(() => { const l = $('.tt-loose'); if(l) l.scrollIntoView({block:'start'}); }, 50); }
   catch(e){ btn.disabled = false; alert(e.message); }
 }
+
+/* חיפוש שיר לפי שם, בכל טבלה ורשימה של שירים */
+const SSQ = {};
+function ssNorm(t){ return String(t || '').toLowerCase().replace(/[֑-ׇ]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); }
+function ssBox(key, ph){ return `<input type="search" class="ss-in" data-ss="${key}" value="${esc(SSQ[key] || '')}" placeholder="${ph || 'חיפוש שיר לפי שם'}" aria-label="חיפוש שיר לפי שם" autocomplete="off">`; }
+function ssApply(scope){
+  const key = scope.dataset.ssScope, q = ssNorm(SSQ[key]);
+  const items = [...scope.querySelectorAll(scope.dataset.ssItems)];
+  let n = 0;
+  items.forEach(el => { const ok = !q || ssNorm(el.textContent).includes(q); if(ok) n++; el.hidden = !ok; el.classList.toggle('ss-hit', !!q && ok); const li = el.closest('li'); if(li && scope.contains(li)) li.hidden = !ok; });
+  if(scope.dataset.ssGroups) scope.querySelectorAll(scope.dataset.ssGroups).forEach(g => { g.hidden = !!q && !g.querySelector(scope.dataset.ssItems.split(',').map(x => x.trim() + ':not([hidden])').join(',')); });
+  let none = scope.querySelector(':scope > .ss-none');
+  if(!none){ none = document.createElement('p'); none.className = 'muted ss-none'; scope.appendChild(none); }
+  none.hidden = !q || n > 0 || !items.length; none.textContent = 'לא נמצא שיר בשם הזה.';
+  const cnt = document.querySelector(`.ss-count[data-ss="${key}"]`); if(cnt) cnt.textContent = q && items.length ? `נמצאו ${n}` : '';
+}
+function ssApplyAll(){ $$('[data-ss-scope]').forEach(sc => { if(SSQ[sc.dataset.ssScope]) ssApply(sc); }); $$('.ss-in').forEach(i => { if(document.activeElement !== i && i.value !== (SSQ[i.dataset.ss] || '')) i.value = SSQ[i.dataset.ss] || ''; }); }
+document.addEventListener('input', e => { const i = e.target.closest && e.target.closest('.ss-in'); if(!i) return; SSQ[i.dataset.ss] = i.value; $$(`[data-ss-scope="${i.dataset.ss}"]`).forEach(ssApply); });
+let ssRaf = 0;
+new MutationObserver(() => { if(ssRaf || !Object.values(SSQ).some(v => v && v.trim())) return; ssRaf = requestAnimationFrame(() => { ssRaf = 0; ssApplyAll(); }); }).observe(document.documentElement, {childList:true, subtree:true});
 
 /* מיון א-ב: עברית קודם, אחר כך אנגלית, ואז השאר */
 const COLL_HE = new Intl.Collator('he', {sensitivity:'base', numeric:true}), COLL_EN = new Intl.Collator('en', {sensitivity:'base', numeric:true});
@@ -6433,7 +6460,8 @@ function pnGrid(){
     </tbody>`;
   $('#pn-main').innerHTML = `<div class="spread" style="margin-bottom:8px"><h3>טבלת טוניקות</h3><div class="row"><span class="muted" id="pg-msg"></span><button class="btn small primary" data-pg-genre="new">ז׳אנר חדש</button></div></div>
     <p class="hint" style="margin-bottom:10px">הז׳אנרים הם אותם ז׳אנרים של טבלת השירים בגיטרה. גוללים ימינה ושמאלה בין 12 הטוניקות. ה־+ בכל תא מוסיף שיר, לחיצה על שיר פותחת את דף האקורדים שלו לפסנתר, ובמחשב אפשר לגרור שיר לתא אחר. לחיצה על שם של טוניקה פותחת את האקורדים שלה.</p>
-    <div class="scroll-x pg-scroll"><table class="shape-table pg-table">${gs.map(block).join('')}</table></div>`;
+    <div class="row ss-row" style="margin-bottom:10px">${ssBox('pg')}<span class="muted ss-count" data-ss="pg"></span></div>
+    <div data-ss-scope="pg" data-ss-items=".ps-song" data-ss-groups="tbody"><div class="scroll-x pg-scroll"><table class="shape-table pg-table">${gs.map(block).join('')}</table></div></div>`;
 }
 let pgT = null;
 function pnGridSave(){
