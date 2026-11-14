@@ -458,10 +458,17 @@ a.btn{ text-decoration:none; display:inline-flex; align-items:center; }
 .ncard-acts button.del{ color:var(--red); }
 .ncard-t{ white-space:pre-line; color:var(--ink); }
 .ncard-q{ font-size:12px; color:var(--ink-2); margin-bottom:2px; }
-.inline-notes{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin:6px 0 4px; white-space:normal; }
-.inline-notes .ncard{ box-shadow:none; background:color-mix(in srgb, var(--mk-c) 13%, var(--surface)); border-radius:8px; padding:3px 10px 4px; font-size:max(14px, .78em); max-width:100%; width:fit-content; min-width:180px; }
-.inline-notes .ncard-h{ font-size:11px; margin:0; }
-.inline-notes .ncard-t{ font-weight:600; }
+.inline-notes{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin:4px 0 2px; white-space:normal; }
+.inline-notes .ncard{ display:inline-flex; align-items:baseline; gap:8px; flex-wrap:wrap; box-shadow:none; background:color-mix(in srgb, var(--mk-c) 9%, transparent); border-radius:0; border-start-end-radius:6px; border-end-end-radius:6px; border-inline-start:3px solid var(--mk-c); padding:1px 10px 2px; font-size:13px; line-height:1.45; max-width:100%; min-width:0; width:auto; }
+.inline-notes .ncard-t{ order:1; font-weight:600; color:color-mix(in srgb, var(--mk-c) 55%, var(--ink)); font-style:italic; }
+.inline-notes .ncard-h{ order:2; font-size:11px; margin:0; gap:4px; color:var(--ink-3, #8a93a6); }
+.inline-notes .ncard-h b{ font-weight:600; color:inherit; }
+.inline-notes .ncard-h .lock{ font-size:10px; padding:0 5px; background:none; border:1px solid var(--line); }
+.inline-notes .ncard-acts{ margin:0; display:none; }
+.inline-notes .ncard:hover .ncard-acts, .inline-notes .ncard:focus-within .ncard-acts{ display:flex; }
+@media (hover: none){ .inline-notes .ncard-acts{ display:flex; } }
+.inline-notes .ncard-acts button{ font-size:11px; padding:0 3px; }
+.inline-notes .ncard-q{ display:none; }
 .song-notes{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; }
 
 /* Form builder */
@@ -842,7 +849,8 @@ th.g-name:hover .pg-g-acts, .pg-g-acts:focus-within{ opacity:1; }
 .ve-ch{ font-weight:700; font-size:.86em; color:var(--chord); background:color-mix(in srgb, var(--chord) 10%, transparent); border-radius:5px; padding:0 4px; cursor:grab; user-select:none; touch-action:none; line-height:1.3; }
 .ve-ch:hover{ background:color-mix(in srgb, var(--chord) 22%, transparent); }
 .ve-ch.none{ background:none; cursor:default; padding:0; }
-.ve-ch.dragging{ opacity:.5; }
+.ve-ch.dragging{ opacity:.35; }
+.ve-ghost{ position:fixed; z-index:100; pointer-events:none; transform:translate(-50%, -130%); font:700 16px 'Assistant',Arial,sans-serif; color:#fff; background:var(--chord); padding:2px 9px; border-radius:7px; box-shadow:0 6px 16px rgba(10,20,40,.25); }
 .ve-ch.ve-hl, .ve-chip.ve-hl{ outline:2px solid var(--amber); }
 .ve-tx{ white-space:pre; }
 .ve-c{ cursor:pointer; border-radius:3px; }
@@ -928,6 +936,9 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .sd-card{ display:grid; gap:12px; margin-top:12px; padding:16px 18px; border:2px solid color-mix(in srgb, var(--blue) 35%, var(--line)); }
 .sync-pill{ position:fixed; bottom:14px; inset-inline-start:14px; z-index:90; background:var(--ink); color:var(--surface); font:600 13px 'Assistant',Arial,sans-serif; padding:6px 12px; border-radius:999px; opacity:.85; pointer-events:none; }
 .sync-pill[hidden]{ display:none; }
+.snote-sheet .ln[data-l]{ cursor:pointer; }
+.snote-sheet .ln.mk{ width:fit-content; max-width:100%; border-radius:4px; padding-inline:3px; margin-inline:-3px; }
+.snote-sheet .ln.mk-yellow{ background:var(--mk-yellow); } .snote-sheet .ln.mk-green{ background:var(--mk-green); } .snote-sheet .ln.mk-pink{ background:var(--mk-pink); } .snote-sheet .ln.mk-blue{ background:var(--mk-blue); } .snote-sheet .ln.mk-orange{ background:var(--mk-orange); }
 </style>
 </head>
 <body>
@@ -1191,6 +1202,7 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
             <div id="sh-editor"></div>
             <p class="muted" id="tr-capo"></p>
             <div class="att-chords" id="sh-chords"></div>
+            <p class="hint" id="sh-nhint" hidden></p>
             <div class="sheet" id="sh-body"></div>
           </div>
         </div>
@@ -2462,7 +2474,7 @@ function serverHandle(req, store, teacherPassword){
 
   const nMember = m => ({id:String(m.id), name:String(m.name || ''), role:String(m.role || ''), pin:String(m.pin || ''), createdAt:String(m.createdAt || '')});
   const nBand = r => { let d = {}; try{ d = typeof r.data === 'string' ? JSON.parse(r.data || '{}') : (r.data || {}); }catch(e){} return {id:String(r.id), kind:String(r.kind), data:d, authorId:String(r.authorId || ''), updatedAt:String(r.updatedAt || '')}; };
-  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => ['song','pvoice','pgrid','psong','plink','proll','landing'].indexOf(c.kind) < 0)};
+  if(a === 'publicContent') return {items:store.all('Content').map(nContent).filter(c => ['song','pvoice','pgrid','psong','plink','proll','landing','snote'].indexOf(c.kind) < 0)};
   if(a === 'publicApplyForm' || a === 'publicApplySubmit'){
     const f = store.all('Band').map(nBand).find(x => x.kind === 'form');
     const d = f ? f.data : null;
@@ -2731,7 +2743,21 @@ function serverHandle(req, store, teacherPassword){
       const myTasks = store.all('Tasks').filter(t => String(t.studentId) === st.id).map(nTask);
       const songIds = new Set(st.songs);
       myTasks.forEach(t => String(t.attachments || '').split(',').forEach(k => { if(k.indexOf('v:') === 0) songIds.add(k.slice(2)); }));
-      return {recs:store.all('Recs').map(nRec).filter(r => r.scope === 'student' && r.ownerId === st.id), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song' && songIds.has(c.id)), student:{id:st.id, name:st.name, weeklyGoal:st.weeklyGoal}, tasks:myTasks, logs:store.all('Logs').filter(l => String(l.studentId) === st.id).map(nLog), lessons:store.all('Lessons').filter(l => String(l.studentId) === st.id).map(nLesson)};
+      const snotes = store.all('Content').map(nContent).filter(c => c.kind === 'snote' && (c.data.author === st.id || (c.data.author === 'teacher' && (c.data.visibility === 'all' || (c.data.visibility === 'to' && (c.data.to || []).indexOf(st.id) >= 0)))));
+      return {snotes, recs:store.all('Recs').map(nRec).filter(r => r.scope === 'student' && r.ownerId === st.id), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song' && songIds.has(c.id)), student:{id:st.id, name:st.name, weeklyGoal:st.weeklyGoal}, tasks:myTasks, logs:store.all('Logs').filter(l => String(l.studentId) === st.id).map(nLog), lessons:store.all('Lessons').filter(l => String(l.studentId) === st.id).map(nLesson)};
+    }
+    if(a === 'studentSaveNote'){
+      const it = req.note || {}, d = it.data || {};
+      const data = {songId:String(d.songId || '').slice(0, 60), line:Math.round(num(d.line)), lineText:String(d.lineText || '').slice(0, 300), text:String(d.text || '').slice(0, 1000), color:String(d.color || 'yellow').slice(0, 12), visibility:d.visibility === 'teacher' ? 'teacher' : 'mine', author:st.id, createdAt:String(d.createdAt || now())};
+      if(!data.songId) throw new Error('השיר לא נמצא.');
+      const raw = it.id ? store.all('Content').find(x => String(x.id) === String(it.id)) : null;
+      if(raw){ if(String(raw.kind) !== 'snote' || nContent(raw).data.author !== st.id) throw new Error('אפשר לערוך רק הערות שכתבת.'); raw.data = JSON.stringify(data); raw.updatedAt = now(); store.update('Content', raw); return {note:nContent(raw)}; }
+      const row = {id:/^[A-Za-z0-9_]{4,40}$/.test(String(it.id || '')) ? String(it.id) : newId(), kind:'snote', data:JSON.stringify(data), updatedAt:now()};
+      store.insert('Content', row); return {note:nContent(row)};
+    }
+    if(a === 'studentDeleteNote'){
+      store.remove('Content', x => String(x.id) === String(req.id) && String(x.kind) === 'snote' && nContent(x).data.author === st.id);
+      return {};
     }
     if(a === 'studentUploadRec'){
       const task = store.all('Tasks').find(t => String(t.id) === String(req.taskId) && String(t.studentId) === st.id);
@@ -2769,7 +2795,7 @@ function serverHandle(req, store, teacherPassword){
   if(a.indexOf('teacher') === 0){
     if(!teacherPassword || String(req.password || '') !== String(teacherPassword)) throw new Error('הסיסמה שגויה.');
     if(a === 'teacherLoad'){
-      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), recs:store.all('Recs').map(nRec).filter(r => r.scope === 'student'), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => ['pvoice','pgrid','psong','plink','proll'].indexOf(c.kind) >= 0), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
+      return {students:store.all('Students').map(nStudent), tasks:store.all('Tasks').map(nTask), logs:store.all('Logs').map(nLog), members:store.all('Members').map(nMember), lessons:store.all('Lessons').map(nLesson), settings:settingsObj(), recs:store.all('Recs').map(nRec).filter(r => r.scope === 'student'), songs:store.all('Content').map(nContent).filter(c => c.kind === 'song'), pvoices:store.all('Content').map(nContent).filter(c => ['pvoice','pgrid','psong','plink','proll'].indexOf(c.kind) >= 0), snotes:store.all('Content').map(nContent).filter(c => c.kind === 'snote'), youthStaff:store.all('YouthPeople').map(nPerson).filter(x => x.staff)};
     }
     if(a === 'teacherSaveSettings'){
       const KEYS = ['teacherEmail','notifyDone','notifyPractice','remindHour','remindDays','siteUrl'], inp = req.settings || {}, rows = store.all('Settings');
@@ -2891,7 +2917,7 @@ function serverHandle(req, store, teacherPassword){
       return {};
     }
     if(a === 'teacherSaveContent'){
-      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice','pgrid','psong','plink','proll'], list = req.items || [];
+      const KINDS = ['ccat','chord','scat','shape','song','genre','songcfg','pvoice','pgrid','psong','plink','proll','snote'], list = req.items || [];
       if(!list.length) throw new Error('אין מה לשמור.');
       const all = store.all('Content'), fresh = [], out = [];
       list.forEach(it => {
@@ -2975,7 +3001,7 @@ async function studentLogin(pin, silent){
   autoStart('#stu-login', '#stu-go', silent);
   try{
     const r = await apiRetry('studentLogin', {pin}, silent);
-    S.recs = r.recs || []; S.pin = pin; S.student = r.student; S.tasks = r.tasks; S.logs = r.logs; S.lessons = r.lessons || []; S.songs = r.songs || [];
+    S.recs = r.recs || []; S.snotes = r.snotes || []; S.pin = pin; S.student = r.student; S.tasks = r.tasks; S.logs = r.logs; S.lessons = r.lessons || []; S.songs = r.songs || [];
     dropPrivateSongs();
     store.set('pritah.pin', pin);
     renderStudent();
@@ -4191,6 +4217,7 @@ try{ SH.cols = localStorage.getItem('pritah.sheetCols') === '1'; }catch(e){}
 try{ SH.size = Number(localStorage.getItem('pritah.sheetSize')) || 18; }catch(e){}
 const canEditLib = s => !!(T.data && s && s.id && LIB.items.some(i => i.id === s.id && i.kind === 'song'));
 function renderSheet(){
+  inlHome();
   const s = SG.song, part = $('#sh-part');
   const editing = s && inlineOn('lib', s.id), hasSheet = s && s.sheet && s.sheet.trim();
   if(!s || (!hasSheet && !canEditLib(s))){ part.hidden = true; return; }
@@ -4215,6 +4242,9 @@ function renderSheet(){
   body.innerHTML = html;
   body.dir = s.dir || (hasHebrew(s.sheet) ? 'rtl' : 'ltr');
   body.style.fontSize = SH.size + 'px';
+  snApply('#sh-body', s.id, s.sheet, renderSheet);
+  $('#sh-nhint').hidden = !(snMe() && s.id);
+  $('#sh-nhint').textContent = T.data ? 'לחיצה על שורה בשיר, או על שם של חלק, מוסיפה הערה לפניה. אפשר לבחור אם רק אתה רואה אותה, כל התלמידים שיש להם את השיר, או תלמידים מסוימים.' : 'לחיצה על שורה בשיר מוסיפה לך הערה לפניה. אפשר לבחור אם היא רק שלך או שגם המורה רואה אותה.';
   $('#tr-key').textContent = keyLabel(detectKey(s.sheet, s.key), SH.shift) || '–';
   $('#tr-shift').textContent = SH.shift ? (SH.shift > 0 ? '+' : '−') + Math.abs(SH.shift) + ' חצאי טונים' : 'כמו המקור';
   const k = Math.abs(SH.shift);
@@ -4757,7 +4787,8 @@ function renderBandSong(){
     notes.filter(n => n._at >= 0).forEach(n => { (B.byLine[n._at] = B.byLine[n._at] || []).push(n); });
     Object.keys(B.byLine).forEach(li => {
       const ln = el.querySelector(`.ln[data-l="${li}"]`); if(!ln) return;
-      const list = B.byLine[li], col = (list.find(n => n.data.color) || {data:{}}).data.color || 'yellow';
+      const hl = B.byLine[li].filter(n => !n.data.text); if(!hl.length) return;
+      const col = (hl.find(n => n.data.color) || {data:{}}).data.color || 'yellow';
       ln.classList.add('mk', 'mk-' + col);
 
     });
@@ -4829,7 +4860,7 @@ async function onBandMain(e){
 
 /* הערות */
 function openNoteDlg(n, line, lineText){
-  if(NOTE_CTX !== 'youth') setNoteCtx('band');
+  if(NOTE_CTX !== 'youth' && NOTE_CTX !== 'song') setNoteCtx('band');
   B.editNote = {item:n, line, lineText};
   $('#nt-title').textContent = n ? 'עריכת הערה' : (line >= 0 ? 'הערה לשורה' : 'הערה לשיר');
   $('#nt-quote').hidden = !lineText; $('#nt-quote').textContent = lineText ? `“\u2068${lineText}\u2069”` : '';
@@ -4838,11 +4869,11 @@ function openNoteDlg(n, line, lineText){
   $$('#nt-color .mk-sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === col));
   $('#nt-color-hint').hidden = !(line >= 0);
   $('#nt-del').hidden = !n;
-  const vis = n ? n.data.visibility : 'mine';
+  const vis = n ? n.data.visibility : 'all';
   $$('#nt-vis button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === vis));
   $('#nt-err').textContent = '';
   if(typeof syncNoteTo === 'function') syncNoteTo();
-  const yo = NOTE_CTX === 'youth', sheet = $(yo ? '#yo-sheet' : '#vb-sheet');
+  const yo = NOTE_CTX === 'youth', sheet = $(yo ? '#yo-sheet' : NOTE_CTX === 'song' ? SN.cur.sel : '#vb-sheet');
   let anchor = line >= 0 && sheet ? sheet.querySelector(`.ln[data-l="${line}"]`) : null;
   if(anchor) anchor.classList.add('ln-edit');
   if(!anchor){ const box = $(yo ? '#yo-song-notes' : '#vb-song-notes'); anchor = box ? box.previousElementSibling : null; }
@@ -4857,6 +4888,7 @@ async function saveNote(e){
   B.lastColor = color;
   const vis = ($('#nt-vis button[aria-pressed="true"]') || {}).dataset.v || 'mine';
   if(NOTE_CTX === 'youth') return saveYNote(text, color, vis);
+  if(NOTE_CTX === 'song') return saveSNote(text, color, vis);
   const data = Object.assign({}, ed.item ? ed.item.data : {createdAt:new Date().toISOString()}, {songId:B.songId, line:ed.line, lineText:ed.lineText, text, color, visibility:vis});
   delete data.orphan;
   try{ await bSave([{id:ed.item ? ed.item.id : '', kind:'note', data}], $('#nt-err')); $('#dlg-note').close(); }catch(err){}
@@ -5962,7 +5994,8 @@ function yRenderNotes(s){
     notes.filter(n => n._at >= 0).forEach(n => { (Y.byLine[n._at] = Y.byLine[n._at] || []).push(n); });
     Object.keys(Y.byLine).forEach(li => {
       const ln = el.querySelector(`.ln[data-l="${li}"]`); if(!ln) return;
-      const list = Y.byLine[li], col = (list.find(n => n.data.color) || {data:{}}).data.color || 'yellow';
+      const hl = Y.byLine[li].filter(n => !n.data.text); if(!hl.length) return;
+      const col = (hl.find(n => n.data.color) || {data:{}}).data.color || 'yellow';
       ln.classList.add('mk', 'mk-' + col);
 
     });
@@ -5974,12 +6007,98 @@ function yRenderNotes(s){
 function yLayoutNotes(){ layoutNotesIn({wrap:'#yo-wrap', sheet:'#yo-sheet', rail:'#yo-rail', byLine:Y.byLine, openLines:Y.openLines, html:yNoteHTML}); }
 window.addEventListener('resize', () => { clearTimeout(yLayoutNotes.t); yLayoutNotes.t = setTimeout(() => { if(currentView === 'youth' && Y.songId) yLayoutNotes(); }, 150); });
 
+/* הערות לשורה בשירים של המורה והתלמיד (וגם בפסנתר) */
+const SN = {cur:null};
+function snList(){ if(T.data){ T.data.snotes = T.data.snotes || []; return T.data.snotes; } if(S.student){ S.snotes = S.snotes || []; return S.snotes; } return null; }
+function snMe(){ return T.data ? 'teacher' : S.student ? S.student.id : null; }
+function snName(a){ if(a === snMe()) return 'אני'; if(a === 'teacher') return 'המורה'; const st = T.data && (T.data.students || []).find(x => x.id === a); return st ? st.name : 'תלמיד'; }
+function snVisible(n){
+  const me = snMe(); if(!me) return false;
+  if(n.data.author === me) return true;
+  if(me === 'teacher') return n.data.visibility === 'teacher';
+  return n.data.author === 'teacher' && (n.data.visibility === 'all' || (n.data.visibility === 'to' && (n.data.to || []).includes(me)));
+}
+function snFor(songId){ const l = snList(); return l ? l.filter(n => n.kind === 'snote' && n.data.songId === songId && snVisible(n)).sort((a, b) => String(a.data.createdAt || '').localeCompare(String(b.data.createdAt || ''))) : []; }
+function snHTML(n){
+  const mine = n.data.author === snMe(), col = n.data.color || 'yellow', v = n.data.visibility;
+  const lock = mine ? (v === 'mine' ? '<span class="lock">פרטית</span>' : v === 'teacher' ? '<span class="lock">גם למורה</span>' : v === 'to' ? `<span class="lock">אל: ${esc((n.data.to || []).map(snName).join(', '))}</span>` : '') : '';
+  return `<div class="ncard c-${col}" data-nid="${esc(n.id)}"><div class="ncard-h"><b>${esc(snName(n.data.author))}</b>${lock}${mine ? `<span class="ncard-acts"><button type="button" data-sn="edit" data-id="${esc(n.id)}">עריכה</button><button type="button" class="del" data-sn="del" data-id="${esc(n.id)}">מחיקה</button></span>` : ''}</div><div class="ncard-t" dir="auto">${esc(n.data.text)}</div></div>`;
+}
+function snApply(sel, songId, sheetText, render){
+  const el = $(sel); if(!el) return;
+  SN.cur = {sel, songId, render};
+  if(!snMe() || !songId) return;
+  el.classList.add('snote-sheet'); el.dataset.src = String(sheetText || '');
+  const lines = String(sheetText || '').split('\n'), by = {};
+  snFor(songId).forEach(n => {
+    let at = -1;
+    if(plainLine(lines[n.data.line]) === n.data.lineText) at = n.data.line; else at = lines.findIndex(l => plainLine(l) === n.data.lineText);
+    if(at >= 0) (by[at] = by[at] || []).push(n);
+  });
+  Object.keys(by).forEach(li => {
+    const ln = el.querySelector(`.ln[data-l="${li}"]`); if(!ln) return;
+    const hl = by[li].filter(n => !n.data.text);
+    if(hl.length) ln.classList.add('mk', 'mk-' + (hl[0].data.color || 'yellow'));
+    const tx = by[li].filter(n => n.data.text);
+    if(tx.length) ln.insertAdjacentHTML('beforebegin', `<div class="inline-notes">${tx.map(snHTML).join('')}</div>`);
+  });
+}
+function snOpen(n, line, lineText){
+  setNoteCtx('song');
+  openNoteDlg(n, line, lineText);
+  const v = n ? (n.data.visibility === 'teacher' ? 'all' : n.data.visibility) : 'all';
+  $$('#nt-vis button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v));
+  $('#nt-del').hidden = !n;
+  if(T.data){
+    const sel = new Set(n ? n.data.to || [] : []), sid = SN.cur.songId;
+    const has = (T.data.students || []).filter(st => { try{ const {direct, fromTasks} = studentSongIds(st); return direct.has(sid) || fromTasks.has(sid); }catch(e){ return false; } });
+    const list = has.length ? has : (T.data.students || []);
+    $('#nt-to').innerHTML = list.map(st => `<label><input type="checkbox" value="${esc(st.id)}" ${sel.has(st.id) ? 'checked' : ''}> ${esc(st.name)}</label>`).join('') || '<span class="muted">אין תלמידים.</span>';
+  }
+  syncNoteTo();
+}
+function snSend(its, prev){
+  const list = snList(), render = SN.cur.render;
+  const call = T.data ? () => api('teacherSaveContent', {password:T.pw, items:its}) : () => api('studentSaveNote', {pin:S.pin, note:its[0]});
+  return bgSend(T.data ? 'teacher' : 'student', call, err => revertSave(list, its, prev, render, err));
+}
+function saveSNote(text, color, vis){
+  const ed = B.editNote, list = snList(); if(!list) return;
+  const to = vis === 'to' ? $$('#nt-to input:checked').map(b => b.value) : [];
+  if(vis === 'to' && !to.length){ $('#nt-err').textContent = 'בחרו לאילו תלמידים.'; return; }
+  const visibility = T.data ? vis : (vis === 'all' ? 'teacher' : 'mine');
+  const data = Object.assign({}, ed.item ? ed.item.data : {createdAt:new Date().toISOString()}, {songId:SN.cur.songId, line:ed.line, lineText:ed.lineText, text, color, visibility, to, author:snMe()});
+  $('#dlg-note').close();
+  fastSave(list, [{id:ed.item ? ed.item.id : '', kind:'snote', data}], () => ({}), SN.cur.render, snSend);
+}
+function snDelete(id){
+  const list = snList(); if(!list) return;
+  const i = list.findIndex(x => x.id === id); if(i < 0) return;
+  const old = list[i]; list.splice(i, 1); SN.cur.render();
+  const call = T.data ? () => api('teacherDeleteContent', {password:T.pw, id}) : () => api('studentDeleteNote', {pin:S.pin, id});
+  bgSend(T.data ? 'teacher' : 'student', call, err => { list.push(old); SN.cur.render(); alert('המחיקה לא הצליחה: ' + err.message); });
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-sn]');
+  if(b){ const n = (snList() || []).find(x => x.id === b.dataset.id); if(!n) return; if(b.dataset.sn === 'edit') return snOpen(n, n.data.line, n.data.lineText || ''); if(confirm('למחוק את ההערה?')) snDelete(n.id); return; }
+  if(!snMe() || !SN.cur) return;
+  const ln = e.target.closest('.snote-sheet .ln[data-l]');
+  if(!ln || e.target.closest('.ch, [data-c], .media-link, a, button, dialog, .inline-notes')) return;
+  const sheet = ln.closest('.snote-sheet'); if(!sheet || !sheet.matches(SN.cur.sel)) return;
+  const li = Number(ln.dataset.l), raw = String(sheet.dataset.src || '').split('\n')[li];
+  const mineHl = snFor(SN.cur.songId).find(n => n.data.author === snMe() && !n.data.text && (n.data.line === li));
+  if(mineHl) return snOpen(mineHl, li, mineHl.data.lineText || '');
+  if(plainLine(raw)) snOpen(null, li, plainLine(raw));
+});
+
 /* דיאלוג ההערה: משותף ללהקה ולהרכבים */
 let NOTE_CTX = 'band';
 function setNoteCtx(ctx){
   NOTE_CTX = ctx;
-  $('#nt-vis-to').hidden = ctx !== 'youth';
-  $('#nt-vis-all').textContent = ctx === 'youth' ? 'כל ההרכב' : 'כל הלהקה';
+  const tsong = ctx === 'song' && !!T.data;
+  $('#nt-vis-to').hidden = !(ctx === 'youth' || tsong);
+  $('#nt-vis-to').textContent = tsong ? 'תלמידים מסוימים' : 'חברים מסוימים';
+  $('#nt-vis-all').textContent = ctx === 'youth' ? 'כל ההרכב' : ctx === 'song' ? (T.data ? 'כל התלמידים עם השיר' : 'גם המורה') : 'כל הלהקה';
 }
 function syncNoteTo(){
   const to = ($('#nt-vis button[aria-pressed="true"]') || {}).dataset.v === 'to';
@@ -6096,7 +6215,7 @@ function inlineEditorHTML(){
       </div>
     </div>
     <div class="ied-visual" ${INL.mode === 'text' ? 'hidden' : ''}>
-      <p class="hint"><b>לחיצה על אות</b> מוסיפה אקורד מעליה. <b>לחיצה על אקורד</b> משנה, מזיזה או מוחקת אותו. במחשב אפשר גם <b>לגרור אקורד</b> למקום אחר. <b>לחיצה על שם של חלק או על הערה</b> משנה או מוחקת אותם. את המילים עצמן עורכים במצב "טקסט".</p>
+      <p class="hint"><b>לחיצה על אות</b> מוסיפה אקורד מעליה. <b>לחיצה על אקורד</b> משנה, מזיזה או מוחקת אותו. אפשר גם <b>לגרור אקורד</b> לאורך השורה, והוא נצמד לאות שמתחתיו. <b>לחיצה על שם של חלק או על הערה</b> משנה או מוחקת אותם. את המילים עצמן עורכים במצב "טקסט".</p>
       <div class="ve-tools" id="ve-tools"><button type="button" class="btn small" data-vt="sec">+ חלק בשיר</button><button type="button" class="btn small" data-vt="txt">+ הערה בתוך השיר</button><button type="button" class="btn small" data-vt="link">+ קישור להקלטה</button><span class="ve-tmsg" id="ve-tmsg"></span></div>
       <div class="ied-ve-wrap" id="ied-ve-wrap"><div class="ied-ve" id="ied-ve"></div></div>
     </div>
@@ -6258,6 +6377,7 @@ function rangeFor(ms){ const lo = Math.min(...ms), hi = Math.max(...ms); let fro
 const rootMidi = r => 48 + r;
 
 function renderPiano(){
+  inlHome();
   const ok = !!T.data;
   $('#pn-locked').hidden = ok; $('#pn-dash').hidden = !ok;
   if(!ok) return;
@@ -6723,6 +6843,7 @@ function psView(){
     const {html, used} = renderSheetHTML(d.sheet, PN.shift, d.key), el = $('#ps-sheet');
     el.innerHTML = html; el.dir = d.dir || (hasHebrew(d.sheet) ? 'rtl' : 'ltr'); el.style.fontSize = SH.size + 'px';
     $('#ps-chords').innerHTML = pianoStripHTML(used);
+    if(T.data) snApply('#ps-sheet', it.id, d.sheet, renderPiano);
   }
 }
 async function onPsong(e){
@@ -7694,19 +7815,39 @@ function veEnter(){
 }
 function wireVE(root){
   const wrap = $('#ied-ve-wrap');
+  /* גרירת אקורד: האקורד נצמד לאות הקרובה ביותר בשורה, תוך כדי תנועה */
+  const nearestChar = (x, y, li0) => {
+    const lines = $$('#ied-ve .ve-line'); if(!lines.length) return null;
+    let line = lines.find(l => { const r = l.getBoundingClientRect(); return y >= r.top - 4 && y <= r.bottom + 4; });
+    if(!line){ const src = lines.find(l => +l.dataset.li === li0); const r = src && src.getBoundingClientRect(); if(src && Math.abs(y - (r.top + r.bottom) / 2) < 70) line = src; }
+    if(!line) return null;
+    let best = null, bd = Infinity;
+    line.querySelectorAll('.ve-c').forEach(c => { const r = c.getBoundingClientRect(); const cx = VE.dir === 'rtl' ? r.right - 2 : r.left + 2; const d = Math.abs(x - cx) + (y < r.top - 40 || y > r.bottom + 40 ? 50 : 0); if(d < bd){ bd = d; best = c; } });
+    return best;
+  };
   wrap.addEventListener('pointerdown', e => {
     const ch = e.target.closest('.ve-ch:not(.none)'); if(!ch || e.button) return;
-    VE.drag = {li:+ch.dataset.li, ci:+ch.dataset.ci, x:e.clientX, y:e.clientY, el:ch, moved:false};
-    const move = ev => { if(!VE.drag) return; if(Math.hypot(ev.clientX - VE.drag.x, ev.clientY - VE.drag.y) > 6){ VE.drag.moved = true; ch.classList.add('dragging'); const t = document.elementFromPoint(ev.clientX, ev.clientY); $$('.ve-c.drop').forEach(x => x.classList.remove('drop')); const c = t && t.closest('.ve-c'); if(c) c.classList.add('drop'); } };
-    const up = ev => {
-      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
-      const d = VE.drag; VE.drag = null; ch.classList.remove('dragging'); $$('.ve-c.drop').forEach(x => x.classList.remove('drop'));
-      if(!d || !d.moved) return;
-      const t = document.elementFromPoint(ev.clientX, ev.clientY), c = t && t.closest('.ve-c');
-      if(c){ const src = VE.model[d.li], chord = src.chords.splice(d.ci, 1)[0], dst = VE.model[+c.dataset.li]; src.dirty = true; dst.dirty = true; dst.chords.push({pos:+c.dataset.i, name:chord.name}); veClose(); veCommit(); }
-      VE.suppressClick = true; setTimeout(() => { VE.suppressClick = false; }, 50);
+    e.preventDefault();
+    VE.drag = {li:+ch.dataset.li, ci:+ch.dataset.ci, x:e.clientX, y:e.clientY, el:ch, moved:false, ghost:null, target:null};
+    try{ ch.setPointerCapture(e.pointerId); }catch(err){}
+    const move = ev => {
+      const d = VE.drag; if(!d) return;
+      if(!d.moved && Math.hypot(ev.clientX - d.x, ev.clientY - d.y) < 5) return;
+      if(!d.moved){ d.moved = true; ch.classList.add('dragging'); veClose(); d.ghost = document.createElement('div'); d.ghost.className = 've-ghost'; d.ghost.textContent = ch.textContent; d.ghost.dir = 'ltr'; document.body.appendChild(d.ghost); }
+      d.ghost.style.left = ev.clientX + 'px'; d.ghost.style.top = ev.clientY + 'px';
+      const c = nearestChar(ev.clientX, ev.clientY, d.li);
+      if(c !== d.target){ $$('.ve-c.drop').forEach(x => x.classList.remove('drop')); d.target = c; if(c) c.classList.add('drop'); }
     };
-    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+    const up = () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+      const d = VE.drag; VE.drag = null; ch.classList.remove('dragging'); $$('.ve-c.drop').forEach(x => x.classList.remove('drop'));
+      if(d && d.ghost) d.ghost.remove();
+      if(!d || !d.moved) return;
+      const c = d.target;
+      if(c){ const src = VE.model[d.li], chord = src.chords.splice(d.ci, 1)[0], dst = VE.model[+c.dataset.li]; src.dirty = true; dst.dirty = true; dst.chords.push({pos:+c.dataset.i, name:chord.name}); veCommit(); }
+      VE.suppressClick = true; setTimeout(() => { VE.suppressClick = false; }, 60);
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
   });
   root.addEventListener('click', e => { const t = e.target.closest('[data-vt]'); if(t) vePlace(t.dataset.vt); });
   wrap.addEventListener('click', e => {
@@ -8195,6 +8336,7 @@ function init(){
   $('#dlg-note').addEventListener('close', () => { NOTE_CTX = 'band'; });
   $('#nt-del').addEventListener('click', async () => { const n = B.editNote && B.editNote.item; if(!n || !confirm('למחוק את ההערה?')) return;
     if(NOTE_CTX === 'youth'){ try{ await yDel(n.id, $('#nt-err')); $('#dlg-note').close(); renderYouth(); }catch(err){} return; }
+    if(NOTE_CTX === 'song'){ $('#dlg-note').close(); snDelete(n.id); return; }
     $('#dlg-note').close(); bDel(n.id); });
   $('#fcd').addEventListener('submit', saveCand);
   $('#cdf-del').addEventListener('click', deleteCand);
