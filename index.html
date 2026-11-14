@@ -2584,7 +2584,7 @@ function serverHandle(req, store, teacherPassword){
   }
   if(a === 'publicLandingSubmit'){
     if(String(req.website || '')) return {done:true};
-    const it = landingItem(), d = it ? nContent(it).data : {}, f = d.form || {};
+    const it = landingItem(), d = it ? nContent(it).data : {}, isReg = String(req.form || '') === 'reg', f = (isReg ? d.reg : d.form) || {};
     if(f.open === false) throw new Error('ההרשמה סגורה כרגע.');
     const qs = Array.isArray(f.questions) && f.questions.length ? f.questions : null;
     const ans = Array.isArray(req.answers) ? req.answers.slice(0, 25) : [];
@@ -2592,13 +2592,26 @@ function serverHandle(req, store, teacherPassword){
     if(qs) qs.forEach(q => { if(q.required && !answers.some(x => x.label === q.label && x.value.trim())) throw new Error('חסרה תשובה לשאלה: ' + q.label); });
     if(!answers.some(x => x.value.trim())) throw new Error('הטופס ריק.');
     const pick = re => (answers.find(x => re.test(x.label) && x.value.trim()) || {}).value || '';
-    const lead = {answers, name:pick(/שם/), phone:pick(/טלפון|נייד|וואטסאפ/), status:'new', createdAt:now()};
+    let plan = null, signer = '';
+    if(isReg){
+      const plans = (Array.isArray(f.plans) ? f.plans : []).filter(p => p && String(p.label || '').trim());
+      if(plans.length){ plan = plans.find(p => String(p.id) === String(req.planId || '')) || (plans.length === 1 ? plans[0] : null); if(!plan) throw new Error('צריך לבחור מסלול תשלום.'); }
+      if(String(f.terms || '').trim()){
+        if(req.terms !== true) throw new Error('כדי להירשם צריך לאשר את התקנון.');
+        signer = String(req.signer || '').trim().slice(0, 80);
+        if(f.signerLabel && !signer) throw new Error('צריך לכתוב את שם המאשר/ת.');
+      }
+    }
+    const payUrl = plan && /^https?:\/\//i.test(String(plan.url || '')) ? String(plan.url) : '';
+    const lead = {answers, name:pick(/שם המשתתף|שם התלמיד|שם/), phone:pick(/טלפון|נייד|וואטסאפ/), status:'new', createdAt:now(), type:isReg ? 'reg' : 'interest'};
+    if(isReg){ Object.assign(lead, {plan:plan ? String(plan.label) : '', price:plan ? String(plan.price || '') : '', payUrl, termsAccepted:String(f.terms || '').trim() ? true : false, termsAt:now(), termsVersion:String(f.termsUpdated || ''), signer}); }
     store.insert('Youth', {id:newId(), groupId:'', kind:'lead', data:JSON.stringify(lead), authorId:'form', updatedAt:now()});
     const S = settingsObj();
     const to = String(f.notifyEmail || '').split(/[\s,;]+/).concat(store.all('YouthPeople').map(nPerson).filter(p => p.staff && p.email).map(p => p.email)).filter(x => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
     const uniq = to.filter((x, i) => to.indexOf(x) === i).slice(0, 20).join(',');
-    if(uniq) mail(uniq, 'הרשמה חדשה להרכב: ' + (lead.name || 'בלי שם'), 'הגיעה הרשמה חדשה דרך דף ההרכב.\n\n' + answers.map(x => x.label + ': ' + (x.value || '-')).join('\n') + (S.siteUrl ? '\n\nלכל הפניות: ' + S.siteUrl + '#youth' : ''));
-    return {done:true, message:String(f.success || 'תודה! קיבלנו את ההרשמה ונחזור אליכם בהקדם.')};
+    const extra = isReg ? '\n\nמסלול: ' + (lead.plan || '-') + (lead.price ? ' (' + lead.price + ')' : '') + '\nאישור תקנון: ' + (lead.termsAccepted ? 'כן' + (signer ? ', על ידי ' + signer : '') : 'אין תקנון') + '\nשימו לב: המייל נשלח לפני התשלום. כדאי לבדוק בעמוד התשלום שהתשלום עבר.' : '';
+    if(uniq) mail(uniq, (isReg ? 'הרשמה מלאה לסינקופה: ' : 'הרשמה חדשה להרכב: ') + (lead.name || 'בלי שם'), (isReg ? 'הגיעה הרשמה מלאה דרך טופס ההרשמה והתשלום.' : 'הגיעה הרשמה חדשה דרך דף ההרכב.') + '\n\n' + answers.map(x => x.label + ': ' + (x.value || '-')).join('\n') + extra + (S.siteUrl ? '\n\nלכל הפניות: ' + S.siteUrl + '#youth' : ''));
+    return {done:true, payUrl, message:String(f.success || (isReg ? 'ההרשמה נקלטה. תודה!' : 'תודה! קיבלנו את ההרשמה ונחזור אליכם בהקדם.'))};
   }
   if(a.indexOf('youth') === 0){
     const pin = String(req.pin || '').trim();
@@ -6989,15 +7002,17 @@ function ymSave(kind, data){
   }, 600);
 }
 const nis = v => '₪' + (Math.round((Number(v) || 0) * 100) / 100).toLocaleString('he-IL');
-const LEAD_ST = [['new', 'חדש'], ['contacted', 'דיברנו'], ['trial', 'הוזמן לחזרת ניסיון'], ['joined', 'הצטרף'], ['no', 'לא רלוונטי']];
+const LEAD_ST = [['new', 'חדש'], ['contacted', 'דיברנו'], ['trial', 'הוזמן לחזרת ניסיון'], ['paid', 'שילם'], ['joined', 'הצטרף'], ['no', 'לא רלוונטי']];
 function landingUrl(){ return siteBase() + 'ensemble.html'; }
+function regUrl(){ return siteBase() + 'register.html'; }
 function yLeadsHTML(){
   const leads = yAll('lead').sort((a, b) => String(b.data.createdAt).localeCompare(String(a.data.createdAt)));
   const newCount = leads.filter(l => (l.data.status || 'new') === 'new').length;
   return `<section class="sub-panel" style="margin-bottom:18px">
-    <div class="spread"><h3>הרשמות מדף ההרכב ${newCount ? `<span class="chip due soon">${newCount} חדשות</span>` : ''}</h3><div class="row"><a class="btn small" href="${esc(landingUrl())}" target="_blank" rel="noopener">לדף ההרכב</a><a class="btn small" href="${esc(landingUrl())}?edit" target="_blank" rel="noopener">עריכת הדף</a></div></div>
-    ${leads.length ? `<div class="lead-list">${leads.map(l => { const d = l.data; return `<details class="lead-item ${(d.status || 'new') === 'new' ? 'new' : ''}"><summary><b>${esc(d.name || 'בלי שם')}</b><span class="muted">${esc(d.phone || '')}${d.phone ? ', ' : ''}${fmtDate(d.createdAt)}</span><span class="chip">${esc((LEAD_ST.find(x => x[0] === (d.status || 'new')) || LEAD_ST[0])[1])}</span></summary>
-      <dl class="lead-ans">${(d.answers || []).map(x => `<dt>${esc(x.label)}</dt><dd>${esc(x.value || '-')}</dd>`).join('')}</dl>
+    <div class="spread"><h3>הרשמות ופניות ${newCount ? `<span class="chip due soon">${newCount} חדשות</span>` : ''}</h3><div class="row"><a class="btn small" href="${esc(landingUrl())}" target="_blank" rel="noopener">לדף ההרכב</a><a class="btn small" href="${esc(landingUrl())}?edit" target="_blank" rel="noopener">עריכת הדף</a><a class="btn small" href="${esc(regUrl())}" target="_blank" rel="noopener">לטופס ההרשמה והתשלום</a><a class="btn small" href="${esc(regUrl())}?edit" target="_blank" rel="noopener">עריכת הטופס, המסלולים והתקנון</a></div></div>
+    <p class="muted" style="margin:4px 0 8px;font-size:.9rem">"התעניינות" מגיעה מהטופס הקצר בדף ההרכב. "הרשמה + תשלום" מגיעה מטופס ההרשמה המלא, אחרי אישור התקנון ולפני המעבר לתשלום. את התשלום עצמו בודקים בעמוד התשלום, ואז מסמנים "שילם".</p>
+    ${leads.length ? `<div class="lead-list">${leads.map(l => { const d = l.data, reg = d.type === 'reg'; return `<details class="lead-item ${(d.status || 'new') === 'new' ? 'new' : ''}"><summary><b>${esc(d.name || 'בלי שם')}</b><span class="chip ${reg ? 'ok' : ''}">${reg ? 'הרשמה + תשלום' : 'התעניינות'}</span><span class="muted">${esc(d.phone || '')}${d.phone ? ', ' : ''}${fmtDate(d.createdAt)}</span>${reg && d.plan ? `<span class="muted">${esc(d.plan)}</span>` : ''}<span class="chip">${esc((LEAD_ST.find(x => x[0] === (d.status || 'new')) || LEAD_ST[0])[1])}</span></summary>
+      <dl class="lead-ans">${(d.answers || []).map(x => `<dt>${esc(x.label)}</dt><dd>${esc(x.value || '-')}</dd>`).join('')}${reg ? `<dt>מסלול</dt><dd>${esc(d.plan || '-')}${d.price ? ' · ' + esc(d.price) : ''}</dd><dt>תקנון</dt><dd>${d.termsAccepted ? `אושר ב־${fmtDate(d.termsAt)}${d.signer ? ', על ידי ' + esc(d.signer) : ''}` : 'אין תקנון בטופס'}</dd>` : ''}</dl>
       <div class="row"><select data-lead-st="${esc(l.id)}" aria-label="סטטוס">${LEAD_ST.map(([v, t]) => `<option value="${v}" ${v === (d.status || 'new') ? 'selected' : ''}>${t}</option>`).join('')}</select>
       ${d.phone ? `<a class="btn small" href="https://wa.me/${esc(String(d.phone).replace(/\D/g, '').replace(/^0/, '972'))}" target="_blank" rel="noopener">וואטסאפ</a><a class="btn small" href="tel:${esc(String(d.phone).replace(/[^\d+]/g, ''))}">חיוג</a>` : ''}
       <button class="btn small ghost danger" data-lead-del="${esc(l.id)}">מחיקה</button></div></details>`; }).join('')}</div>` : '<p class="muted">עוד לא הגיעו הרשמות. הטופס נמצא בתחתית דף ההרכב.</p>'}
