@@ -939,6 +939,13 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .snote-sheet .ln[data-l]{ cursor:pointer; }
 .snote-sheet .ln.mk{ width:fit-content; max-width:100%; border-radius:4px; padding-inline:3px; margin-inline:-3px; }
 .snote-sheet .ln.mk-yellow{ background:var(--mk-yellow); } .snote-sheet .ln.mk-green{ background:var(--mk-green); } .snote-sheet .ln.mk-pink{ background:var(--mk-pink); } .snote-sheet .ln.mk-blue{ background:var(--mk-blue); } .snote-sheet .ln.mk-orange{ background:var(--mk-orange); }
+.cd-dot.root, .cd-mark.root{ fill:#e0532f; }
+.cd-mark.root{ stroke:#e0532f; }
+.cshape-wrap{ display:block; }
+.cshape-h{ margin:18px 0 8px; font-size:1.15rem; }
+.cshape-wrap > .cshape-h:first-child{ margin-top:4px; }
+.cname.cshape-n{ font-size:15px; line-height:1.25; white-space:normal; text-align:center; }
+.tonic-lib > summary{ cursor:pointer; padding:6px 0; }
 </style>
 </head>
 <body>
@@ -1026,12 +1033,12 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
   <section class="view" id="v-chords">
     <div class="view-head">
       <h2>אקורדים</h2>
-      <p>לוחצים על אקורד כדי לשמוע איך הוא אמור להישמע. נקודה היא אצבע, O הוא מיתר פתוח ו־X מיתר שלא פורטים.</p>
+      <p>לכל הרמוניה מופיעות הצורות הנפוצות שלה. כל צורה אפשר להזיז לאורך הצוואר: הנקודה הצבעונית היא הטוניקה, ולפיה יודעים איזה אקורד מנגנים. נקודה היא אצבע, O מיתר פתוח ו־X מיתר שלא פורטים. לחיצה על צורה משמיעה אותה.</p>
     </div>
     <div class="stack">
       <div class="spread">
         <div class="seg" id="c-filter"></div>
-        <input type="search" id="c-search" placeholder="חיפוש, למשל Am" style="max-width:220px" aria-label="חיפוש אקורד">
+        <input type="search" id="c-search" placeholder="חיפוש צורה לפי שם" style="max-width:220px" aria-label="חיפוש צורה">
       </div>
       <div class="seg" id="c-sub" hidden></div>
       <div class="chord-grid" id="c-grid"></div>
@@ -1651,13 +1658,13 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
   <form id="fc">
     <h3 id="fc-title">אקורד חדש</h3>
     <div class="two">
-      <label class="field">שם האקורד<input id="fc-name" required maxlength="20" style="direction:ltr;text-align:right" placeholder="Am"></label>
-      <label class="field">קטגוריה<select id="fc-cat"></select></label>
+      <label class="field" id="fc-name-l">שם האקורד<input id="fc-name" required maxlength="40" style="direction:ltr;text-align:right" placeholder="Am"></label>
+      <label class="field" id="fc-cat-l">קטגוריה<select id="fc-cat"></select></label>
     </div>
     <div class="ce-grid">
       <div class="ce-board" id="ce-board"></div>
       <div class="stack">
-        <div class="opt"><span class="opt-l">מה הלחיצה עושה</span><div class="seg" id="ce-tool"><button type="button" data-v="dot">נקודה</button><button type="button" data-v="finger">מספר אצבע</button><button type="button" data-v="barre">ברר</button></div></div>
+        <div class="opt"><span class="opt-l">מה הלחיצה עושה</span><div class="seg" id="ce-tool"><button type="button" data-v="dot">נקודה</button><button type="button" data-v="finger">מספר אצבע</button><button type="button" data-v="barre">ברר</button><button type="button" data-v="root">טוניקה</button></div></div>
         <p class="hint" id="ce-hint"></p>
         <p class="hint">לחיצה מעל הקו העליון של מיתר מחליפה בין מיתר פתוח (O) למיתר שלא מנגנים (X).</p>
         <label class="field" style="max-width:170px">הסריג הראשון בתרשים<input type="number" id="ce-base" min="1" max="15"></label>
@@ -1666,7 +1673,7 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
     </div>
     <label class="field">הערה לתלמידים <small>(לא חובה)</small><input id="fc-note" maxlength="120" placeholder="למשל: האגודל מאחורי הצוואר"></label>
     <p class="err" id="fc-err"></p>
-    <div class="row"><button class="btn primary" type="submit">שמור אקורד</button><button class="btn ghost" type="button" data-close>ביטול</button><button class="btn danger" type="button" id="fc-del" style="margin-inline-start:auto">מחיקת האקורד</button></div>
+    <div class="row"><button class="btn primary" type="submit" id="fc-save">שמור אקורד</button><button class="btn ghost" type="button" data-close>ביטול</button><button class="btn danger" type="button" id="fc-del" style="margin-inline-start:auto">מחיקת האקורד</button></div>
   </form>
 </dialog>
 
@@ -2191,7 +2198,7 @@ function chordModel(d){
   const fingers = (d.fingers || [0,0,0,0,0,0]).map(Number);
   let barre = d.barre && d.barre.fret ? {fret:Number(d.barre.fret), from:Number(d.barre.from), to:Number(d.barre.to)} : null;
   if(!barre && d.b){ const pos = frets.filter(x => x > 0), bf = Math.min(...pos); barre = {fret:bf, from:frets.indexOf(bf), to:frets.lastIndexOf(bf)}; }
-  return {id:d.id || '', name:d.name || d.n || '', frets, fingers, barre, base:Number(d.base) || 0, categoryId:d.categoryId || '', note:d.note || '', cat:d.c || ''};
+  return {id:d.id || '', name:d.name || d.n || '', frets, fingers, barre, base:Number(d.base) || 0, categoryId:d.categoryId || '', note:d.note || '', cat:d.c || '', shape:!!d.shape, roots:(d.roots || []).map(Number)};
 }
 function chordBase(m){
   if(m.base) return m.base;
@@ -2208,7 +2215,7 @@ function chordSVG(m, opts = {}){
   else s += `<text class="cd-txt" x="${L - 4}" y="${T + fh * .65}" text-anchor="end">${base}</text>`;
   m.frets.forEach((f, i) => {
     if(f === -1){ const cx = x(i), y = T - 13; s += `<path class="cd-mark" d="M${cx - 4} ${y - 4}L${cx + 4} ${y + 4}M${cx + 4} ${y - 4}L${cx - 4} ${y + 4}"/>`; }
-    else if(f === 0) s += `<circle class="cd-mark" cx="${x(i)}" cy="${T - 13}" r="4.5"/>`;
+    else if(f === 0) s += `<circle class="cd-mark${(m.roots || []).includes(i) ? ' root' : ''}" cx="${x(i)}" cy="${T - 13}" r="4.5"/>`;
   });
   if(m.barre && inWin(m.barre.fret)){
     const a = Math.min(m.barre.from, m.barre.to), b = Math.max(m.barre.from, m.barre.to), y = cy(m.barre.fret);
@@ -2216,7 +2223,7 @@ function chordSVG(m, opts = {}){
   }
   m.frets.forEach((f, i) => {
     if(f > 0 && inWin(f)){
-      s += `<circle class="cd-dot" cx="${x(i)}" cy="${cy(f)}" r="6.5"/>`;
+      s += `<circle class="cd-dot${(m.roots || []).includes(i) ? ' root' : ''}" cx="${x(i)}" cy="${cy(f)}" r="6.5"/>`;
       if(m.fingers[i]) s += `<text class="cd-fing" x="${x(i)}" y="${cy(f) + 3.5}" text-anchor="middle">${m.fingers[i]}</text>`;
     }
   });
@@ -2229,9 +2236,9 @@ function chordSVG(m, opts = {}){
   return s + '</svg>';
 }
 const chordKey = c => c.id || ('b:' + c.name);
-function findChord(key){ return currentChords().find(c => chordKey(c) === key) || (key.indexOf('b:') === 0 ? currentChords().find(c => c.name === key.slice(2)) : null); }
+function findChord(key){ return currentChords().find(c => chordKey(c) === key) || chordShapes().find(c => chordKey(c) === key) || (key.indexOf('b:') === 0 ? currentChords().find(c => c.name === key.slice(2)) : null); }
 function renderChords(){
-  const custom = hasCustomChords(), chords = currentChords();
+  const custom = true, chords = chordShapes();
   const catIds = libOf('ccat').map(c => c.id);
   let filters = CHORD_FILTERS, subs = [];
   if(custom){
@@ -2253,10 +2260,19 @@ function renderChords(){
     if(chordFilter === 'none') return !catIds.includes(ch.categoryId);
     return chordSub ? ch.categoryId === chordSub : ccatTree(chordFilter).includes(ch.categoryId);
   };
-  const list = chords.filter(ch => match(ch) && (!q || ch.name.toLowerCase().startsWith(q)));
-  $('#c-grid').innerHTML = list.length
-    ? list.map(c => `<button class="chord" data-key="${esc(chordKey(c))}" aria-label="אקורד ${esc(c.name)}, לחצו לשמיעה"><span class="cname">${esc(c.name)}</span>${chordSVG(c)}${c.note ? `<span class="cnote">${esc(c.note)}</span>` : ''}</button>`).join('')
-    : `<p class="empty">${chords.length ? 'לא נמצא אקורד בשם הזה. נסו לחפש רק את האות, למשל A.' : 'המורה עוד לא הוסיף אקורדים.'}</p>`;
+  const list = chords.filter(ch => match(ch) && (!q || ch.name.toLowerCase().includes(q)));
+  const catName = id => { const c = libOf('ccat').find(x => x.id === id); return c ? c.data.name : ''; };
+  const card = c => `<button class="chord" data-key="${esc(chordKey(c))}" aria-label="${esc(c.name)}, לחצו לשמיעה"><span class="cname cshape-n" dir="auto">${esc(c.name)}</span>${chordSVG(c)}${c.note ? `<span class="cnote">${esc(c.note)}</span>` : ''}</button>`;
+  let gridHTML;
+  if(!list.length) gridHTML = `<p class="empty">${chords.length ? 'לא נמצאה צורה בשם הזה.' : T.data ? 'עוד אין צורות. יוצרים אותן באזור המורה, בלשונית "ספריית אקורדים", בכפתור "צורה חדשה".' : 'המורה עוד לא הוסיף צורות אקורדים.'}</p>`;
+  else if(chordFilter === 'all' && !q){
+    const order = [], groups = {};
+    list.forEach(c => { const top = catIds.includes(c.categoryId) ? (catParent(libOf('ccat').find(x => x.id === c.categoryId)) || c.categoryId) : ''; if(!groups[top]){ groups[top] = []; order.push(top); } groups[top].push(c); });
+    const tops = ccatTops().map(t => t.id).filter(id => groups[id]).concat(order.filter(id => !ccatTops().some(t => t.id === id)));
+    gridHTML = tops.map(id => `<h3 class="cshape-h">${esc(catName(id) || 'נוספים')}</h3><div class="chord-grid">${groups[id].map(card).join('')}</div>`).join('');
+  } else gridHTML = `<div class="chord-grid">${list.map(card).join('')}</div>`;
+  $('#c-grid').classList.remove('chord-grid'); $('#c-grid').classList.add('cshape-wrap');
+  $('#c-grid').innerHTML = gridHTML;
 }
 function flash(el){ el.classList.add('playing'); setTimeout(() => el.classList.remove('playing'), 600); }
 
@@ -3395,8 +3411,9 @@ const SHAPE_FRETS = 17;
 function libOf(kind){
   return LIB.items.filter(i => i.kind === kind).sort((a, b) => (Number(a.data.order) || 0) - (Number(b.data.order) || 0) || String(a.data.name).localeCompare(String(b.data.name), 'he'));
 }
-function hasCustomChords(){ return LIB.items.some(i => i.kind === 'chord'); }
-function currentChords(){ return hasCustomChords() ? libOf('chord').map(i => chordModel(Object.assign({}, i.data, {id:i.id}))) : CHORDS.map(chordModel); }
+function hasCustomChords(){ return LIB.items.some(i => i.kind === 'chord' && !i.data.shape); }
+function currentChords(){ return hasCustomChords() ? libOf('chord').filter(i => !i.data.shape).map(i => chordModel(Object.assign({}, i.data, {id:i.id}))) : CHORDS.map(chordModel); }
+function chordShapes(){ return libOf('chord').filter(i => i.data.shape).map(i => chordModel(Object.assign({}, i.data, {id:i.id}))); }
 function shapeModel(d){
   return {
     id:d.id || '', name:d.name || '', categoryId:d.categoryId || '', description:d.description || '',
@@ -3554,10 +3571,25 @@ function catHead(g, kind, sub){
 function chordCardsHTML(list){
   return list.length ? `<div class="chord-grid">${list.map(c => `<button class="chord" data-act="edit-chord" data-id="${esc(c.id)}" aria-label="עריכת ${esc(c.name)}"><span class="cname">${esc(c.name)}</span>${chordSVG(c)}<span class="cnote">לחצו לעריכה</span></button>`).join('')}</div>` : '<p class="empty">אין עדיין אקורדים כאן.</p>';
 }
+function shapesLibHTML(){
+  const shapes = chordShapes(), tops = ccatTops(), ids = libOf('ccat').map(c => c.id);
+  const cards = list => list.length ? `<div class="chord-grid">${list.map(c => `<button class="chord" data-act="edit-chord" data-id="${esc(c.id)}" aria-label="עריכת ${esc(c.name)}"><span class="cname cshape-n" dir="auto">${esc(c.name)}</span>${chordSVG(c)}<span class="cnote">לחצו לעריכה</span></button>`).join('')}</div>` : '<p class="muted" style="margin:4px 0 0">עוד אין כאן צורות.</p>';
+  const head = (cat, n, sub) => `<div class="spread"><${sub ? 'h4' : 'h3'}>${esc(cat.data.name)} <small class="muted">${n}</small></${sub ? 'h4' : 'h3'}><button class="btn small" data-act="new-cshape" data-cat="${esc(cat.id)}">צורה חדשה כאן</button></div>`;
+  let h = `<section class="lib-group cshape-lib"><div class="spread"><h3>צורות לפי הרמוניה</h3><button class="btn primary" data-act="new-cshape">צורה חדשה</button></div>
+    <p class="muted" style="max-width:70ch">רק הצורות מופיעות לתלמידים בדף "אקורדים", בלי טוניקות. נותנים לכל צורה שם משלך (למשל "צורת E עם ברר"), בוחרים לה הרמוניה (מז׳ור, מינור, 7…), ומסמנים בכלי "טוניקה" את המיתר שעליו נמצאת הטוניקה.</p>`;
+  if(!tops.length) h += '<p class="muted">כדאי קודם ליצור קטגוריות להרמוניות (מז׳ור, מינור, 7…) בכפתור "קטגוריה חדשה".</p>';
+  h += tops.map(top => { const kids = ccatKids(top.id); return `<div class="lib-sub">${head(top, shapes.filter(c => ccatTree(top.id).includes(c.categoryId)).length)}${cards(shapes.filter(c => c.categoryId === top.id))}${kids.map(k => `<div class="lib-sub">${head(k, shapes.filter(c => c.categoryId === k.id).length, true)}${cards(shapes.filter(c => c.categoryId === k.id))}</div>`).join('')}</div>`; }).join('');
+  const rest = shapes.filter(c => !ids.includes(c.categoryId));
+  if(rest.length) h += `<div class="lib-sub"><h3>בלי הרמוניה</h3>${cards(rest)}</div>`;
+  return h + '</section>';
+}
 function renderTeacherChords(){
   const custom = hasCustomChords();
-  const chords = libOf('chord').map(i => chordModel(Object.assign({}, i.data, {id:i.id})));
-  let h = `<div class="spread"><h2>ספריית האקורדים</h2><div class="row">${custom ? '<button class="btn" data-act="arrange-chords">השלמה וסידור לפי הקטגוריות</button>' : ''}<button class="btn" data-act="new-cat" data-kind="ccat">קטגוריה חדשה</button><button class="btn primary" data-act="new-chord">אקורד חדש</button></div></div>`;
+  const chords = libOf('chord').filter(i => !i.data.shape).map(i => chordModel(Object.assign({}, i.data, {id:i.id})));
+  let h = `<div class="spread"><h2>ספריית האקורדים</h2><div class="row"><button class="btn" data-act="new-cat" data-kind="ccat">קטגוריה חדשה</button></div></div>`;
+  h += shapesLibHTML();
+  h += `<details class="lib-group tonic-lib"><summary><b>אקורדים לפי טוניקה</b> <span class="muted">(${chords.length}) · לא מוצגים לתלמידים בדף האקורדים, אבל משמשים לתרשימים ולצליל בדפי השירים</span></summary>
+    <div class="row" style="margin:10px 0">${custom ? '<button class="btn" data-act="arrange-chords">השלמה וסידור לפי הקטגוריות</button>' : ''}<button class="btn" data-act="new-chord">אקורד חדש</button></div>`;
   if(!custom) h += `<div class="banner" style="margin:14px 0 0">כרגע התלמידים רואים את הספרייה הבסיסית: כל האקורדים בכל 12 הטוניקות, בקטגוריות מז׳ור, מינור, 7, M7 ו־m7. אפשר לייבא אותה לכאן ולערוך כל אקורד, או לבנות ספרייה משלך מאפס. מהרגע שתשמור אקורד ראשון, התלמידים יראו רק את האקורדים שלך.<div class="row" style="margin-top:10px"><button class="btn primary" data-act="import-chords">ייבוא הספרייה הבסיסית</button></div></div>`;
   else h += `<p class="muted" style="margin-top:6px;max-width:66ch">"השלמה וסידור" מוסיף את האקורדים שחסרים לך מהספרייה הבסיסית, ומכניס אקורדים לקטגוריות מז׳ור, מינור, 7, M7 ו־m7. אקורדים שכבר שייכת לקטגוריות משלך לא יזוזו.</p>`;
   const tops = ccatTops(), ids = libOf('ccat').map(c => c.id);
@@ -3572,7 +3604,10 @@ function renderTeacherChords(){
     const rest = chords.filter(c => !ids.includes(c.categoryId));
     if(rest.length || !tops.length) h += `<section class="lib-group">${catHead({cat:null, list:rest}, 'ccat')}${chordCardsHTML(rest)}</section>`;
   }
+  h += '</details>';
+  const wasOpen = $('#t-chords .tonic-lib') && $('#t-chords .tonic-lib').open;
   $('#t-chords').innerHTML = h;
+  if(wasOpen) $('#t-chords .tonic-lib').open = true;
 }
 function renderTeacherShapes(){
   const cats = libOf('scat'), shapes = allShapes();
@@ -3594,6 +3629,7 @@ async function onTeacherLib(e){
     const r = await tCall('teacherDeleteContent', {id}); LIB.items = r.items; refreshLib();
   }
   if(act === 'new-chord') openChordDlg(null, b.dataset.cat || '');
+  if(act === 'new-cshape') openChordDlg(null, b.dataset.cat || '', true);
   if(act === 'edit-chord') openChordDlg(item);
   if(act === 'new-shape') openShapeDlg(null, b.dataset.cat || '');
   if(act === 'edit-shape') openShapeDlg(item);
@@ -3620,7 +3656,7 @@ async function arrangeChords(btn){
   });
   const legacy = new Set(cats.filter(c => ['ספטאקורדים'].includes(c.data.name)).map(c => c.id));
   const known = new Set(Object.values(catId));
-  const existing = libOf('chord');
+  const existing = libOf('chord').filter(i => !i.data.shape);
   existing.forEach(i => {
     const q = chordClass(i.data.name); if(!q) return;
     const cur = i.data.categoryId || '';
@@ -3667,14 +3703,23 @@ function catOptions(kind, sel){
 const CE = {m:null, orig:null, tool:'dot'};
 const CE_HINTS = {
   dot:'לחיצה על משבצת מניחה שם נקודה. לחיצה על נקודה קיימת מורידה אותה.',
+  root:'לחיצה על נקודה או על מיתר פתוח מסמנת אותם כטוניקה (צבעוני). לחיצה נוספת מבטלת.',
   finger:'לחיצה על נקודה מחליפה את מספר האצבע: 1, 2, 3, 4, ובלי מספר.',
   barre:'לחיצה על משבצת יוצרת ברר מהמיתר הזה ועד המיתר הדק. לחיצה נוספת באותו מקום מבטלת אותו.'
 };
-function openChordDlg(item, cat){
+function openChordDlg(item, cat, asShape){
   CE.orig = item || null; CE.tool = 'dot';
+  CE.shape = item ? !!item.data.shape : !!asShape;
   CE.m = item ? chordModel(Object.assign({}, item.data, {id:item.id})) : chordModel({name:'', frets:[0,0,0,0,0,0], categoryId:cat || ''});
   CE.m.base = chordBase(CE.m);
-  $('#fc-title').textContent = item ? 'עריכת אקורד' : 'אקורד חדש';
+  $('#fc-title').textContent = CE.shape ? (item ? 'עריכת צורה' : 'צורה חדשה') : (item ? 'עריכת אקורד' : 'אקורד חדש');
+  $('#fc-name-l').firstChild.textContent = CE.shape ? 'שם הצורה' : 'שם האקורד';
+  $('#fc-name').placeholder = CE.shape ? 'למשל: צורת E עם ברר' : 'Am';
+  $('#fc-name').style.direction = CE.shape ? '' : 'ltr';
+  $('#fc-cat-l').firstChild.textContent = CE.shape ? 'הרמוניה' : 'קטגוריה';
+  $('#ce-tool [data-v=root]').hidden = !CE.shape;
+  $('#fc-del').textContent = CE.shape ? 'מחיקת הצורה' : 'מחיקת האקורד';
+  $('#fc-save').textContent = CE.shape ? 'שמור צורה' : 'שמור אקורד';
   $('#fc-name').value = CE.m.name;
   $('#fc-cat').innerHTML = catOptions('ccat', CE.m.categoryId);
   $('#fc-note').value = CE.m.note;
@@ -3693,10 +3738,17 @@ function onCEClick(e){
   const m = CE.m;
   if(r.dataset.top !== undefined){
     const i = Number(r.dataset.top);
-    m.frets[i] = m.frets[i] === 0 ? -1 : 0; m.fingers[i] = 0;
+    if(CE.tool === 'root' && m.frets[i] === 0){ m.roots = m.roots.includes(i) ? m.roots.filter(x => x !== i) : m.roots.concat([i]); renderCE(); return; }
+    m.frets[i] = m.frets[i] === 0 ? -1 : 0; m.fingers[i] = 0; m.roots = m.roots.filter(x => x !== i);
     renderCE(); return;
   }
   const i = Number(r.dataset.s), fret = m.base + Number(r.dataset.r);
+  if(CE.tool === 'root'){
+    if(m.frets[i] < 0) return;
+    if(m.frets[i] !== fret && m.frets[i] !== 0){ m.frets[i] = fret; m.fingers[i] = 0; }
+    m.roots = m.roots.includes(i) ? m.roots.filter(x => x !== i) : m.roots.concat([i]);
+    renderCE(); return;
+  }
   if(CE.tool === 'dot'){
     if(m.frets[i] === fret){ m.frets[i] = 0; m.fingers[i] = 0; }
     else { m.frets[i] = fret; m.fingers[i] = 0; pluck(midiFreq(OPEN[i] + fret), 0, .3); }
@@ -3718,13 +3770,14 @@ function onCEClick(e){
 async function saveChord(e){
   e.preventDefault();
   const name = $('#fc-name').value.trim();
-  if(!name){ $('#fc-err').textContent = 'צריך לתת לאקורד שם.'; return; }
+  if(!name){ $('#fc-err').textContent = CE.shape ? 'צריך לתת לצורה שם.' : 'צריך לתת לאקורד שם.'; return; }
   const m = CE.m, o = CE.orig;
   const data = {name, categoryId:$('#fc-cat').value, frets:m.frets, fingers:m.fingers, barre:m.barre, base:m.base, note:$('#fc-note').value.trim(), order:o ? o.data.order : Date.now()};
+  if(CE.shape){ data.shape = true; data.roots = m.roots.filter(i => m.frets[i] >= 0); }
   try{ await saveItems([{id:o ? o.id : '', kind:'chord', data}], $('#fc-err')); $('#dlg-chord').close(); }catch(err){}
 }
 async function deleteChord(){
-  if(!CE.orig || !confirm(`למחוק את האקורד ${CE.orig.data.name}?`)) return;
+  if(!CE.orig || !confirm(`למחוק את ${CE.shape ? 'הצורה' : 'האקורד'} "${CE.orig.data.name}"?`)) return;
   try{ const r = await tCall('teacherDeleteContent', {id:CE.orig.id}, $('#fc-err')); LIB.items = r.items; refreshLib(); $('#dlg-chord').close(); }catch(err){}
 }
 
