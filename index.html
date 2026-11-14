@@ -458,7 +458,10 @@ a.btn{ text-decoration:none; display:inline-flex; align-items:center; }
 .ncard-acts button.del{ color:var(--red); }
 .ncard-t{ white-space:pre-line; color:var(--ink); }
 .ncard-q{ font-size:12px; color:var(--ink-2); margin-bottom:2px; }
-.inline-notes{ display:grid; gap:6px; margin:4px 0 10px; white-space:normal; position:sticky; left:0; right:0; }
+.inline-notes{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin:6px 0 4px; white-space:normal; }
+.inline-notes .ncard{ box-shadow:none; background:color-mix(in srgb, var(--mk-c) 13%, var(--surface)); border-radius:8px; padding:3px 10px 4px; font-size:max(14px, .78em); max-width:100%; width:fit-content; min-width:180px; }
+.inline-notes .ncard-h{ font-size:11px; margin:0; }
+.inline-notes .ncard-t{ font-weight:600; }
 .song-notes{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; }
 
 /* Form builder */
@@ -923,6 +926,8 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .ln.ln-edit{ outline:2px solid var(--blue); outline-offset:2px; border-radius:6px; }
 .sd-card .two{ margin-top:10px; }
 .sd-card{ display:grid; gap:12px; margin-top:12px; padding:16px 18px; border:2px solid color-mix(in srgb, var(--blue) 35%, var(--line)); }
+.sync-pill{ position:fixed; bottom:14px; inset-inline-start:14px; z-index:90; background:var(--ink); color:var(--surface); font:600 13px 'Assistant',Arial,sans-serif; padding:6px 12px; border-radius:999px; opacity:.85; pointer-events:none; }
+.sync-pill[hidden]{ display:none; }
 </style>
 </head>
 <body>
@@ -3439,10 +3444,15 @@ function refreshLib(){
   if(S.student) renderStudent();
 }
 function mergeItems(list){ list.forEach(it => { const i = LIB.items.findIndex(x => x.id === it.id); if(i >= 0) LIB.items[i] = it; else LIB.items.push(it); }); }
+function tDataMerge(list){ if(T.data){ ['songs:song', 'pvoices:pvoice', 'pvoices:pgrid', 'pvoices:psong', 'pvoices:plink', 'pvoices:proll'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; list.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); } }
 async function saveItems(items, errEl){
-  const r = await tCall('teacherSaveContent', {items}, errEl); mergeItems(r.items);
-  if(T.data){ ['songs:song', 'pvoices:pvoice', 'pvoices:pgrid', 'pvoices:psong', 'pvoices:plink', 'pvoices:proll'].forEach(pair => { const [key, kind] = pair.split(':'); T.data[key] = T.data[key] || []; r.items.filter(i => i.kind === kind).forEach(it => { const k = T.data[key].findIndex(x => x.id === it.id); if(k >= 0) T.data[key][k] = it; else T.data[key].push(it); }); }); }
-  refreshLib(); return r.items;
+  if(items.length > 40){ const r = await tCall('teacherSaveContent', {items}, errEl); mergeItems(r.items); tDataMerge(r.items); refreshLib(); return r.items; }
+  return fastSave(LIB.items, items, () => ({}), () => {}, (its, prev, local) => { tDataMerge(local); refreshLib();
+    return bgSend('teacher', () => api('teacherSaveContent', {password:T.pw, items:its}).then(r => { mergeItems(r.items); tDataMerge(r.items); }), err => {
+      revertSave(LIB.items, its, prev, () => {}, err);
+      if(T.data) ['songs', 'pvoices'].forEach(k => { T.data[k] = (T.data[k] || []).map(x => LIB.items.find(y => y.id === x.id)).filter(Boolean); });
+      refreshLib(); if(currentView === 'teacher') renderTeacher();
+    }); });
 }
 
 /* צורות מהמורה בצד הציבורי */
@@ -4521,7 +4531,40 @@ async function bCall(action, payload, errEl){
   catch(e){ if(errEl) errEl.textContent = e.message; else alert(e.message); throw e; }
 }
 function bMerge(list){ list.forEach(it => { const i = B.items.findIndex(x => x.id === it.id); if(i >= 0) B.items[i] = it; else B.items.push(it); }); }
-async function bSave(items, errEl){ const r = await bCall('bandSave', {items}, errEl); bMerge(r.items); renderBand(); return r.items; }
+/* שמירה מהירה: מעדכנים מיד על המסך, ושולחים לשרת ברקע */
+const SYNC = {n:0, chains:{}};
+const cid = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function syncPill(){ let b = $('#sync-pill'); if(!b){ b = document.createElement('div'); b.id = 'sync-pill'; b.className = 'sync-pill'; b.setAttribute('role', 'status'); document.body.appendChild(b); } b.textContent = 'שומר ברקע…'; b.hidden = !SYNC.n; }
+window.addEventListener('beforeunload', e => { if(SYNC.n){ e.preventDefault(); e.returnValue = ''; } });
+function bgSend(key, fn, onFail){
+  SYNC.n++; syncPill();
+  const p = (SYNC.chains[key] || Promise.resolve()).catch(() => {}).then(fn);
+  SYNC.chains[key] = p;
+  p.catch(err => onFail(err)).finally(() => { SYNC.n--; syncPill(); });
+  return p;
+}
+function fastSave(list, items, extra, render, send){
+  items = items.map(it => Object.assign({}, it, {id:it.id || cid()}));
+  const prev = items.map(it => list.find(x => x.id === it.id));
+  const local = items.map((it, k) => Object.assign({updatedAt:new Date().toISOString()}, prev[k] || extra(it), {id:it.id, kind:it.kind, data:JSON.parse(JSON.stringify(it.data || {}))}, it.groupId !== undefined ? {groupId:it.groupId} : {}));
+  local.forEach(it => { const i = list.findIndex(x => x.id === it.id); if(i >= 0) list[i] = it; else list.push(it); });
+  render();
+  const sent = send(items, prev, local);
+  local.sent = sent;
+  return local;
+}
+function revertSave(list, items, prev, render, err){
+  items.forEach((it, k) => { const i = list.findIndex(x => x.id === it.id); if(prev[k]){ if(i >= 0) list[i] = prev[k]; else list.push(prev[k]); } else if(i >= 0) list.splice(i, 1); });
+  render(); alert('השמירה לא הצליחה, והשינוי בוטל: ' + err.message);
+}
+async function bSave(items, errEl){
+  return fastSave(B.items, items, () => ({authorId:B.member.id}), renderBand, (its, prev) => bgSend('band', () => api('bandSave', {pin:B.pin, items:its}).then(r => bMerge(r.items)), err => revertSave(B.items, its, prev, renderBand, err)));
+}
+function bDel(id){
+  const i = B.items.findIndex(x => x.id === id); if(i < 0) return;
+  const old = B.items[i]; B.items.splice(i, 1); renderBand();
+  bgSend('band', () => api('bandDelete', {pin:B.pin, id}), err => { B.items.push(old); renderBand(); alert('המחיקה לא הצליחה: ' + err.message); });
+}
 async function saveSetlist(order){ await bSave([{id:'setlist', kind:'setlist', data:{order}}]); }
 async function bandLogin(pin, silent){
   $('#vb-err').textContent = ''; autoStart('#vb-login', '#vb-go', silent);
@@ -4595,7 +4638,7 @@ function noteHTML(n){
   return `<div class="ncard c-${col}" data-nid="${esc(n.id)}" data-line="${n._at ?? -1}">
     <div class="ncard-h"><b>${esc(memberName(n.authorId))}</b>${n.data.visibility === 'all' ? '' : '<span class="lock">פרטית</span>'}${mine ? `<span class="ncard-acts"><button type="button" data-act="edit-note" data-id="${esc(n.id)}">עריכה</button><button type="button" class="del" data-act="del-note" data-id="${esc(n.id)}">מחיקה</button></span>` : ''}</div>
     ${n.data.lineText && (n.data.orphan || n._at === undefined || n._at < 0) && n.data.line >= 0 ? `<div class="ncard-q">“\u2068${esc(n.data.lineText)}\u2069”</div>` : ''}
-    <div class="ncard-t">${esc(n.data.text)}</div></div>`;
+    <div class="ncard-t" dir="auto">${esc(n.data.text)}</div></div>`;
 }
 function layoutNotes(){ layoutNotesIn({wrap:'#vb-wrap', sheet:'#vb-sheet', rail:'#vb-rail', byLine:B.byLine, openLines:B.openLines, html:noteHTML}); }
 let notesResizeT = null;
@@ -4666,7 +4709,7 @@ function renderBandSong(){
     wireInline(async f => {
       const det = bandDetailsRead(), cur = s.id ? bGet(s.id) : null;
       const saved2 = await bSave([{id:s.id, kind:'bsong', data:Object.assign({}, cur ? cur.data : {shift:0}, det, f)}]);
-      loadLibrary();
+      saved2.sent.then(() => loadLibrary(), () => {});
       if(!s.id){ const nid = saved2[0].id, add = $('#sd-set') && $('#sd-set').checked; B.newSong = false; B.songId = nid; B.viewShift = 0; if(add) await saveSetlist(setlistOrder().concat([nid])); }
     }, () => { if(B.newSong){ B.newSong = false; B.songId = null; } renderBand(); });
     return;
@@ -4692,7 +4735,7 @@ function renderBandSong(){
           <button class="btn small" data-print="1" type="button">הדפסה</button><button class="btn small primary" data-act="edit-sheet" type="button">עריכה</button>
         </div></div>
       <p class="muted">${saved ? `הלהקה מנגנת ב־${esc(bandKey(s, saved))}. המקור ב־${esc(orig)}.` : `הלהקה מנגנת בסולם המקורי${orig ? `, ${esc(orig)}` : ''}.`}${dirty ? ' השינוי שעשית עכשיו מוצג רק לך, עד שתשמור אותו.' : ''}</p>
-      <div class="spread"><div class="seg" id="vb-nf">${[['all', 'כל ההערות'], ['mine', 'רק שלי'], ['pub', 'רק כלליות']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${B.filter === v}">${l}</button>`).join('')}</div><span class="hint">לחיצה על שורה בשיר מוסיפה לה הערה.</span></div>
+      <div class="spread"><div class="seg" id="vb-nf">${[['all', 'כל ההערות'], ['mine', 'רק שלי'], ['pub', 'רק כלליות']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${B.filter === v}">${l}</button>`).join('')}</div><span class="hint">לחיצה על שורה בשיר, או על שם של חלק, מוסיפה הערה לפניה, בתוך השיר.</span></div>
       <div class="att-chords" id="vb-chords"></div>
       <div class="sheet-wrap" id="vb-wrap"><div class="sheet bsheet" id="vb-sheet"></div><aside class="note-rail" id="vb-rail" aria-label="הערות"></aside></div>
     </div>`;
@@ -4716,8 +4759,7 @@ function renderBandSong(){
       const ln = el.querySelector(`.ln[data-l="${li}"]`); if(!ln) return;
       const list = B.byLine[li], col = (list.find(n => n.data.color) || {data:{}}).data.color || 'yellow';
       ln.classList.add('mk', 'mk-' + col);
-      const withText = list.filter(n => n.data.text);
-      if(withText.length) ln.insertAdjacentHTML('beforeend', `<button type="button" class="nbadge" data-act="toggle-notes" data-line="${li}" aria-label="${withText.length} הערות">${withText.length}</button>`);
+
     });
     $('#vb-chords').innerHTML = chordStripHTML(used);
     layoutNotes();
@@ -4779,7 +4821,7 @@ async function onBandMain(e){
     return;
   }
   if(act === 'edit-note'){ const n = bGet(btn.dataset.id); return openNoteDlg(n, n.data.line, n.data.lineText || ''); }
-  if(act === 'del-note'){ if(!confirm('למחוק את ההערה?')) return; await bCall('bandDelete', {id:btn.dataset.id}); B.items = B.items.filter(x => x.id !== btn.dataset.id); return renderBand(); }
+  if(act === 'del-note'){ if(!confirm('למחוק את ההערה?')) return; return bDel(btn.dataset.id); }
   if(act === 'new-cand') return openCandDlg(null);
   if(act === 'edit-cand') return openCandDlg(bGet(btn.closest('[data-cid]').dataset.cid));
   if(act === 'status'){ const cd = bGet(btn.closest('[data-cid]').dataset.cid); if(cd.data.status === btn.dataset.v) return; return bSave([{id:cd.id, kind:'candidate', data:Object.assign({}, cd.data, {status:btn.dataset.v})}]); }
@@ -4804,7 +4846,7 @@ function openNoteDlg(n, line, lineText){
   let anchor = line >= 0 && sheet ? sheet.querySelector(`.ln[data-l="${line}"]`) : null;
   if(anchor) anchor.classList.add('ln-edit');
   if(!anchor){ const box = $(yo ? '#yo-song-notes' : '#vb-song-notes'); anchor = box ? box.previousElementSibling : null; }
-  inlDlg($('#dlg-note'), anchor);
+  inlDlg($('#dlg-note'), anchor, line >= 0 && anchor && anchor.classList.contains('ln') ? 'beforebegin' : 'afterend');
   $('#nt-text').focus({preventScroll:true});
 }
 async function saveNote(e){
@@ -4862,7 +4904,7 @@ async function saveBandSong(e){
   const data = Object.assign({}, it ? it.data : {shift:0}, {recordings, name, artist:$('#bsg-artist').value.trim(), bpm:Math.max(0, Math.round(Number($('#bsg-bpm').value) || 0)), duration, url, sheet:$('#bsg-sheet').value.replace(/\s+$/, ''), dir:B.editSong.dir || '', key:$('#bsg-key').value});
   try{
     const saved = await bSave([{id:it ? it.id : '', kind:'bsong', data}], $('#bsg-err'));
-    loadLibrary();
+    saved.sent.then(() => loadLibrary(), () => {});
     if(!it && $('#bsg-set').checked) await saveSetlist(setlistOrder().concat([saved[0].id]));
     $('#dlg-bsong').close();
     if(!it) openBandSong(saved[0].id);
@@ -5393,8 +5435,16 @@ async function yCall(action, payload, errEl){
   catch(e){ if(errEl) errEl.textContent = e.message; else alert(e.message); throw e; }
 }
 function yMerge(list){ list.forEach(it => { const i = Y.items.findIndex(x => x.id === it.id); if(i >= 0) Y.items[i] = it; else Y.items.push(it); }); }
-async function ySave(items, errEl){ const r = await yCall('youthSave', {items}, errEl); yMerge(r.items); renderYouth(); return r.items; }
-async function yDel(id, errEl){ await yCall('youthDelete', {id}, errEl); Y.items = Y.items.filter(x => x.id !== id); }
+async function ySave(items, errEl){
+  items = items.map(it => Object.assign({}, it, {groupId:it.groupId !== undefined ? it.groupId : ((Y.items.find(x => x.id === it.id) || {}).groupId || Y.gid)}));
+  items.forEach(it => { if(it.kind === 'group' && !it.id){ it.id = cid(); it.groupId = it.id; } });
+  return fastSave(Y.items, items, () => ({authorId:Y.me.id}), renderYouth, (its, prev) => bgSend('youth', () => api('youthSave', {pin:Y.pin, items:its}).then(r => yMerge(r.items)), err => revertSave(Y.items, its, prev, renderYouth, err)));
+}
+async function yDel(id, errEl){
+  const i = Y.items.findIndex(x => x.id === id); if(i < 0) return;
+  const old = Y.items[i]; Y.items.splice(i, 1);
+  bgSend('youth', () => api('youthDelete', {pin:Y.pin, id}), err => { Y.items.push(old); renderYouth(); alert('המחיקה לא הצליחה: ' + err.message); });
+}
 async function youthLogin(pin, silent){
   $('#yo-err').textContent = ''; autoStart('#yo-login', '#yo-go', silent);
   try{
@@ -5559,7 +5609,7 @@ function ySongView(){
           <button class="btn small" data-print="1" type="button">הדפסה</button>${ySongEdit() ? '<button class="btn small primary" data-act="edit-sheet" type="button">עריכה</button>' : ''}
         </div></div>
       <p class="muted">${saved ? `ההרכב מנגן ב־${esc(bandKey(s, saved))}. המקור ב־${esc(orig)}.` : `ההרכב מנגן בסולם המקורי${orig ? `, ${esc(orig)}` : ''}.`}</p>
-      <div class="spread"><div class="seg" id="yo-nf">${[['all', 'כל ההערות'], ['mine', 'שלי'], ['pub', 'כלליות'], ['tome', 'אליי']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${(Y.noteF || 'all') === v}">${l}</button>`).join('')}</div><span class="hint">לחיצה על שורה בשיר מוסיפה לה הערה או מרקר.</span></div>
+      <div class="spread"><div class="seg" id="yo-nf">${[['all', 'כל ההערות'], ['mine', 'שלי'], ['pub', 'כלליות'], ['tome', 'אליי']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${(Y.noteF || 'all') === v}">${l}</button>`).join('')}</div><span class="hint">לחיצה על שורה בשיר, או על שם של חלק, מוסיפה הערה או מרקר לפניה, בתוך השיר.</span></div>
       <div class="att-chords" id="yo-chords"></div>
       <div class="sheet-wrap" id="yo-wrap"><div class="sheet bsheet" id="yo-sheet"></div><aside class="note-rail" id="yo-rail" aria-label="הערות"></aside></div></div>`;
   } else if(ySongEdit()) h += `<div class="sub-panel" style="margin-top:16px"><div class="spread"><h3>מילים ואקורדים</h3><button class="btn small primary" data-act="edit-sheet">הוספת מילים ואקורדים</button></div><p class="muted">עוד אין מילים ואקורדים לשיר.</p></div>`;
@@ -5859,14 +5909,13 @@ async function onTeacherYouth(e){
 function layoutNotesIn(c){
   const wrap = $(c.wrap), el = $(c.sheet), rail = $(c.rail);
   if(!wrap || !el || !c.byLine) return;
-  const narrow = wrap.clientWidth < 760;
-  wrap.classList.toggle('narrow', narrow);
+  wrap.classList.add('narrow');
   $$('.inline-notes', el).forEach(x => x.remove());
   rail.innerHTML = '';
-  if(narrow){
-    (c.openLines || new Set()).forEach(li => {
+  if(true){
+    Object.keys(c.byLine).forEach(li => {
       const ln = el.querySelector(`.ln[data-l="${li}"]`), list = (c.byLine[li] || []).filter(n => n.data.text);
-      if(ln && list.length) ln.insertAdjacentHTML('afterend', `<div class="inline-notes">${list.map(c.html).join('')}</div>`);
+      if(ln && list.length) ln.insertAdjacentHTML('beforebegin', `<div class="inline-notes">${list.map(c.html).join('')}</div>`);
     });
     return;
   }
@@ -5898,7 +5947,7 @@ function yNoteHTML(n){
   return `<div class="ncard c-${col}" data-nid="${esc(n.id)}" data-line="${n._at ?? -1}">
     <div class="ncard-h"><b>${esc(yName(n.authorId))}</b>${yVisLabel(n)}${canDel ? `<span class="ncard-acts">${mine ? `<button type="button" data-act="edit-ynote" data-id="${esc(n.id)}">עריכה</button>` : ''}<button type="button" class="del" data-act="del-ynote" data-id="${esc(n.id)}">מחיקה</button></span>` : ''}</div>
     ${n.data.lineText && (n.data.orphan || n._at === undefined || n._at < 0) && n.data.line >= 0 ? `<div class="ncard-q">“\u2068${esc(n.data.lineText)}\u2069”</div>` : ''}
-    <div class="ncard-t">${esc(n.data.text)}</div></div>`;
+    <div class="ncard-t" dir="auto">${esc(n.data.text)}</div></div>`;
 }
 function yRenderNotes(s){
   const d = s.data, notes = yNotesFor(s.id), lines = String(d.sheet || '').split('\n'), el = $('#yo-sheet');
@@ -5915,8 +5964,7 @@ function yRenderNotes(s){
       const ln = el.querySelector(`.ln[data-l="${li}"]`); if(!ln) return;
       const list = Y.byLine[li], col = (list.find(n => n.data.color) || {data:{}}).data.color || 'yellow';
       ln.classList.add('mk', 'mk-' + col);
-      const withText = list.filter(n => n.data.text);
-      if(withText.length) ln.insertAdjacentHTML('beforeend', `<button type="button" class="nbadge" data-act="toggle-ynotes" data-line="${li}" aria-label="${withText.length} הערות">${withText.length}</button>`);
+
     });
     yLayoutNotes();
   }
@@ -8147,7 +8195,7 @@ function init(){
   $('#dlg-note').addEventListener('close', () => { NOTE_CTX = 'band'; });
   $('#nt-del').addEventListener('click', async () => { const n = B.editNote && B.editNote.item; if(!n || !confirm('למחוק את ההערה?')) return;
     if(NOTE_CTX === 'youth'){ try{ await yDel(n.id, $('#nt-err')); $('#dlg-note').close(); renderYouth(); }catch(err){} return; }
-    try{ await bCall('bandDelete', {id:n.id}, $('#nt-err')); B.items = B.items.filter(x => x.id !== n.id); $('#dlg-note').close(); renderBand(); }catch(err){} });
+    $('#dlg-note').close(); bDel(n.id); });
   $('#fcd').addEventListener('submit', saveCand);
   $('#cdf-del').addEventListener('click', deleteCand);
   $('#role-list').innerHTML = ROLE_SUGGEST.map(r => `<option value="${r}">`).join('');
