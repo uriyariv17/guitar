@@ -904,6 +904,7 @@ dialog form{ padding:20px; display:grid; gap:14px; max-height:calc(100vh - 40px)
   *{ animation:none !important; transition:none !important; }
 }
 .ss-row input.ss-in{max-width:280px}
+.ss-top input.ss-in{max-width:360px;font-size:1.05rem;padding:10px 14px;border:2px solid #f5b400}
 .ss-hit{outline:2px solid #f5b400;outline-offset:1px;border-radius:6px}
 [data-ss-scope] [hidden]{display:none!important}
 </style>
@@ -3924,6 +3925,7 @@ function playSongFromTask(id, bpm){ const s = findSong(id); if(!s) return; showV
 function renderTeacherSongs(){
   const songs = allSongs();
   let h = `<div class="spread"><h2>שירים</h2><div class="row">${claptonImported() ? '' : '<button class="btn" data-act="clapton">הוספת רשימת Clapton</button>'}<button class="btn" data-act="open-songs-view">פתיחת הנגן</button><button class="btn" data-act="my-table">סידור לפי הטבלה שלי</button><button class="btn" data-act="bulk-open">ייבוא רשימת שירים</button><button class="btn" data-act="sync-band">העתקת שירי VELVET לספרייה</button><button class="btn primary" data-act="new-song">שיר חדש</button></div></div>
+    <div class="row ss-row ss-top" style="margin-top:12px">${ssBox('tt', 'חיפוש שיר לפי שם…')}<span class="muted ss-count" data-ss="tt"></span></div>
     <p class="muted" style="margin-top:6px;max-width:62ch">הספרייה גלויה רק לך. תלמיד רואה רק שירים שצירפת אליו. השירים מסודרים לפי ז׳אנר, ובתוך כל ז׳אנר לפי צורת הנגינה C, A, G, E, D. לכל שיר אפשר להוסיף סרטון, מילים ואקורדים, או את שניהם. קטעים ללולאה שומרים מתוך הנגן: מסמנים התחלה וסוף ולוחצים "שמור את הקטע לשיר".</p>`;
   if(BULK.open) h += bulkHTML();
   h += songTagsAdminHTML();
@@ -6314,8 +6316,7 @@ function teacherSongsTableHTML(songs){
       <tr>${SONG_SHAPES.map(sh => cell(g, sh, 'min')).join('')}</tr>
     </tbody>`).join('')}</table></div>` : '<p class="empty">עוד אין ז׳אנרים. הוסף ז׳אנר כדי לבנות את הטבלה.</p>';
   const loose = songs.filter(s => !s.shape).sort((a, b) => a.name.localeCompare(b.name, 'he'));
-  return `<div class="row ss-row" style="margin-top:14px">${ssBox('tt')}<span class="muted ss-count" data-ss="tt"></span></div>
-    <div data-ss-scope="tt" data-ss-items=".tt-song" data-ss-groups="tbody, .ab-grp">
+  return `<div data-ss-scope="tt" data-ss-items=".tt-song" data-ss-groups="tbody, .ab-grp">
     <p class="hint" style="margin:12px 0 8px">לחיצה על כותרת ירוקה או אדומה משנה את השם שלה. לחיצה על שיר פותחת אותו לעריכה. במחשב אפשר לגרור שיר לתא אחר בטבלה כדי לשנות ז׳אנר או צורה. ה־+ בכל תא מוסיף שיר ישר אליו.</p>
     ${table}
     <div class="tt-loose" data-loose="1">
