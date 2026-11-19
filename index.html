@@ -296,6 +296,7 @@ pre.tab{ direction:ltr; text-align:left; font:15px/1.35 ui-monospace, Menlo, Con
 .t-task:first-child{ border-top:0; }
 .t-task .bar{ grid-column:1 / -1; }
 .t-task .acts{ display:flex; gap:2px; flex-wrap:wrap; justify-content:flex-end; align-items:start; }
+@media (max-width:640px){ .t-task{ grid-template-columns:minmax(0,1fr); gap:8px; } .t-task .acts{ justify-content:flex-start; margin-inline-start:-6px; } }
 tr.click{ cursor:pointer; }
 tr.click:hover td{ background:var(--surface-2); }
 .pin{ font-family:'Secular One',Arial,sans-serif; letter-spacing:.12em; direction:ltr; display:inline-block; }
@@ -946,6 +947,11 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .cshape-wrap > .cshape-h:first-child{ margin-top:4px; }
 .cname.cshape-n{ font-size:15px; line-height:1.25; white-space:normal; text-align:center; }
 .tonic-lib > summary{ cursor:pointer; padding:6px 0; }
+.sheet .ch.deg{ font-variant-numeric:tabular-nums; }
+.sheet .ch.deg .dq{ font-size:.72em; vertical-align:super; line-height:0; margin-inline-start:1px; font-weight:600; }
+.sheet .ch.deg .doff{ font-size:.72em; font-weight:600; margin-inline-start:1px; }
+.sheet .ch.deg.out{ background:#ffe066; color:#5a4300; padding:0 3px; border-radius:4px; }
+.deg-tog[aria-pressed="true"]{ background:var(--blue); color:#fff; border-color:var(--blue); }
 </style>
 </head>
 <body>
@@ -1200,7 +1206,7 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
                   <button class="round" id="tr-up" aria-label="העלאה בחצי טון">▲</button>
                 </div>
                 <button class="btn ghost small" id="tr-reset">חזרה למקור</button>
-                <div class="seg" aria-label="גודל טקסט"><button id="shf-down" aria-label="הקטנת טקסט">א−</button><button id="shf-up" aria-label="הגדלת טקסט">א+</button></div><button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>
+                <div class="seg" aria-label="גודל טקסט"><button id="shf-down" aria-label="הקטנת טקסט">א−</button><button id="shf-up" aria-label="הגדלת טקסט">א+</button></div><button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button><span id="sh-degbox"></span>
                 <button class="btn small" id="sh-cols" type="button" aria-pressed="false">שני טורים</button>
                 <button class="btn small" data-print="1" type="button">הדפסה</button>
                 <button class="btn small primary" id="sh-edit" type="button" hidden>עריכה</button>
@@ -4215,11 +4221,42 @@ function firstChord(text){
 }
 const LINK_RE = /\{\{([^|{}]{0,60})\|\s*(https?:\/\/[^\s{}]+)\s*\}\}|(https?:\/\/[^\s{}]+)/g;
 const PH_RE = /\u0000(\d+)\u0000/g;
-const chordSpan = name => `<b class="ch" data-c="${esc(name)}">${esc(name)}</b>`;
+/* תצוגת דרגות: במקום שם האקורד, הדרגה שלו בסולם של השיר */
+const DEG = {on:(() => { try{ return localStorage.getItem('pritah.deg') === '1'; }catch(e){ return false; } })(), ctx:null};
+const SCALE_STEPS = {maj:[0, 2, 4, 5, 7, 9, 11], min:[0, 2, 3, 5, 7, 8, 10]};
+function degOf(note){
+  const k = DEG.ctx; if(!k || NOTE_IDX[note] == null) return null;
+  const iv = (NOTE_IDX[note] - k.pc + 120) % 12, st = SCALE_STEPS[k.minor ? 'min' : 'maj'];
+  const i = st.indexOf(iv); if(i >= 0) return {d:String(i + 1), out:false};
+  let lo = 0; st.forEach((v, j) => { if(v < iv) lo = j; });
+  const diff = (iv - st[lo]) / 2;
+  return {d:String(lo + 1), off:`(+${diff})`, out:true};
+}
+const degPart = r => esc(r.d) + (r.off ? `<span class="doff">${esc(r.off)}</span>` : '');
+function degLabel(name){
+  const c = parseChord(name); if(!c || !DEG.ctx) return {t:name, out:false};
+  const r = degOf(c.root); if(!r) return {t:name, out:false};
+  const b = c.bass ? degOf(c.bass) : null;
+  const t = c.pre + r.d + (r.off || '') + c.suf + (b ? '/' + b.d + (b.off || '') : c.bass ? '/' + c.bass : '') + c.post;
+  const html = esc(c.pre) + degPart(r) + (c.suf ? `<span class="dq">${esc(c.suf)}</span>` : '') + (b ? '/' + degPart(b) : c.bass ? '/' + esc(c.bass) : '') + esc(c.post);
+  return {t, html, out:r.out || !!(b && b.out)};
+}
+const chordSpan = name => { if(!DEG.ctx) return `<b class="ch" data-c="${esc(name)}">${esc(name)}</b>`; const l = degLabel(name); return `<b class="ch deg${l.out ? ' out' : ''}" data-c="${esc(name)}" title="${esc(name)}">${l.html || esc(l.t)}</b>`; };
+const degBtnHTML = () => `<button class="btn small deg-tog" data-deg type="button" aria-pressed="${DEG.on}" title="הצגת דרגת כל אקורד בסולם של השיר">${DEG.on ? 'הצגת אקורדים' : 'הצגת דרגות'}</button>`;
+document.addEventListener('click', e => {
+  if(!e.target.closest('[data-deg]')) return;
+  DEG.on = !DEG.on; try{ localStorage.setItem('pritah.deg', DEG.on ? '1' : '0'); }catch(err){}
+  $$('[data-deg]').forEach(b => { b.setAttribute('aria-pressed', DEG.on); b.textContent = DEG.on ? 'הצגת אקורדים' : 'הצגת דרגות'; });
+  if(currentView === 'songs' && typeof renderSheet === 'function' && SG.song) renderSheet();
+  else if(currentView === 'velvet') renderBand();
+  else if(currentView === 'youth') renderYouth();
+  else if(currentView === 'piano') renderPiano();
+});
 var VE_NOTE_RE = /^\s*\((?!\s*[A-G][#b]?[^)]{0,8}\)\s*$)[^()]{1,120}\)\s*$/;
 function renderSheetHTML(text, n, manualKey){
   text = normSpaces(text || '');
-  const used = [], sp = spellForKey(detectKey(text, manualKey), n);
+  const key0 = detectKey(text, manualKey), used = [], sp = spellForKey(key0, n);
+  DEG.ctx = DEG.on && key0 ? {pc:(key0.pc + (n || 0) + 120) % 12, minor:key0.minor} : null;
   const use = name => { const p = parseChord(name); const k = p ? p.root + p.suf + (p.bass ? '/' + p.bass : '') : name; if(!used.includes(k)) used.push(k); };
   const rows = String(text || '').replace(/\r/g, '').split('\n').map((rawLine, li) => {
     const links = [];
@@ -4248,7 +4285,7 @@ function renderSheetHTML(text, n, manualKey){
         const txt = isC ? trChord(m[0], n, sp) : m[0];
         const start = len ? Math.max(m.index, len + 1) : m.index;
         out += ' '.repeat(start - len) + (isC ? chordSpan(txt) : esc(txt));
-        len = start + txt.length;
+        len = start + (isC && DEG.ctx ? degLabel(txt).t.length : txt.length);
         if(isC) use(txt);
       }
       return `<div class="ln chords" data-l="${li}">${out}${tail}</div>`;
@@ -4263,6 +4300,7 @@ function renderSheetHTML(text, n, manualKey){
   rows.forEach(r => { if(r === EMPTY){ flushB(); blocksHtml += '<div class="ln gap">&nbsp;</div>'; } else cur.push(r); });
   flushB();
   const html = blocksHtml;
+  DEG.ctx = null;
   return {html, used};
 }
 function libChordByName(name){
@@ -4309,6 +4347,7 @@ function renderSheet(){
   body.dir = s.dir || (hasHebrew(s.sheet) ? 'rtl' : 'ltr');
   body.style.fontSize = SH.size + 'px';
   snApply('#sh-body', s.id, s.sheet, renderSheet);
+  $('#sh-degbox').innerHTML = degBtnHTML();
   $('#sh-nhint').hidden = !(snMe() && s.id);
   $('#sh-nhint').textContent = T.data ? 'לחיצה על שורה בשיר, או על שם של חלק, מוסיפה הערה לפניה. אפשר לבחור אם רק אתה רואה אותה, כל התלמידים שיש להם את השיר, או תלמידים מסוימים.' : 'לחיצה על שורה בשיר מוסיפה לך הערה לפניה. אפשר לבחור אם היא רק שלך או שגם המורה רואה אותה.';
   $('#tr-key').textContent = keyLabel(detectKey(s.sheet, s.key), SH.shift) || '–';
@@ -4827,7 +4866,7 @@ function renderBandSong(){
           <div class="tr-ctl"><button class="round" data-act="tr-down" ${B.viewShift <= -11 ? 'disabled' : ''} aria-label="הורדה בחצי טון">▼</button><div class="tr-val"><b>${esc(k || '–')}</b><small>${B.viewShift ? (B.viewShift > 0 ? '+' : '−') + Math.abs(B.viewShift) + ' מהמקור' : 'כמו המקור'}</small></div><button class="round" data-act="tr-up" ${B.viewShift >= 11 ? 'disabled' : ''} aria-label="העלאה בחצי טון">▲</button></div>
           ${dirty ? '<button class="btn small primary" data-act="save-key">שמירה כסולם של הלהקה</button>' : ''}
           ${B.viewShift !== saved || saved ? `<button class="btn ghost small" data-act="key-band">לסולם של הלהקה</button>` : ''}
-          <div class="seg"><button data-act="fs-down" aria-label="הקטנת טקסט">א−</button><button data-act="fs-up" aria-label="הגדלת טקסט">א+</button></div><button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>
+          <div class="seg"><button data-act="fs-down" aria-label="הקטנת טקסט">א−</button><button data-act="fs-up" aria-label="הגדלת טקסט">א+</button></div><button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>${degBtnHTML()}
           <button class="btn small" data-print="1" type="button">הדפסה</button><button class="btn small primary" data-act="edit-sheet" type="button">עריכה</button>
         </div></div>
       <p class="muted">${saved ? `הלהקה מנגנת ב־${esc(bandKey(s, saved))}. המקור ב־${esc(orig)}.` : `הלהקה מנגנת בסולם המקורי${orig ? `, ${esc(orig)}` : ''}.`}${dirty ? ' השינוי שעשית עכשיו מוצג רק לך, עד שתשמור אותו.' : ''}</p>
@@ -5703,7 +5742,7 @@ function ySongView(){
           <div class="tr-ctl"><button class="round" data-act="tr-down" ${Y.shift <= -11 ? 'disabled' : ''} aria-label="הורדה בחצי טון">▼</button><div class="tr-val"><b>${esc(k || '–')}</b><small>${Y.shift ? (Y.shift > 0 ? '+' : '−') + Math.abs(Y.shift) + ' מהמקור' : 'כמו המקור'}</small></div><button class="round" data-act="tr-up" ${Y.shift >= 11 ? 'disabled' : ''} aria-label="העלאה בחצי טון">▲</button></div>
           ${yStaff() && Y.shift !== saved ? '<button class="btn small primary" data-act="save-key">שמירה כסולם של ההרכב</button>' : ''}
           ${Y.shift !== saved ? '<button class="btn ghost small" data-act="key-group">לסולם של ההרכב</button>' : ''}
-          <div class="seg"><button data-act="fs-down" aria-label="הקטנת טקסט">א−</button><button data-act="fs-up" aria-label="הגדלת טקסט">א+</button></div><button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>
+          <div class="seg"><button data-act="fs-down" aria-label="הקטנת טקסט">א−</button><button data-act="fs-up" aria-label="הגדלת טקסט">א+</button></div><button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>${degBtnHTML()}
           <button class="btn small" data-print="1" type="button">הדפסה</button>${ySongEdit() ? '<button class="btn small primary" data-act="edit-sheet" type="button">עריכה</button>' : ''}
         </div></div>
       <p class="muted">${saved ? `ההרכב מנגן ב־${esc(bandKey(s, saved))}. המקור ב־${esc(orig)}.` : `ההרכב מנגן בסולם המקורי${orig ? `, ${esc(orig)}` : ''}.`}</p>
@@ -6897,7 +6936,7 @@ function psView(){
         <div class="row">
           <div class="tr-ctl"><button class="round" data-ps="tr-down" ${PN.shift <= -11 ? 'disabled' : ''} aria-label="הורדה בחצי טון">▼</button><div class="tr-val"><b>${esc(keyLabel(detectKey(d.sheet, d.key), PN.shift) || '–')}</b><small>${PN.shift ? (PN.shift > 0 ? '+' : '−') + Math.abs(PN.shift) + ' מהמקור' : 'כמו המקור'}</small></div><button class="round" data-ps="tr-up" ${PN.shift >= 11 ? 'disabled' : ''} aria-label="העלאה בחצי טון">▲</button></div>
           <div class="seg"><button data-ps="fs-down" aria-label="הקטנת טקסט">א−</button><button data-ps="fs-up" aria-label="הגדלת טקסט">א+</button></div>
-          <button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button><button class="btn small" data-print="1" type="button">הדפסה</button><button class="btn small primary" data-ps="edit">עריכה</button>
+          <button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>${degBtnHTML()}<button class="btn small" data-print="1" type="button">הדפסה</button><button class="btn small primary" data-ps="edit">עריכה</button>
         </div></div>
       <p class="hint">לחיצה על אקורד משמיעה אותו בפסנתר. הצורות מגיעות מהצורות ששמרת ב"אקורדים והרמוניות", ואם אין, מוצג מצב יסודי.</p>
       <div class="pchords" id="ps-chords"></div>
