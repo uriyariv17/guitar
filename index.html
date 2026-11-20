@@ -1757,11 +1757,13 @@ function silentWavURL(){
   for(let i = 0; i < n; i++) v.setUint8(44 + i, 128);
   return URL.createObjectURL(new Blob([buf], {type:'audio/wav'}));
 }
+/* כדי שספוטיפיי (או כל מוזיקה אחרת) ימשיך לנגן: האפליקציה מתערבבת עם צלילים אחרים ולא עוצרת אותם */
+try{ if(navigator.audioSession) navigator.audioSession.type = 'ambient'; }catch(e){}
 function unlockAudio(){
   if(audioUnlocked) return;
   audioUnlocked = true;
   try{
-    if(navigator.audioSession){ navigator.audioSession.type = 'playback'; return; }
+    if(navigator.audioSession){ navigator.audioSession.type = 'ambient'; return; }
   }catch(e){}
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if(!isIOS) return;
@@ -2069,7 +2071,7 @@ const Tuner = {
       $('#t-start').textContent = 'עצור טיונר';
       this.loop();
     }catch(e){
-      try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e2){}
+      try{ if(navigator.audioSession) navigator.audioSession.type = 'ambient'; }catch(e2){}
       $('#t-err').textContent = micErrorText(e);
     }
   },
@@ -2077,7 +2079,7 @@ const Tuner = {
     this.running = false;
     if(this.stream) this.stream.getTracks().forEach(t => t.stop());
     this.stream = null;
-    try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e){}
+    try{ if(navigator.audioSession) navigator.audioSession.type = 'ambient'; }catch(e){}
     if(this.src) this.src.disconnect();
     $('#t-start').textContent = 'הפעל טיונר';
     $('#t-note').innerHTML = '–'; $('#t-sol').textContent = 'מחכה לצליל'; $('#t-status').textContent = '';
@@ -7216,12 +7218,15 @@ function sampOut(){
   comp.threshold.value = -14; comp.ratio.value = 3; comp.attack.value = .005; comp.release.value = .2; g.gain.value = .9;
   g.connect(comp); comp.connect(ctx.destination); SAMP.out = g; return g;
 }
+let SAMP_DEC = null;
+function sampDecoder(){ if(AC) return AC; if(!SAMP_DEC){ const O = window.OfflineAudioContext || window.webkitOfflineAudioContext; SAMP_DEC = O ? new O(1, 1, 44100) : ac(); } return SAMP_DEC; }
 function loadPianoSamples(){
   if(SAMP.promise) return SAMP.promise;
   SAMP.state = 'loading'; updateSampState();
   SAMP.promise = Promise.all(PIANO_SAMPLES.map(async s => {
     const r = await fetch(SAMP.base + s.n + '.mp3'); if(!r.ok) throw new Error('http ' + r.status);
-    SAMP.buf[s.m] = await ac().decodeAudioData(await r.arrayBuffer());
+    const ab = await r.arrayBuffer(), dc = sampDecoder();
+    SAMP.buf[s.m] = await new Promise((res, rej) => { const pr = dc.decodeAudioData(ab, res, rej); if(pr && pr.then) pr.then(res, rej); });
   })).then(() => { SAMP.state = 'ready'; }).catch(() => { SAMP.state = Object.keys(SAMP.buf).length >= 8 ? 'ready' : 'failed'; }).finally(updateSampState);
   return SAMP.promise;
 }
