@@ -4222,7 +4222,7 @@ function firstChord(text){
 const LINK_RE = /\{\{([^|{}]{0,60})\|\s*(https?:\/\/[^\s{}]+)\s*\}\}|(https?:\/\/[^\s{}]+)/g;
 const PH_RE = /\u0000(\d+)\u0000/g;
 /* תצוגת דרגות: במקום שם האקורד, הדרגה שלו בסולם של השיר */
-const DEG = {on:(() => { try{ return localStorage.getItem('pritah.deg') === '1'; }catch(e){ return false; } })(), ctx:null};
+const DEG = {on:(() => { try{ return localStorage.getItem('pritah.deg') === '1'; }catch(e){ return false; } })(), rel:(() => { try{ return localStorage.getItem('pritah.degrel') === '1'; }catch(e){ return false; } })(), ctx:null};
 const SCALE_STEPS = {maj:[0, 2, 4, 5, 7, 9, 11], min:[0, 2, 3, 5, 7, 8, 10]};
 function degOf(note){
   const k = DEG.ctx; if(!k || NOTE_IDX[note] == null) return null;
@@ -4242,11 +4242,14 @@ function degLabel(name){
   return {t, html, out:r.out || !!(b && b.out)};
 }
 const chordSpan = name => { if(!DEG.ctx) return `<b class="ch" data-c="${esc(name)}">${esc(name)}</b>`; const l = degLabel(name); return `<b class="ch deg${l.out ? ' out' : ''}" data-c="${esc(name)}" title="${esc(name)}">${l.html || esc(l.t)}</b>`; };
-const degBtnHTML = () => `<button class="btn small deg-tog" data-deg type="button" aria-pressed="${DEG.on}" title="הצגת דרגת כל אקורד בסולם של השיר">${DEG.on ? 'הצגת אקורדים' : 'הצגת דרגות'}</button>`;
+const degBtnHTML = () => `<button class="btn small deg-tog" data-deg type="button" aria-pressed="${DEG.on}" title="הצגת דרגת כל אקורד בסולם של השיר">${DEG.on ? 'הצגת אקורדים' : 'הצגת דרגות'}</button><button class="btn small deg-tog" data-degrel type="button" aria-pressed="${DEG.rel}" ${DEG.on ? '' : 'hidden'} title="בשיר במינור: ספירת הדרגות לפי הסולם המז׳ורי היחסי (למשל בלה מינור, Am היא דרגה 6 כמו בדו מז׳ור)">לפי המז׳ור היחסי</button>`;
 document.addEventListener('click', e => {
-  if(!e.target.closest('[data-deg]')) return;
-  DEG.on = !DEG.on; try{ localStorage.setItem('pritah.deg', DEG.on ? '1' : '0'); }catch(err){}
+  const rel = e.target.closest('[data-degrel]');
+  if(!e.target.closest('[data-deg]') && !rel) return;
+  if(rel){ DEG.rel = !DEG.rel; try{ localStorage.setItem('pritah.degrel', DEG.rel ? '1' : '0'); }catch(err){} }
+  else { DEG.on = !DEG.on; try{ localStorage.setItem('pritah.deg', DEG.on ? '1' : '0'); }catch(err){} }
   $$('[data-deg]').forEach(b => { b.setAttribute('aria-pressed', DEG.on); b.textContent = DEG.on ? 'הצגת אקורדים' : 'הצגת דרגות'; });
+  $$('[data-degrel]').forEach(b => { b.setAttribute('aria-pressed', DEG.rel); b.hidden = !DEG.on; });
   if(currentView === 'songs' && typeof renderSheet === 'function' && SG.song) renderSheet();
   else if(currentView === 'velvet') renderBand();
   else if(currentView === 'youth') renderYouth();
@@ -4256,7 +4259,7 @@ var VE_NOTE_RE = /^\s*\((?!\s*[A-G][#b]?[^)]{0,8}\)\s*$)[^()]{1,120}\)\s*$/;
 function renderSheetHTML(text, n, manualKey){
   text = normSpaces(text || '');
   const key0 = detectKey(text, manualKey), used = [], sp = spellForKey(key0, n);
-  DEG.ctx = DEG.on && key0 ? {pc:(key0.pc + (n || 0) + 120) % 12, minor:key0.minor} : null;
+  DEG.ctx = DEG.on && key0 ? {pc:(key0.pc + (n || 0) + (key0.minor && DEG.rel ? 3 : 0) + 120) % 12, minor:key0.minor && !DEG.rel} : null;
   const use = name => { const p = parseChord(name); const k = p ? p.root + p.suf + (p.bass ? '/' + p.bass : '') : name; if(!used.includes(k)) used.push(k); };
   const rows = String(text || '').replace(/\r/g, '').split('\n').map((rawLine, li) => {
     const links = [];
