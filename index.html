@@ -966,6 +966,15 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .prn-nm{ position:absolute; transform:translateY(-50%); font:700 9px/1 'Assistant', Arial, sans-serif; color:#1f4fbf; background:rgba(255,255,255,.85); padding:0 1px; border-radius:2px; white-space:nowrap; }
 .pr-ntools .seg [aria-pressed="true"]{ background:var(--surface); box-shadow:0 1px 3px rgba(0,0,0,.12); }
 .prn-pk{ position:absolute; border:3px dashed #E0A400; border-radius:6px; pointer-events:none; }
+.sf-list{ display:grid; gap:8px; margin:6px 0; }
+.sf-item{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; border:1px solid var(--line); border-radius:12px; padding:8px 12px; background:var(--surface); }
+.sf-item.on{ border-color:var(--blue); box-shadow:0 0 0 2px color-mix(in srgb, var(--blue) 18%, transparent); }
+.sf-name{ flex:1; min-width:140px; font-weight:600; overflow-wrap:anywhere; }
+.sf-ic{ font:800 11px/1 'Assistant', Arial, sans-serif; padding:6px 7px; border-radius:7px; color:#fff; background:#5b667a; letter-spacing:.3px; }
+.sf-ic.sf-pdf{ background:#d4483b; } .sf-ic.sf-xml, .sf-ic.sf-mxl{ background:#316ee6; } .sf-ic.sf-mid{ background:#20a578; }
+.sf-frame{ width:100%; height:min(78vh, 900px); border:1px solid var(--line); border-radius:12px; background:#fff; }
+.sf-msg:empty{ display:none; }
+#sh-roll .sub-panel{ margin-top:10px; }
 </style>
 </head>
 <body>
@@ -1210,6 +1219,7 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
             <div id="lp-saved-wrap" class="stack" style="gap:6px" hidden><span class="opt-l">קטעים שהמורה שמר</span><div class="seg" id="lp-saved"></div></div>
           </div>
           </div>
+          <div id="sh-files" class="sub-panel" hidden></div>
           <div id="sh-part" class="sub-panel" hidden>
             <div class="spread">
               <h4>מילים ואקורדים</h4>
@@ -2578,6 +2588,17 @@ function serverHandle(req, store, teacherPassword){
     return '';
   };
   const landingItem = () => store.all('Content').find(c => String(c.kind) === 'landing');
+  // קבצי שירים (PDF / MusicXML / MIDI) שהמורה העלה לדף השיר
+  if(a === 'songFile'){
+    const fid = String(req.fileId || ''); if(!fid) throw new Error('הקובץ לא נמצא.');
+    let meta = null;
+    store.all('Content').forEach(c => { if(meta || String(c.kind) !== 'song') return; const f = (nContent(c).data.files || []).find(x => String(x.id) === fid); if(f) meta = f; });
+    if(!meta) throw new Error('הקובץ לא נמצא בשירים.');
+    if(/^data:/.test(String(meta.url || ''))) return {name:meta.name, mime:meta.mime, data:String(meta.url).split(',')[1] || ''};
+    if(typeof DriveApp === 'undefined') throw new Error('הקובץ לא זמין.');
+    const blob = DriveApp.getFileById(fid).getBlob();
+    return {name:meta.name, mime:meta.mime, data:Utilities.base64Encode(blob.getBytes())};
+  }
   if(a === 'publicLanding'){ const it = landingItem(); return {data:it ? nContent(it).data : null}; }
   if(a === 'landingAuthCheck'){ const who = landingAuth(); if(!who) throw new Error('הסיסמה או הקוד לא נכונים.'); return {who}; }
   if(a === 'landingSave'){
@@ -2965,6 +2986,30 @@ function serverHandle(req, store, teacherPassword){
     }
     if(a === 'teacherDeleteTask'){
       store.remove('Tasks', x => String(x.id) === String(req.id));
+      return {};
+    }
+    if(a === 'teacherUploadSongFile'){
+      const name = String(req.name || 'קובץ').replace(/[\\/:*?"<>|]/g, '_').slice(0, 120), data = String(req.data || '');
+      const ext = (name.match(/\.([a-z0-9]+)$/i) || ['', ''])[1].toLowerCase();
+      const type = ext === 'pdf' ? 'pdf' : ext === 'mxl' ? 'mxl' : /^(xml|musicxml)$/.test(ext) ? 'xml' : /^midi?$/.test(ext) ? 'mid' : '';
+      if(!type) throw new Error('אפשר להעלות PDF, MusicXML (‎.musicxml, .xml, .mxl) או MIDI (‎.mid).');
+      if(!data) throw new Error('הקובץ ריק.');
+      if(data.length > 21000000) throw new Error('הקובץ גדול מדי. אפשר עד 15MB.');
+      const mime = type === 'pdf' ? 'application/pdf' : type === 'mxl' ? 'application/vnd.recordare.musicxml' : type === 'mid' ? 'audio/midi' : 'application/xml', size = Math.round(data.length * .75);
+      if(typeof DriveApp === 'undefined'){
+        if(data.length > 4000000) throw new Error('במצב הדגמה אפשר לנסות רק קבצים קטנים.');
+        return {file:{id:'d' + newId(), name, mime, size, type, url:'data:' + mime + ';base64,' + data}};
+      }
+      let folder = DriveApp.getRootFolder();
+      ['פריטה - קבצי שירים'].forEach(n => { const it = folder.getFoldersByName(n); folder = it.hasNext() ? it.next() : folder.createFolder(n); });
+      const file = folder.createFile(Utilities.newBlob(Utilities.base64Decode(data), mime, name));
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      return {file:{id:file.getId(), name, mime, size, type, url:'https://drive.google.com/file/d/' + file.getId() + '/preview'}};
+    }
+    if(a === 'teacherTrashSongFile'){
+      const fid = String(req.fileId || '');
+      const used = store.all('Content').some(c => String(c.kind) === 'song' && (nContent(c).data.files || []).some(x => String(x.id) === fid));
+      if(!used && fid && typeof DriveApp !== 'undefined'){ try{ DriveApp.getFileById(fid).setTrashed(true); }catch(e){} }
       return {};
     }
     if(a === 'teacherSaveContent'){
@@ -3881,7 +3926,7 @@ async function deleteShape(){
 
 /* ================== שירים מ־YouTube ================== */
 const SG = {player:null, ready:false, song:null, orig:0, target:0, rate:1, sync:store.get('pritah.songSync') === '1', loop:{a:null, b:null, on:false}, poll:null, alignPending:false, taps:[], loading:null};
-function songModel(d){ return {fromBand:d.fromBand || '', id:d.id || '', name:d.name || '', url:d.url || '', bpm:Number(d.bpm) || 0, note:d.note || '', sheet:d.sheet || '', dir:d.dir || '', key:d.key || '', shape:d.shape || '', mode:d.mode || 'maj', genreId:d.genreId || '', loops:(d.loops || []).map(l => ({name:String(l.name || ''), a:Number(l.a) || 0, b:Number(l.b) || 0}))}; }
+function songModel(d){ return {fromBand:d.fromBand || '', id:d.id || '', name:d.name || '', url:d.url || '', bpm:Number(d.bpm) || 0, note:d.note || '', sheet:d.sheet || '', dir:d.dir || '', key:d.key || '', shape:d.shape || '', mode:d.mode || 'maj', genreId:d.genreId || '', files:Array.isArray(d.files) ? d.files : [], loops:(d.loops || []).map(l => ({name:String(l.name || ''), a:Number(l.a) || 0, b:Number(l.b) || 0}))}; }
 function allSongs(){ return libOf('song').map(i => songModel(Object.assign({}, i.data, {id:i.id}))); }
 // מה שמוצג בלשונית "שירים": תלמיד מחובר רואה רק את השירים שלו, גם אם במכשיר מחובר גם המורה
 function viewSongs(){ if(S.student){ const ids = new Set((S.songs || []).map(i => i.id)); return allSongs().filter(x => ids.has(x.id)); } return T.data ? allSongs() : []; }
@@ -3916,7 +3961,7 @@ async function openSong(song, targetBpm){
   loadShift(song);
   $('#sg-empty').hidden = true; $('#sg-main').hidden = false;
   $('#sg-video-part').hidden = !vid;
-  renderSongUI(); renderSheet();
+  renderSongUI(); renderSheet(); renderSongFiles();
   if(!vid){ if(SG.ready && SG.player.getPlayerState() === 1) SG.player.pauseVideo(); return; }
   try{ await ytLoad(); }catch(e){ $('#yt-err').textContent = e.message; return; }
   if(!SG.player){
@@ -7259,7 +7304,7 @@ function sampleNote(m, t, dur, vel){
 }
 
 /* ================== Piano Roll: קריאת MusicXML ו־MIDI ================== */
-const PR = {loop:{a:null, b:null, on:false}, drag:null, piece:null, t:0, pps:110, speed:1, playing:false, hands:{1:true, 2:true}, timer:null, raf:null, sched:0, acStart:0, songStart:0, savedId:null};
+const PR = {host:'piano', pianoPiece:null, songFile:null, loop:{a:null, b:null, on:false}, drag:null, piece:null, t:0, pps:110, speed:1, playing:false, hands:{1:true, 2:true}, timer:null, raf:null, sched:0, acStart:0, songStart:0, savedId:null};
 const prItems = () => LIB.items.filter(i => i.kind === 'proll');
 async function unzipFiles(buf){
   const dv = new DataView(buf), u8 = new Uint8Array(buf), out = {};
@@ -7421,9 +7466,8 @@ function parseMIDI(buf){
   while(q <= lastQ + .01 && bars.length < 5000){ while(k + 1 < ts.length && ts[k + 1].tick / division <= q + 1e-6) k++; bars.push(toSec(q)); q += ts[k].num * 4 / ts[k].den; }
   return {title:'', notes:all, bars, barNums:bars.map((_, i) => i + 1), ts:[ts[0].num, ts[0].den], bpm:tempos.length ? Math.round(60000000 / tempos[0].us) : 120, repeated:false, pedal:ped.length > 0};
 }
-async function prLoadFile(f){
-  const name = f.name.toLowerCase(), msg = $('#pr-msg'); msg.textContent = 'קורא את הקובץ…';
-  try{
+async function pieceFromFile(f){
+  const name = f.name.toLowerCase();
     let piece;
     if(/\.midi?$/.test(name)) piece = parseMIDI(await f.arrayBuffer());
     else if(/\.mxl$/.test(name)){
@@ -7437,24 +7481,30 @@ async function prLoadFile(f){
     else if(/\.pdf$|\.(png|jpe?g)$/.test(name)) throw new Error('זה דף תווים כתמונה או PDF. צריך קודם להמיר אותו ל־MusicXML, ההסבר למעלה.');
     else throw new Error('סוג הקובץ לא נתמך. אפשר MusicXML (‎.mxl / .musicxml / .xml) או MIDI (‎.mid).');
     piece.title = piece.title || f.name.replace(/\.[^.]+$/, '');
-    prOpen(piece, null); msg.textContent = '';
-  }catch(e){ msg.textContent = e.message; }
+    return piece;
 }
-function prOpen(piece, savedId){
-  prStop(); PR.piece = piece; PR.savedId = savedId; PR.t = 0; PR.loop = {a:null, b:null, on:false};
+async function prLoadFile(f){
+  const msg = $('#pr-msg'); msg.textContent = 'קורא את הקובץ…';
+  try{ const piece = await pieceFromFile(f); prOpen(piece, null, 'piano'); msg.textContent = ''; }
+  catch(e){ msg.textContent = e.message; }
+}
+function prOpen(piece, savedId, host){
+  prStop(); PR.host = host || 'piano'; PR.piece = piece; PR.savedId = savedId; PR.t = 0; PR.loop = {a:null, b:null, on:false};
+  if(PR.host === 'piano') PR.pianoPiece = piece;
   piece.notes.forEach(n => { if(n.ds == null) n.ds = n.d; });
   piece.dur = Math.max(...piece.notes.map(n => n.s + n.d));
   piece.lo = Math.min(...piece.notes.map(n => n.midi)); piece.hi = Math.max(...piece.notes.map(n => n.midi));
   piece.barNums = piece.barNums && piece.barNums.length === piece.bars.length ? piece.barNums : piece.bars.map((_, i) => i + 1);
   if(!piece.xml || !piece.barIdx || piece.barIdx.length !== piece.bars.length) piece.barIdx = piece.bars.map((_, i) => i);
   PRN.key = null; PRN.pick = null;
-  renderPiano();
+  prRerender();
 }
 const r100 = v => Math.round(v * 100);
 function encodeNotes(ns){ return ns.map(n => [n.midi, r100(n.s), Math.max(1, r100(n.d)), n.hand, Math.round((n.vel || .7) * 9), Math.max(0, r100(n.ds || n.d) - r100(n.d))].map(x => x.toString(36)).join(',')).join(';'); }
 function decodeNotes(s){ return String(s || '').split(';').filter(Boolean).map(t => { const [m, a, d, h, v, x] = t.split(',').map(z => parseInt(z, 36)); return {midi:m, s:a / 100, d:d / 100, ds:(d + (x || 0)) / 100, hand:h, vel:(v || 6) / 9}; }); }
 function pnRoll(){
   if(SAMP.state === 'idle') loadPianoSamples();
+  if(PR.host !== 'piano'){ prStop(); PR.host = 'piano'; PR.piece = PR.pianoPiece; PR.t = 0; PR.loop = {a:null, b:null, on:false}; PRN.key = null; PR.songFile = null; }
   const P = PR.piece, saved = prItems().sort((a, b) => String(a.data.title).localeCompare(String(b.data.title), 'he'));
   let h = `<div class="pr-intro">
       <h3>Piano Roll</h3>
@@ -7469,12 +7519,20 @@ function pnRoll(){
       <div class="row"><button class="btn primary" data-pr="file">טעינת קובץ</button><input type="file" id="pr-file" accept=".mid,.midi,.mxl,.musicxml,.xml,.pdf,.png,.jpg,.jpeg" hidden><span class="muted" id="pr-msg"></span><span id="pr-snd"></span></div>
       ${saved.length ? `<div class="chips" style="margin-top:8px">${saved.map(i => `<span class="chip pr-saved"><button class="lnk" data-pr="open" data-id="${esc(i.id)}">${esc(i.data.title)}</button><button class="lnk del" data-pr="del" data-id="${esc(i.id)}" aria-label="מחיקה">✕</button></span>`).join('')}</div>` : ''}
     </div>`;
-  if(P){
+  if(P) h += prPlayerHTML(P, false);
+  $('#sh-roll') && ($('#sh-roll').innerHTML = '');
+  $('#pn-main').innerHTML = h;
+  updateSampState();
+  if(P){ prResize(); prDraw(); prNotationRender(); prPickMsg(); }
+}
+function prPlayerHTML(P, inSong){
+  let h = '';
+  {
     const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
     const facts = [`${P.notes.length} תווים`, `${P.bars.length} תיבות`, fmt(P.dur), `טמפו פתיחה ${Math.round(P.bpm)}`, P.repeated ? 'חזרות נפרסו' : '', P.pedal ? 'עם פדל' : ''].filter(Boolean).join(', ');
     h += `<div class="sub-panel" style="margin-top:14px">
       <div class="spread"><div><h3>${esc(P.title)}</h3><p class="muted">${esc(facts)}</p></div>
-        ${PR.savedId ? '' : '<button class="btn small" data-pr="save">שמירה ברשימה</button>'}</div>
+        ${inSong ? '<button class="btn small ghost" data-pr="song-close">סגירת הנגן</button>' : PR.savedId ? '' : '<button class="btn small" data-pr="save">שמירה ברשימה</button>'}</div>
       <div class="row pr-ctl">
         <button class="btn primary" data-pr="play" id="pr-play">${PR.playing ? 'השהיה' : 'נגינה'}</button>
         <button class="btn" data-pr="restart">להתחלה</button>
@@ -7506,9 +7564,7 @@ function pnRoll(){
       <p class="hint">התווים יורדים אל המקלדת, והקו האדום הוא הרגע הנוכחי. גלגלת העכבר או הפס שמתחת מזיזים את המיקום. בדף התווים: לחיצה על תיבה מתחילה לנגן ממנה, והתיבה שמתנגנת מסומנת. לולאה מסמנים בכפתור "סימון קטע ללופ בתווים", במספרי התיבות, או בגרירה על התצוגה.</p>
     </div>`;
   }
-  $('#pn-main').innerHTML = h;
-  updateSampState();
-  if(P){ prResize(); prDraw(); prNotationRender(); prPickMsg(); }
+  return h;
 }
 /* ================== תווים מעל ה־Piano Roll ================== */
 const PRN = {names:(() => { try{ return localStorage.getItem('pritah.prnames') || ''; }catch(e){ return ''; } })(), ents:[], on:(() => { try{ return localStorage.getItem('pritah.prnotes') !== '0'; }catch(e){ return true; } })(), el:null, osmd:null, key:null, boxes:[], cur:-1, pick:null, lib:null, msg:''};
@@ -7730,7 +7786,89 @@ function prKeys(W){
 }
 function prBarAt(t){ const B = PR.piece.bars; let i = 0; while(i + 1 < B.length && B[i + 1] <= t + 1e-6) i++; return i + 1; }
 function prBarTime(n){ const B = PR.piece.bars; return n - 1 < B.length ? B[Math.max(0, n - 1)] : PR.piece.dur; }
-function prSetLoop(a, b){ if(b - a < .1) return; PR.loop = {a, b, on:true}; const was = PR.playing; prStop(); PR.t = a; renderPiano(); if(was) prPlay(); }
+/* ================== קבצי שיר: PDF, MusicXML ו־MIDI בתוך דף השיר ================== */
+const SF = {pdfOpen:null, busy:'', msg:''};
+const SF_ICON = {pdf:'PDF', xml:'XML', mxl:'MXL', mid:'MIDI'};
+function sfFileType(f){ return f.type || (/\.pdf$/i.test(f.name) ? 'pdf' : /\.mxl$/i.test(f.name) ? 'mxl' : /\.midi?$/i.test(f.name) ? 'mid' : 'xml'); }
+function renderSongFiles(){
+  const box = $('#sh-files'), s = SG.song; if(!box) return;
+  const files = s && s.id ? s.files || [] : [], can = s && canEditLib(s);
+  if(!s || (!files.length && !can)){ box.hidden = true; box.innerHTML = ''; return; }
+  const rollOpen = PR.host === 'song' && PR.songFile && files.some(f => f.id === PR.songFile);
+  box.hidden = false;
+  box.innerHTML = `<div class="spread"><h4>תווים וקבצים</h4>${can ? `<div class="row"><button class="btn small" data-sf="up" ${SF.busy ? 'disabled' : ''}>${SF.busy ? 'מעלה…' : 'העלאת קובץ'}</button><input type="file" id="sf-file" accept=".pdf,.musicxml,.xml,.mxl,.mid,.midi" hidden></div>` : ''}</div>
+    ${files.length ? `<div class="sf-list">${files.map(f => { const t = sfFileType(f), play = t !== 'pdf'; return `<div class="sf-item${(play && PR.songFile === f.id && rollOpen) || SF.pdfOpen === f.id ? ' on' : ''}">
+      <span class="sf-ic sf-${t}">${SF_ICON[t]}</span><span class="sf-name" dir="auto">${esc(f.name)}</span>
+      <span class="row" style="gap:6px">${play ? `<button class="btn small primary" data-sf="play" data-id="${esc(f.id)}">${PR.songFile === f.id && rollOpen ? 'הנגן פתוח' : 'תווים ונגינה'}</button>` : `<button class="btn small primary" data-sf="pdf" data-id="${esc(f.id)}">${SF.pdfOpen === f.id ? 'סגירה' : 'צפייה'}</button>`}
+      ${/^https?:/.test(f.url || '') ? `<a class="btn small ghost" href="${esc(String(f.url).replace('/preview', '/view'))}" target="_blank" rel="noopener">פתיחה בחלון</a>` : ''}
+      ${can ? `<button class="btn small ghost danger" data-sf="del" data-id="${esc(f.id)}">מחיקה</button>` : ''}</span></div>
+      ${SF.pdfOpen === f.id ? `<iframe class="sf-frame" src="${esc(f.url)}" title="${esc(f.name)}"></iframe>` : ''}`; }).join('')}</div>`
+      : `<p class="muted">אפשר לצרף לשיר דף תווים כ־PDF, או קובץ MusicXML או MIDI. מ־MusicXML ו־MIDI מקבלים כאן את התווים עם סמן שזז, Piano Roll, נגינה בצליל פסנתר ולופ לתרגול.</p>`}
+    <p class="muted sf-msg">${esc(SF.msg)}</p>
+    <div id="sh-roll"></div>`;
+  if(rollOpen) renderSongRoll();
+}
+function renderSongRoll(){
+  const el = $('#sh-roll'); if(!el || !PR.piece) return;
+  if($('#pn-main') && $('#pn-main').querySelector('#pr-canvas')) $('#pn-main').innerHTML = '';
+  el.innerHTML = prPlayerHTML(PR.piece, true);
+  prResize(); prDraw(); prNotationRender(); prPickMsg();
+}
+const b64ToBytes = b => { const bin = atob(b), u = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+async function sfPlay(f){
+  SF.msg = 'טוען את הקובץ…'; renderSongFiles();
+  try{
+    const r = await api('songFile', {fileId:f.id});
+    const piece = await pieceFromFile(new File([b64ToBytes(r.data || '')], f.name));
+    if(!piece.notes.length) throw new Error('לא נמצאו תווים בקובץ.');
+    piece.title = SG.song.name || piece.title;
+    if(SAMP.state === 'idle') loadPianoSamples();
+    PR.songFile = f.id; SF.msg = '';
+    prOpen(piece, null, 'song');
+    renderSongFiles();
+    setTimeout(() => { const r2 = $('#sh-roll'); if(r2) r2.scrollIntoView({block:'start', behavior:'smooth'}); }, 60);
+  }catch(e){ SF.msg = 'לא הצלחתי לפתוח את הקובץ: ' + e.message; renderSongFiles(); }
+}
+async function sfSaveFiles(files){
+  const it = LIB.items.find(i => i.id === SG.song.id); if(!it) throw new Error('השיר לא נמצא.');
+  const data = Object.assign({}, it.data, {files});
+  const r = await saveItems([{id:it.id, kind:'song', data}]);
+  if(r && r.sent) await r.sent;
+  SG.song.files = files;
+}
+async function onSongFiles(e){
+  const b = e.target.closest('[data-sf]'); if(!b) return;
+  const s = SG.song, act = b.dataset.sf, f = (s.files || []).find(x => x.id === b.dataset.id);
+  if(act === 'up') return $('#sf-file').click();
+  if(act === 'pdf'){ SF.pdfOpen = SF.pdfOpen === f.id ? null : f.id; return renderSongFiles(); }
+  if(act === 'play'){ if(PR.songFile === f.id && PR.host === 'song'){ const r2 = $('#sh-roll'); if(r2) r2.scrollIntoView({block:'start', behavior:'smooth'}); return; } return sfPlay(f); }
+  if(act === 'del'){
+    if(!confirm(`למחוק את "${f.name}" מהשיר?`)) return;
+    if(PR.songFile === f.id){ prStop(); PR.songFile = null; PR.piece = null; PR.host = 'piano'; PRN.key = null; }
+    try{ await sfSaveFiles(s.files.filter(x => x.id !== f.id)); api('teacherTrashSongFile', {password:T.pw, fileId:f.id}).catch(() => {}); SF.msg = ''; }
+    catch(err){ SF.msg = 'המחיקה נכשלה: ' + err.message; }
+    renderSongFiles();
+  }
+}
+async function sfUpload(file){
+  if(file.size > 15 * 1024 * 1024){ SF.msg = 'הקובץ גדול מדי. אפשר עד 15MB.'; return renderSongFiles(); }
+  if(!/\.(pdf|musicxml|xml|mxl|midi?)$/i.test(file.name)){ SF.msg = 'אפשר להעלות PDF, MusicXML (‎.musicxml, .xml, .mxl) או MIDI (‎.mid).'; return renderSongFiles(); }
+  SF.busy = 'up'; SF.msg = 'מעלה את הקובץ…'; renderSongFiles();
+  try{
+    if(!/\.pdf$/i.test(file.name)) await pieceFromFile(file);
+    const data = await blobToB64(file);
+    const r = await api('teacherUploadSongFile', {password:T.pw, name:file.name, data});
+    await sfSaveFiles((SG.song.files || []).concat([r.file]));
+    SF.msg = 'הקובץ נשמר בדף השיר.';
+    SF.busy = ''; renderSongFiles();
+    if(r.file.type !== 'pdf') sfPlay(r.file);
+  }catch(err){ SF.busy = ''; SF.msg = 'ההעלאה נכשלה: ' + err.message; renderSongFiles(); }
+}
+document.addEventListener('click', e => { if(e.target.closest('#sh-files [data-sf]') && !e.target.closest('#sh-roll')) onSongFiles(e); });
+document.addEventListener('change', e => { if(e.target.id === 'sf-file' && e.target.files[0]){ const f = e.target.files[0]; e.target.value = ''; sfUpload(f); } });
+
+function prRerender(){ if(PR.host === 'song') renderSongRoll(); else renderPiano(); }
+function prSetLoop(a, b){ if(b - a < .1) return; PR.loop = {a, b, on:true}; const was = PR.playing; prStop(); PR.t = a; prRerender(); if(was) prPlay(); }
 function prSnap(t){ const B = PR.piece.bars; if(!B.length) return t; let best = t, bd = .35 * 60 / (PR.piece.bpm || 100); B.concat([PR.piece.dur]).forEach(x => { if(Math.abs(x - t) < bd){ bd = Math.abs(x - t); best = x; } }); return best; }
 function prTimeAtY(yPx){ return PR.t + (PR_H - PR_KH - yPx) / PR.pps; }
 function prDraw(){
@@ -7793,12 +7931,14 @@ function prPlay(){
 function prStop(){ PR.playing = false; clearTimeout(PR.timer); cancelAnimationFrame(PR.raf); const b = $('#pr-play'); if(b) b.textContent = 'נגינה'; }
 function prSeek(t){ const was = PR.playing; prStop(); PR.t = clamp(t, 0, PR.piece.dur); prDraw(); if(was) prPlay(); }
 async function onRoll(e){
-  if(PN.tab !== 'roll') return false;
+  if(e.currentTarget && e.currentTarget.id === 'pn-main' && PN.tab !== 'roll') return false;
+  if(e.currentTarget && e.currentTarget.id === 'sh-files' && !e.target.closest('#sh-roll')) return false;
   if(e.target.closest('#pr-canvas')) return true;
   const b = e.target.closest('[data-pr]'); if(!b) return false;
   const act = b.dataset.pr;
   if(act === 'file') $('#pr-file').click();
   if(act === 'play'){ if(SAMP.state === 'idle') loadPianoSamples(); PR.playing ? prStop() : prPlay(); }
+  if(act === 'song-close'){ prStop(); PR.songFile = null; PR.piece = null; PR.host = 'piano'; PRN.key = null; $('#sh-roll').innerHTML = ''; renderSongFiles(); return true; }
   if(act === 'restart') prSeek(PR.loop.on && PR.loop.a != null ? PR.loop.a : 0);
   if(act === 'zoom-in' || act === 'zoom-out'){ PR.pps = clamp(PR.pps * (act === 'zoom-in' ? 1.3 : 1 / 1.3), 25, 600); prDraw(); }
   if(act === 'loop-bars'){
@@ -7806,7 +7946,7 @@ async function onRoll(e){
     if(!a || !bb || a < 1 || bb < a || a > n){ $('#pr-loop-txt').textContent = `בחרו תיבות בין 1 ל־${n}.`; return true; }
     prSetLoop(prBarTime(a), bb + 1 <= n ? prBarTime(bb + 1) : PR.piece.dur);
   }
-  if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; PRN.pick = null; renderPiano(); }
+  if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; PRN.pick = null; prRerender(); }
   if(act === 'names-en' || act === 'names-he'){ PRN.names = act === 'names-he' ? 'he' : 'en'; try{ localStorage.setItem('pritah.prnames', PRN.names); localStorage.setItem('pritah.prnames.lang', PRN.names); }catch(err){} $$('#pr-names-lang button').forEach(x => x.setAttribute('aria-pressed', x.dataset.pr === act)); prNotesNames(); }
   if(act === 'pick'){ PRN.picking = !PRN.picking; PRN.pick = null; prNotesLoop(); prPickMsg(); if(PRN.picking && PRN.el) PRN.el.parentElement.scrollIntoView({block:'nearest', behavior:'smooth'}); }
   if(act === 'open'){ const it = prItems().find(i => i.id === b.dataset.id); prOpen({title:it.data.title, notes:decodeNotes(it.data.notes), bars:it.data.bars || [], barNums:it.data.barNums, bpm:it.data.bpm, repeated:it.data.repeated, pedal:it.data.pedal, ts:it.data.ts || null, xml:it.data.xml || '', barIdx:it.data.barIdx || null}, it.id); }
@@ -8758,17 +8898,22 @@ function init(){
   $('#pn-main').addEventListener('dragend', () => $$('#pn-main .dragging, #pn-main .drop-on').forEach(x => x.classList.remove('dragging', 'drop-on')));
   $('#pn-main').addEventListener('dragover', e => { const t = e.target.closest('.pg-cell'); if(!t) return; e.preventDefault(); $$('#pn-main .drop-on').forEach(x => x !== t && x.classList.remove('drop-on')); t.classList.add('drop-on'); });
   $('#pn-main').addEventListener('drop', e => { const t = e.target.closest('.pg-cell'); if(!t) return; e.preventDefault(); psMove(e.dataTransfer.getData('text/plain'), t.dataset.cell); });
-  $('#pn-main').addEventListener('click', async e => { if(await onRoll(e)) e.stopImmediatePropagation(); }, true);
+  wireRollHost($('#pn-main'));
+  wireRollHost($('#sh-files'));
   $('#pn-main').addEventListener('change', e => {
     if(e.target.id === 'pr-file' && e.target.files[0]){ prLoadFile(e.target.files[0]); e.target.value = ''; }
+  });
+  function wireRollHost(host){
+  host.addEventListener('click', async e => { if(await onRoll(e)) e.stopImmediatePropagation(); }, true);
+  host.addEventListener('change', e => {
     if(e.target.id === 'pr-speed'){ const was = PR.playing; prStop(); PR.speed = Number(e.target.value); if(was) prPlay(); }
     const hc = e.target.closest('[data-hand]'); if(hc){ PR.hands[hc.dataset.hand] = hc.checked; prDraw(); }
     if(e.target.id === 'pr-loop-on'){ PR.loop.on = e.target.checked; }
   });
-  $('#pn-main').addEventListener('input', e => { if(e.target.id === 'pr-scroll') prSeek(Number(e.target.value) / 10); });
-  $('#pn-main').addEventListener('change', e => { if(e.target.id === 'pr-names-on'){ PRN.names = e.target.checked ? (localStorage.getItem('pritah.prnames.lang') || 'en') : ''; try{ localStorage.setItem('pritah.prnames', PRN.names); }catch(err){} $('#pr-names-lang').hidden = !PRN.names; $$('#pr-names-lang button').forEach(x => x.setAttribute('aria-pressed', (x.dataset.pr === 'names-he') === (PRN.names === 'he'))); prNotesNames(); return; }
-    if(e.target.id === 'pr-notes-on'){ PRN.on = e.target.checked; try{ localStorage.setItem('pritah.prnotes', PRN.on ? '1' : '0'); }catch(err){} PRN.picking = false; PRN.pick = null; renderPiano(); } });
-  $('#pn-main').addEventListener('pointerdown', e => {
+  host.addEventListener('input', e => { if(e.target.id === 'pr-scroll') prSeek(Number(e.target.value) / 10); });
+  host.addEventListener('change', e => { if(e.target.id === 'pr-names-on'){ PRN.names = e.target.checked ? (localStorage.getItem('pritah.prnames.lang') || 'en') : ''; try{ localStorage.setItem('pritah.prnames', PRN.names); }catch(err){} $('#pr-names-lang').hidden = !PRN.names; $$('#pr-names-lang button').forEach(x => x.setAttribute('aria-pressed', (x.dataset.pr === 'names-he') === (PRN.names === 'he'))); prNotesNames(); return; }
+    if(e.target.id === 'pr-notes-on'){ PRN.on = e.target.checked; try{ localStorage.setItem('pritah.prnotes', PRN.on ? '1' : '0'); }catch(err){} PRN.picking = false; PRN.pick = null; prRerender(); } });
+  host.addEventListener('pointerdown', e => {
     const cv = e.target.closest('#pr-canvas'); if(!cv || !PR.piece) return;
     const r = cv.getBoundingClientRect(), yy = e.clientY - r.top; if(yy > PR_H - PR_KH) return;
     const t = prTimeAtY(yy); PR.drag = {a:t, b:t, y0:e.clientY};
@@ -8781,8 +8926,9 @@ function init(){
     };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   });
-  $('#pn-main').addEventListener('wheel', e => { if(!e.target.closest('#pr-canvas') || !PR.piece) return; e.preventDefault(); prSeek(PR.t - e.deltaY / PR.pps); }, {passive:false});
-  window.addEventListener('resize', () => { if(PN.tab === 'roll' && $('#pr-canvas')){ prResize(); prDraw(); } });
+  host.addEventListener('wheel', e => { if(!e.target.closest('#pr-canvas') || !PR.piece) return; e.preventDefault(); prSeek(PR.t - e.deltaY / PR.pps); }, {passive:false});
+  }
+  window.addEventListener('resize', () => { if($('#pr-canvas')){ prResize(); prDraw(); } });
   $('#pn-main').addEventListener('click', onPiano);
   $('#pn-main').addEventListener('change', e => {
     if(e.target.id === 'pn-scale'){ PN.scale = e.target.value; renderPiano(); }
