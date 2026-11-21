@@ -961,6 +961,10 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .pr-notes-msg.small{ padding:8px 14px 0; font-size:.85rem; }
 .prn-hl{ position:absolute; background:rgba(49,110,230,.13); border:2px solid rgba(49,110,230,.55); border-radius:6px; pointer-events:none; transition:left .12s, top .12s, width .12s; }
 .prn-loop{ position:absolute; background:rgba(255,201,51,.22); border-top:3px solid #E0A400; border-bottom:3px solid #E0A400; pointer-events:none; }
+.prn-cur{ position:absolute; width:2px; background:#E8423F; box-shadow:0 0 0 1px rgba(232,66,63,.25); pointer-events:none; z-index:3; border-radius:2px; }
+.prn-names{ position:absolute; inset:0; pointer-events:none; z-index:2; }
+.prn-nm{ position:absolute; transform:translateY(-50%); font:700 9px/1 'Assistant', Arial, sans-serif; color:#1f4fbf; background:rgba(255,255,255,.85); padding:0 1px; border-radius:2px; white-space:nowrap; }
+.pr-ntools .seg [aria-pressed="true"]{ background:var(--surface); box-shadow:0 1px 3px rgba(0,0,0,.12); }
 .prn-pk{ position:absolute; border:3px dashed #E0A400; border-radius:6px; pointer-events:none; }
 </style>
 </head>
@@ -7491,6 +7495,8 @@ function pnRoll(){
       </div>
       <div class="row pr-ntools">
         <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-notes-on" ${PRN.on ? 'checked' : ''}> הצגת תווים</label>
+        <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-names-on" ${PRN.names ? 'checked' : ''} ${PRN.on ? '' : 'disabled'}> שמות התווים</label>
+        <div class="seg" ${PRN.names ? '' : 'hidden'} id="pr-names-lang"><button type="button" data-pr="names-en" aria-pressed="${PRN.names !== 'he'}">C D E</button><button type="button" data-pr="names-he" aria-pressed="${PRN.names === 'he'}">דו רה מי</button></div>
         <button class="btn small" data-pr="pick" aria-pressed="${!!PRN.picking}" ${PRN.on ? '' : 'disabled'}>סימון קטע ללופ בתווים</button>
         <span class="muted" id="pr-pick-msg"></span>
       </div>
@@ -7505,7 +7511,7 @@ function pnRoll(){
   if(P){ prResize(); prDraw(); prNotationRender(); prPickMsg(); }
 }
 /* ================== תווים מעל ה־Piano Roll ================== */
-const PRN = {on:(() => { try{ return localStorage.getItem('pritah.prnotes') !== '0'; }catch(e){ return true; } })(), el:null, osmd:null, key:null, boxes:[], cur:-1, pick:null, lib:null, msg:''};
+const PRN = {names:(() => { try{ return localStorage.getItem('pritah.prnames') || ''; }catch(e){ return ''; } })(), ents:[], on:(() => { try{ return localStorage.getItem('pritah.prnotes') !== '0'; }catch(e){ return true; } })(), el:null, osmd:null, key:null, boxes:[], cur:-1, pick:null, lib:null, msg:''};
 function loadOSMD(){
   if(window.opensheetmusicdisplay) return Promise.resolve(window.opensheetmusicdisplay);
   if(PRN.lib) return PRN.lib;
@@ -7587,8 +7593,9 @@ async function prNotationRender(){
     osmd.zoom = innerWidth < 700 ? .6 : .8;
     osmd.render();
     PRN.osmd = osmd;
-    ['hl', 'pk'].forEach(c => { const d = document.createElement('div'); d.className = 'prn-' + c; d.hidden = true; PRN.el.appendChild(d); });
+    ['hl', 'pk', 'cur'].forEach(c => { const d = document.createElement('div'); d.className = 'prn-' + c; d.hidden = true; PRN.el.appendChild(d); });
     const lp = document.createElement('div'); lp.className = 'prn-loops'; PRN.el.appendChild(lp);
+    const nm = document.createElement('div'); nm.className = 'prn-names'; PRN.el.appendChild(nm);
     if(!P.xml){ const n = document.createElement('p'); n.className = 'pr-notes-msg small'; n.textContent = 'התווים נבנו מתוך הנגינה (MIDI או יצירה שמורה), ולכן הם בקירוב: המקצבים מיושרים לשש־עשריות, והחזרות כבר פרוסות.'; PRN.el.prepend(n); }
     prNotesBoxes(); prNotesSync(true);
   }catch(e){ PRN.el.innerHTML = `<p class="pr-notes-msg">לא הצלחתי להציג את התווים של הקובץ הזה (${esc(e.message || e)}). הנגינה עובדת כרגיל.</p>`; }
@@ -7601,12 +7608,82 @@ function prNotesBoxes(){
     (staves || []).forEach(gm => { if(!gm || !gm.PositionAndShape) return; const ps = gm.PositionAndShape, a = ps.AbsolutePosition, sz = ps.Size; x0 = Math.min(x0, a.x); x1 = Math.max(x1, a.x + sz.width); y0 = Math.min(y0, a.y + (ps.BorderTop || 0)); y1 = Math.max(y1, a.y + (ps.BorderBottom || sz.height)); });
     return x0 === Infinity ? null : {x:offX + x0 * u, y:off + y0 * u - 6, w:(x1 - x0) * u, h:(y1 - y0) * u + 12};
   });
+  prNotesEntries();
   prNotesLoop();
+  prNotesNames();
+}
+/* מיקום כל "רגע" בתיבה (לפי התווים עצמם), כדי שהסמן ילך בדיוק עם הנגינה */
+const fracVal = f => f == null ? null : typeof f.RealValue === 'number' ? f.RealValue : typeof f === 'number' ? f : (f.Numerator != null ? f.Numerator / f.Denominator : null);
+function gnHead(gn){
+  try{ const g = gn.getSVGGElement && gn.getSVGGElement(); if(!g) return null; const hs = [...g.querySelectorAll('.vf-notehead')]; return {g, hs:hs.length ? hs : [g]}; }catch(e){ return null; }
+}
+function prNotesEntries(){
+  const o = PRN.osmd, er = PRN.el.getBoundingClientRect(); PRN.ents = [];
+  (o.GraphicSheet.MeasureList || []).forEach((staves, mi) => {
+    const list = [], box = PRN.boxes[mi]; let dur = null;
+    (staves || []).forEach(gm => {
+      if(!gm) return;
+      try{ if(dur == null) dur = fracVal(gm.parentSourceMeasure && gm.parentSourceMeasure.Duration); }catch(e){}
+      (gm.staffEntries || []).forEach(se => {
+        const ts = fracVal(se.relInMeasureTimestamp); if(ts == null) return;
+        let x = null;
+        (se.graphicalVoiceEntries || []).forEach(ve => (ve.notes || []).forEach(gn => { if(x != null) return; const h = gnHead(gn); if(h){ const r = h.hs[0].getBoundingClientRect(); if(r.width) x = r.left - er.left + r.width / 2; } }));
+        if(x == null && se.PositionAndShape && box){ x = box.x + (se.PositionAndShape.AbsolutePosition.x * 10 * o.zoom - (box.x - (PRN.el.querySelector('.pr-notes-svg') || {offsetLeft:0}).offsetLeft)); }
+        if(x != null) list.push({ts, x});
+      });
+    });
+    list.sort((a, b) => a.ts - b.ts || a.x - b.x);
+    const uniq = []; list.forEach(e => { const l = uniq[uniq.length - 1]; if(l && Math.abs(l.ts - e.ts) < 1e-6) l.x = Math.min(l.x, e.x); else uniq.push(e); });
+    PRN.ents[mi] = {dur:dur || (uniq.length ? uniq[uniq.length - 1].ts * 1.25 || 1 : 1), list:uniq};
+  });
+}
+function prCursorX(mi, f){
+  const b = PRN.boxes[mi], E = PRN.ents[mi]; if(!b) return null;
+  const end = b.x + b.w - 4;
+  if(!E || !E.list.length) return b.x + 10 + f * (b.w - 14);
+  const pos = f * E.dur, L = E.list;
+  let i = -1; for(let k = 0; k < L.length; k++){ if(L[k].ts <= pos + 1e-6) i = k; else break; }
+  if(i < 0) return L[0].x;
+  const a = L[i], nx = i + 1 < L.length ? L[i + 1] : {ts:E.dur, x:end};
+  const span = nx.ts - a.ts; return a.x + (span > 0 ? (pos - a.ts) / span : 0) * (nx.x - a.x);
+}
+/* שמות התווים ליד כל תו */
+const NAME_EN = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
+function pitchName(pt){
+  if(!pt) return '';
+  const fn = pt.FundamentalNote != null ? Number(pt.FundamentalNote) : null; if(fn == null || isNaN(fn)) return '';
+  const steps = {0:['C', 'דו'], 2:['D', 'רה'], 4:['E', 'מי'], 5:['F', 'פה'], 7:['G', 'סול'], 9:['A', 'לה'], 11:['B', 'סי']}, st = steps[fn]; if(!st) return '';
+  let acc = 0; try{ acc = pt.AccidentalHalfTones != null ? Number(pt.AccidentalHalfTones) : 0; }catch(e){}
+  const sign = acc >= 2 ? '𝄪' : acc === 1 ? '♯' : acc === -1 ? '♭' : acc <= -2 ? '𝄫' : '';
+  return (PRN.names === 'he' ? st[1] : st[0]) + sign;
+}
+function prNotesNames(){
+  const box = PRN.el && PRN.el.querySelector('.prn-names'); if(!box) return;
+  box.innerHTML = ''; if(!PRN.names || !PRN.osmd) return;
+  const er = PRN.el.getBoundingClientRect(), groups = new Map();
+  (PRN.osmd.GraphicSheet.MeasureList || []).forEach(staves => (staves || []).forEach(gm => (gm && gm.staffEntries || []).forEach(se => (se.graphicalVoiceEntries || []).forEach(ve => (ve.notes || []).forEach(gn => {
+    const sn = gn.sourceNote; if(!sn || !sn.Pitch || (sn.isRest && sn.isRest())) return;
+    try{ if(sn.NoteTie && sn.NoteTie.StartNote && sn.NoteTie.StartNote !== sn) return; }catch(e){}
+    const h = gnHead(gn); if(!h) return;
+    const pt = sn.Pitch, key = ((Number(pt.Octave) || 0) * 12) + (Number(pt.FundamentalNote) || 0) + (Number(pt.AccidentalHalfTones) || 0);
+    if(!groups.has(h.g)) groups.set(h.g, {hs:h.hs, notes:[]});
+    groups.get(h.g).notes.push({key, name:pitchName(pt)});
+  })))));
+  let html = '';
+  groups.forEach(({hs, notes}) => {
+    const heads = hs.map(x => x.getBoundingClientRect()).filter(r => r.width).sort((a, b) => b.top - a.top);
+    notes.sort((a, b) => a.key - b.key);
+    notes.forEach((n, i) => { const r = heads[Math.min(i, heads.length - 1)]; if(!r || !n.name) return; html += `<span class="prn-nm" style="left:${(r.right - er.left + 1).toFixed(1)}px;top:${(r.top - er.top + r.height / 2).toFixed(1)}px">${esc(n.name)}</span>`; });
+  });
+  box.innerHTML = html;
 }
 function place(el, b){ if(!el) return; if(!b){ el.hidden = true; return; } el.hidden = false; Object.assign(el.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px'}); }
 function prNotesSync(force){
   const P = PR.piece; if(!P || !PRN.osmd || !PRN.on || !PRN.el || !PRN.el.isConnected) return;
-  const mi = P.barIdx[prBarAt(PR.t) - 1];
+  const bi = prBarAt(PR.t) - 1, mi = P.barIdx[bi], t0 = P.bars[bi], t1 = bi + 1 < P.bars.length ? P.bars[bi + 1] : P.dur;
+  const cb = PRN.boxes[mi], cur = PRN.el.querySelector('.prn-cur');
+  if(cur && cb){ const f = Math.min(1, Math.max(0, (PR.t - t0) / Math.max(.001, t1 - t0))), x = prCursorX(mi, f); cur.hidden = x == null; if(x != null) Object.assign(cur.style, {left:(x - 1).toFixed(1) + 'px', top:cb.y + 'px', height:cb.h + 'px'}); }
+  else if(cur) cur.hidden = true;
   if(mi === PRN.cur && !force) return;
   PRN.cur = mi; const b = PRN.boxes[mi];
   place(PRN.el.querySelector('.prn-hl'), b);
@@ -7730,6 +7807,7 @@ async function onRoll(e){
     prSetLoop(prBarTime(a), bb + 1 <= n ? prBarTime(bb + 1) : PR.piece.dur);
   }
   if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; PRN.pick = null; renderPiano(); }
+  if(act === 'names-en' || act === 'names-he'){ PRN.names = act === 'names-he' ? 'he' : 'en'; try{ localStorage.setItem('pritah.prnames', PRN.names); localStorage.setItem('pritah.prnames.lang', PRN.names); }catch(err){} $$('#pr-names-lang button').forEach(x => x.setAttribute('aria-pressed', x.dataset.pr === act)); prNotesNames(); }
   if(act === 'pick'){ PRN.picking = !PRN.picking; PRN.pick = null; prNotesLoop(); prPickMsg(); if(PRN.picking && PRN.el) PRN.el.parentElement.scrollIntoView({block:'nearest', behavior:'smooth'}); }
   if(act === 'open'){ const it = prItems().find(i => i.id === b.dataset.id); prOpen({title:it.data.title, notes:decodeNotes(it.data.notes), bars:it.data.bars || [], barNums:it.data.barNums, bpm:it.data.bpm, repeated:it.data.repeated, pedal:it.data.pedal, ts:it.data.ts || null, xml:it.data.xml || '', barIdx:it.data.barIdx || null}, it.id); }
   if(act === 'del'){ const it = prItems().find(i => i.id === b.dataset.id); if(!confirm(`למחוק את "${it.data.title}" מהרשימה?`)) return true; const r = await tCall('teacherDeleteContent', {id:it.id}); LIB.items = r.items; T.data.pvoices = r.items.filter(i => ['pvoice','pgrid','psong','plink','proll'].includes(i.kind)); if(PR.savedId === it.id) PR.savedId = null; renderPiano(); }
@@ -8688,7 +8766,8 @@ function init(){
     if(e.target.id === 'pr-loop-on'){ PR.loop.on = e.target.checked; }
   });
   $('#pn-main').addEventListener('input', e => { if(e.target.id === 'pr-scroll') prSeek(Number(e.target.value) / 10); });
-  $('#pn-main').addEventListener('change', e => { if(e.target.id === 'pr-notes-on'){ PRN.on = e.target.checked; try{ localStorage.setItem('pritah.prnotes', PRN.on ? '1' : '0'); }catch(err){} PRN.picking = false; PRN.pick = null; renderPiano(); } });
+  $('#pn-main').addEventListener('change', e => { if(e.target.id === 'pr-names-on'){ PRN.names = e.target.checked ? (localStorage.getItem('pritah.prnames.lang') || 'en') : ''; try{ localStorage.setItem('pritah.prnames', PRN.names); }catch(err){} $('#pr-names-lang').hidden = !PRN.names; $$('#pr-names-lang button').forEach(x => x.setAttribute('aria-pressed', (x.dataset.pr === 'names-he') === (PRN.names === 'he'))); prNotesNames(); return; }
+    if(e.target.id === 'pr-notes-on'){ PRN.on = e.target.checked; try{ localStorage.setItem('pritah.prnotes', PRN.on ? '1' : '0'); }catch(err){} PRN.picking = false; PRN.pick = null; renderPiano(); } });
   $('#pn-main').addEventListener('pointerdown', e => {
     const cv = e.target.closest('#pr-canvas'); if(!cv || !PR.piece) return;
     const r = cv.getBoundingClientRect(), yy = e.clientY - r.top; if(yy > PR_H - PR_KH) return;
