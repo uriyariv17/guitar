@@ -1236,7 +1236,7 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
             <div id="lp-saved-wrap" class="stack" style="gap:6px" hidden><span class="opt-l">קטעים שהמורה שמר</span><div class="seg" id="lp-saved"></div></div>
           </div>
           </div>
-          <div id="sh-files" class="sub-panel" hidden></div>
+          <div id="sh-files" class="sub-panel sf-box" hidden></div>
           <div id="sh-part" class="sub-panel" hidden>
             <div class="spread">
               <h4>מילים ואקורדים</h4>
@@ -2609,7 +2609,7 @@ function serverHandle(req, store, teacherPassword){
   if(a === 'songFile'){
     const fid = String(req.fileId || ''); if(!fid) throw new Error('הקובץ לא נמצא.');
     let meta = null;
-    store.all('Content').forEach(c => { if(meta || String(c.kind) !== 'song') return; const f = (nContent(c).data.files || []).find(x => String(x.id) === fid); if(f) meta = f; });
+    store.all('Content').forEach(c => { if(meta || (String(c.kind) !== 'song' && String(c.kind) !== 'psong')) return; const f = (nContent(c).data.files || []).find(x => String(x.id) === fid); if(f) meta = f; });
     if(!meta) throw new Error('הקובץ לא נמצא בשירים.');
     if(/^data:/.test(String(meta.url || ''))) return {name:meta.name, mime:meta.mime, data:String(meta.url).split(',')[1] || ''};
     if(typeof DriveApp === 'undefined') throw new Error('הקובץ לא זמין.');
@@ -3025,7 +3025,7 @@ function serverHandle(req, store, teacherPassword){
     }
     if(a === 'teacherTrashSongFile'){
       const fid = String(req.fileId || '');
-      const used = store.all('Content').some(c => String(c.kind) === 'song' && (nContent(c).data.files || []).some(x => String(x.id) === fid));
+      const used = store.all('Content').some(c => (String(c.kind) === 'song' || String(c.kind) === 'psong') && (nContent(c).data.files || []).some(x => String(x.id) === fid));
       if(!used && fid && typeof DriveApp !== 'undefined'){ try{ DriveApp.getFileById(fid).setTrashed(true); }catch(e){} }
       return {};
     }
@@ -3978,7 +3978,7 @@ async function openSong(song, targetBpm){
   loadShift(song);
   $('#sg-empty').hidden = true; $('#sg-main').hidden = false;
   $('#sg-video-part').hidden = !vid;
-  renderSongUI(); renderSheet(); renderSongFiles();
+  renderSongUI(); renderSheet(); SFX = {kind:'song', box:'#sh-files', id:song.id || ''}; renderSongFiles();
   if(!vid){ if(SG.ready && SG.player.getPlayerState() === 1) SG.player.pauseVideo(); return; }
   try{ await ytLoad(); }catch(e){ $('#yt-err').textContent = e.message; return; }
   if(!SG.player){
@@ -7024,7 +7024,9 @@ function psView(){
       <div class="pchords" id="ps-chords"></div>
       <div class="sheet" id="ps-sheet"></div></div>`;
   } else h += `<div class="sub-panel" style="margin-top:12px"><div class="spread"><h3>מילים ואקורדים</h3><button class="btn small primary" data-ps="edit">הוספת מילים ואקורדים</button></div><p class="muted">עוד אין מילים ואקורדים לשיר.</p></div>`;
+  h = h.replace('<div id="ps-details"', '<div class="sub-panel sf-box" id="ps-files" style="margin-top:12px"></div><div id="ps-details"');
   $('#pn-main').innerHTML = h;
+  SFX = {kind:'psong', box:'#ps-files', id:it.id}; renderSongFiles();
   if(editing) wireInline(async f => { const cur = pSongs().find(i => i.id === it.id); await saveItems([{id:it.id, kind:'psong', data:Object.assign({}, cur.data, f)}]); }, () => renderPiano());
   else if(has){
     const {html, used} = renderSheetHTML(d.sheet, PN.shift, d.key), el = $('#ps-sheet');
@@ -7038,7 +7040,7 @@ async function onPsong(e){
   const ch = e.target.closest('#ps-sheet [data-c]'); if(ch){ const v = pianoVoicingFor(ch.dataset.c); if(v) pianoPlay(v.ms, false); return true; }
   const b = e.target.closest('[data-ps]'); if(!b) return false;
   const act = b.dataset.ps, it = pSongs().find(i => i.id === PN.songId);
-  if(act === 'back'){ if(INL.ctx === 'piano' && INL.dirty && !confirm('לצאת בלי לשמור?')) return true; INL.ctx = ''; PN.songId = null; renderPiano(); return true; }
+  if(act === 'back'){ if(INL.ctx === 'piano' && INL.dirty && !confirm('לצאת בלי לשמור?')) return true; INL.ctx = ''; PN.songId = null; if(PR.host === 'song' && SFX.kind === 'psong'){ prStop(); PR.songFile = null; } renderPiano(); return true; }
   if(act === 'edit'){ startInline('piano', it.id, it.data); renderPiano(); return true; }
   if(act === 'details'){ $('#ps-details').hidden = !$('#ps-details').hidden; return true; }
   if(act === 'save-details'){ const name = $('#ps-name').value.trim(), url = $('#ps-url').value.trim(); if(!name) return true; if(url && !/^https?:\/\//i.test(url)){ alert('הקישור צריך להתחיל ב־https://'); return true; } await saveItems([{id:it.id, kind:'psong', data:Object.assign({}, it.data, {name, url})}]); renderPiano(); return true; }
@@ -7522,7 +7524,7 @@ function encodeNotes(ns){ return ns.map(n => [n.midi, r100(n.s), Math.max(1, r10
 function decodeNotes(s){ return String(s || '').split(';').filter(Boolean).map(t => { const [m, a, d, h, v, x] = t.split(',').map(z => parseInt(z, 36)); return {midi:m, s:a / 100, d:d / 100, ds:(d + (x || 0)) / 100, hand:h, vel:(v || 6) / 9}; }); }
 function pnRoll(){
   if(SAMP.state === 'idle') loadPianoSamples();
-  if(PR.host !== 'piano'){ prStop(); PR.host = 'piano'; PR.piece = PR.pianoPiece; PR.t = 0; PR.loop = {a:null, b:null, on:false}; PRN.key = null; PR.songFile = null; }
+  if(PR.host !== 'piano'){ prStop(); PR.host = 'piano'; PR.songFile = null; PR.piece = PR.pianoPiece; PR.t = 0; PR.loop = {a:null, b:null, on:false}; PRN.key = null; PR.songFile = null; }
   const P = PR.piece, saved = prItems().sort((a, b) => String(a.data.title).localeCompare(String(b.data.title), 'he'));
   let h = `<div class="pr-intro">
       <h3>Piano Roll</h3>
@@ -7578,7 +7580,7 @@ function prPlayerHTML(P, inSong){
       </div>
       <div class="row pr-ctools">
         <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-ch-on" ${CH.show ? 'checked' : ''}> אקורדים</label>
-        ${CH.show ? `<button class="btn small" data-pr="ch-only" aria-pressed="${CH.only}" title="במקום התווים, הנגינה משמיעה את האקורדים שזוהו">רק אקורדים (בלי מלודיה)</button>${degBtnHTML()}${(inSong ? SG.song && canEditLib(SG.song) : !!T.data) ? `<button class="btn small" data-pr="ch-edit" aria-pressed="${CH.edit}">${CH.edit ? 'סיום ושמירה' : 'תיקון אקורדים'}</button>` : ''}` : ''}
+        ${CH.show ? `<button class="btn small" data-pr="ch-only" aria-pressed="${CH.only}" title="במקום התווים, הנגינה משמיעה את האקורדים שזוהו">רק אקורדים (בלי מלודיה)</button>${degBtnHTML()}${(inSong ? sfCan() : !!T.data) ? `<button class="btn small" data-pr="ch-edit" aria-pressed="${CH.edit}">${CH.edit ? 'סיום ושמירה' : 'תיקון אקורדים'}</button>` : ''}` : ''}
       </div>
       <div id="pr-chords">${prChordStripHTML()}</div>
       <div class="pr-notes-scroll" id="pr-notes-slot" ${PRN.on ? '' : 'hidden'}></div>
@@ -7878,7 +7880,7 @@ function prCurSeg(segs){ const t = PR.t; let k = -1; segs.forEach((g, i) => { if
 function prMergedSegs(segs){ const out = []; segs.forEach((g, i) => { const l = out[out.length - 1]; if(l && l.name === g.name && Math.abs(l.e - g.s) < .01){ l.e = g.e; l.idx.push(i); } else out.push(Object.assign({}, g, {idx:[i]})); }); return out; }
 function prChordStripHTML(){
   if(!CH.show) return '';
-  const segs = prChords(), M = prMergedSegs(segs), canFix = PR.host === 'song' ? (SG.song && canEditLib(SG.song)) : !!T.data;
+  const segs = prChords(), M = prMergedSegs(segs), canFix = PR.host === 'song' ? sfCan() : !!T.data;
   return `<div class="pr-chstrip" dir="ltr">${CH.edit
     ? segs.map((g, i) => `<label class="pr-chi${g.fixed ? ' fx' : ''}"><small>${g.bi + 1}${g.half === 0 ? 'א' : g.half === 1 ? 'ב' : ''}</small><input value="${esc(g.name)}" data-seg="${i}" maxlength="12" spellcheck="false" aria-label="אקורד בתיבה ${g.bi + 1}"></label>`).join('')
     : M.map(m => `<button type="button" class="pr-ch" data-chs="${m.idx[0]}" title="תיבה ${m.s === segs[m.idx[0]].s ? segs[m.idx[0]].bi + 1 : ''}"><b>${prChordLabel(m.name, true) || '–'}</b><small>${segs[m.idx[0]].bi + 1}</small></button>`).join('')}</div>
@@ -7887,8 +7889,8 @@ function prChordStripHTML(){
 }
 async function prSaveChordFix(){
   const P = PR.piece, fix = P.chordFix || {};
-  if(PR.host === 'song' && PR.songFile && SG.song && canEditLib(SG.song)){
-    const files = (SG.song.files || []).map(f => f.id === PR.songFile ? Object.assign({}, f, {chordFix:fix}) : f);
+  if(PR.host === 'song' && PR.songFile && sfCan()){
+    const files = sfFiles().map(f => f.id === PR.songFile ? Object.assign({}, f, {chordFix:fix}) : f);
     try{ await sfSaveFiles(files); toast('האקורדים נשמרו'); }catch(e){ alert('השמירה נכשלה: ' + e.message); }
   } else if(PR.host === 'piano' && PR.savedId){
     const it = prItems().find(i => i.id === PR.savedId); if(!it) return;
@@ -7926,11 +7928,17 @@ function prChordSync(){
 
 /* ================== קבצי שיר: PDF, MusicXML ו־MIDI בתוך דף השיר ================== */
 const SF = {pdfOpen:null, busy:'', msg:''};
+/* איפה מוצגים הקבצים: שיר בספרייה (נגן השירים) או שיר בפסנתר */
+let SFX = {kind:'song', box:'#sh-files', id:''};
+function sfItem(){ return LIB.items.find(i => i.id === SFX.id && i.kind === SFX.kind) || null; }
+function sfCan(){ return SFX.kind === 'psong' ? !!T.data : !!(SG.song && canEditLib(SG.song)); }
+function sfFiles(){ const it = sfItem(); return it && Array.isArray(it.data.files) ? it.data.files : []; }
 const SF_ICON = {pdf:'PDF', xml:'XML', mxl:'MXL', mid:'MIDI'};
 function sfFileType(f){ return f.type || (/\.pdf$/i.test(f.name) ? 'pdf' : /\.mxl$/i.test(f.name) ? 'mxl' : /\.midi?$/i.test(f.name) ? 'mid' : 'xml'); }
 function renderSongFiles(){
-  const box = $('#sh-files'), s = SG.song; if(!box) return;
-  const files = s && s.id ? s.files || [] : [], can = s && canEditLib(s);
+  const box = $(SFX.box); if(!box) return;
+  ['#sh-files', '#ps-files'].forEach(o => { if(o !== SFX.box && $(o)){ $(o).innerHTML = ''; if(o === '#sh-files') $(o).hidden = true; } });
+  const files = sfFiles(), can = sfCan(), s = sfItem();
   if(!s || (!files.length && !can)){ box.hidden = true; box.innerHTML = ''; return; }
   const rollOpen = PR.host === 'song' && PR.songFile && files.some(f => f.id === PR.songFile);
   box.hidden = false;
@@ -7959,7 +7967,7 @@ async function sfPlay(f){
     const r = await api('songFile', {fileId:f.id});
     const piece = await pieceFromFile(new File([b64ToBytes(r.data || '')], f.name));
     if(!piece.notes.length) throw new Error('לא נמצאו תווים בקובץ.');
-    piece.title = SG.song.name || piece.title; piece.chordFix = f.chordFix || {};
+    piece.title = (sfItem() || {data:{}}).data.name || piece.title; piece.chordFix = f.chordFix || {};
     if(SAMP.state === 'idle') loadPianoSamples();
     PR.songFile = f.id; SF.msg = '';
     prOpen(piece, null, 'song');
@@ -7968,22 +7976,22 @@ async function sfPlay(f){
   }catch(e){ SF.msg = 'לא הצלחתי לפתוח את הקובץ: ' + e.message; renderSongFiles(); }
 }
 async function sfSaveFiles(files){
-  const it = LIB.items.find(i => i.id === SG.song.id); if(!it) throw new Error('השיר לא נמצא.');
+  const it = sfItem(); if(!it) throw new Error('השיר לא נמצא.');
   const data = Object.assign({}, it.data, {files});
-  const r = await saveItems([{id:it.id, kind:'song', data}]);
+  const r = await saveItems([{id:it.id, kind:SFX.kind, data}]);
   if(r && r.sent) await r.sent;
-  SG.song.files = files;
+  if(SFX.kind === 'song' && SG.song && SG.song.id === it.id) SG.song.files = files;
 }
 async function onSongFiles(e){
   const b = e.target.closest('[data-sf]'); if(!b) return;
-  const s = SG.song, act = b.dataset.sf, f = (s.files || []).find(x => x.id === b.dataset.id);
+  const act = b.dataset.sf, files = sfFiles(), f = files.find(x => x.id === b.dataset.id);
   if(act === 'up') return $('#sf-file').click();
   if(act === 'pdf'){ SF.pdfOpen = SF.pdfOpen === f.id ? null : f.id; return renderSongFiles(); }
   if(act === 'play'){ if(PR.songFile === f.id && PR.host === 'song'){ const r2 = $('#sh-roll'); if(r2) r2.scrollIntoView({block:'start', behavior:'smooth'}); return; } return sfPlay(f); }
   if(act === 'del'){
     if(!confirm(`למחוק את "${f.name}" מהשיר?`)) return;
     if(PR.songFile === f.id){ prStop(); PR.songFile = null; PR.piece = null; PR.host = 'piano'; PRN.key = null; }
-    try{ await sfSaveFiles(s.files.filter(x => x.id !== f.id)); api('teacherTrashSongFile', {password:T.pw, fileId:f.id}).catch(() => {}); SF.msg = ''; }
+    try{ await sfSaveFiles(files.filter(x => x.id !== f.id)); api('teacherTrashSongFile', {password:T.pw, fileId:f.id}).catch(() => {}); SF.msg = ''; }
     catch(err){ SF.msg = 'המחיקה נכשלה: ' + err.message; }
     renderSongFiles();
   }
@@ -7996,13 +8004,13 @@ async function sfUpload(file){
     if(!/\.pdf$/i.test(file.name)) await pieceFromFile(file);
     const data = await blobToB64(file);
     const r = await api('teacherUploadSongFile', {password:T.pw, name:file.name, data});
-    await sfSaveFiles((SG.song.files || []).concat([r.file]));
+    await sfSaveFiles(sfFiles().concat([r.file]));
     SF.msg = 'הקובץ נשמר בדף השיר.';
     SF.busy = ''; renderSongFiles();
     if(r.file.type !== 'pdf') sfPlay(r.file);
   }catch(err){ SF.busy = ''; SF.msg = 'ההעלאה נכשלה: ' + err.message; renderSongFiles(); }
 }
-document.addEventListener('click', e => { if(e.target.closest('#sh-files [data-sf]') && !e.target.closest('#sh-roll')) onSongFiles(e); });
+document.addEventListener('click', e => { if(e.target.closest('.sf-box [data-sf]') && !e.target.closest('#sh-roll')) onSongFiles(e); });
 document.addEventListener('change', e => { if(e.target.id === 'sf-file' && e.target.files[0]){ const f = e.target.files[0]; e.target.value = ''; sfUpload(f); } });
 
 function prRerender(){ if(PR.host === 'song') renderSongRoll(); else renderPiano(); }
@@ -8081,7 +8089,7 @@ function prPlay(){
 function prStop(){ PR.playing = false; clearTimeout(PR.timer); cancelAnimationFrame(PR.raf); const b = $('#pr-play'); if(b) b.textContent = 'נגינה'; }
 function prSeek(t){ const was = PR.playing; prStop(); PR.t = clamp(t, 0, PR.piece.dur); prDraw(); if(was) prPlay(); }
 async function onRoll(e){
-  if(e.currentTarget && e.currentTarget.id === 'pn-main' && PN.tab !== 'roll') return false;
+  if(e.currentTarget && e.currentTarget.id === 'pn-main' && PN.tab !== 'roll' && !e.target.closest('#sh-roll')) return false;
   if(e.currentTarget && e.currentTarget.id === 'sh-files' && !e.target.closest('#sh-roll')) return false;
   if(e.target.closest('#pr-canvas')) return true;
   const chb = e.target.closest('[data-chs]'); if(chb){ const g = prChords()[Number(chb.dataset.chs)]; if(g) prSeek(g.s); return true; }
