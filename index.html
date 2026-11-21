@@ -952,6 +952,16 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .sheet .ch.deg .doff{ font-size:.72em; font-weight:600; margin-inline-start:1px; }
 .sheet .ch.deg.out{ background:#ffe066; color:#5a4300; padding:0 3px; border-radius:4px; }
 .deg-tog[aria-pressed="true"]{ background:var(--blue); color:#fff; border-color:var(--blue); }
+.pr-ntools{ margin:10px 0 6px; align-items:center; }
+.pr-ntools [aria-pressed="true"]{ background:#E0A400; color:#1b1300; border-color:#E0A400; }
+.pr-notes-scroll{ max-height:340px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:12px; margin-bottom:10px; position:relative; }
+.pr-notes{ position:relative; min-height:60px; cursor:pointer; color:#111; }
+.pr-notes-svg svg{ display:block; }
+.pr-notes-msg{ margin:0; padding:14px 16px; color:#5b667a; direction:rtl; text-align:right; font-size:.95rem; }
+.pr-notes-msg.small{ padding:8px 14px 0; font-size:.85rem; }
+.prn-hl{ position:absolute; background:rgba(49,110,230,.13); border:2px solid rgba(49,110,230,.55); border-radius:6px; pointer-events:none; transition:left .12s, top .12s, width .12s; }
+.prn-loop{ position:absolute; background:rgba(255,201,51,.22); border-top:3px solid #E0A400; border-bottom:3px solid #E0A400; pointer-events:none; }
+.prn-pk{ position:absolute; border:3px dashed #E0A400; border-radius:6px; pointer-events:none; }
 </style>
 </head>
 <body>
@@ -7310,7 +7320,7 @@ function parseMusicXML(text){
       const meas = measures[mi]; if(!meas) return;
       if(k > 0 && order[k - 1] >= mi) repeated = true;
       const mStart = pos; let maxPos = pos;
-      if(pi === 0) bars.push({q:mStart, n:Number(meas.getAttribute('number')) || mi + 1});
+      if(pi === 0) bars.push({q:mStart, n:Number(meas.getAttribute('number')) || mi + 1, i:mi});
       [...meas.children].forEach(el => {
         const tag = el.tagName;
         if(tag === 'attributes'){ const d = el.querySelector('divisions'); if(d) div = Number(d.textContent) || 1; }
@@ -7361,7 +7371,7 @@ function parseMusicXML(text){
     let ds = d; const pe = ped.find(([a, b]) => s + d > a - .01 && s + d <= b + .01); if(pe) ds = Math.max(d, pe[1] - s);
     return {midi:n.midi, s, d, ds, hand:n.hand, vel:n.vel};
   }).sort((a, b) => a.s - b.s || a.midi - b.midi);
-  return {title:title.trim(), notes:out, bars:bars.map(b => toSec(b.q)), barNums:bars.map(b => b.n), bpm:(tempos[0] || {bpm:100}).bpm, repeated, pedal:ped.length > 0};
+  return {title:title.trim(), notes:out, bars:bars.map(b => toSec(b.q)), barNums:bars.map(b => b.n), barIdx:bars.map(b => b.i), xml:text, bpm:(tempos[0] || {bpm:100}).bpm, repeated, pedal:ped.length > 0};
 }
 function parseMIDI(buf){
   const u8 = new Uint8Array(buf); let p = 0;
@@ -7405,7 +7415,7 @@ function parseMIDI(buf){
   const ts = timesig.length ? timesig.slice().sort((a, b) => a.tick - b.tick) : [{tick:0, num:4, den:4}];
   let q = 0, k = 0;
   while(q <= lastQ + .01 && bars.length < 5000){ while(k + 1 < ts.length && ts[k + 1].tick / division <= q + 1e-6) k++; bars.push(toSec(q)); q += ts[k].num * 4 / ts[k].den; }
-  return {title:'', notes:all, bars, barNums:bars.map((_, i) => i + 1), bpm:tempos.length ? Math.round(60000000 / tempos[0].us) : 120, repeated:false, pedal:ped.length > 0};
+  return {title:'', notes:all, bars, barNums:bars.map((_, i) => i + 1), ts:[ts[0].num, ts[0].den], bpm:tempos.length ? Math.round(60000000 / tempos[0].us) : 120, repeated:false, pedal:ped.length > 0};
 }
 async function prLoadFile(f){
   const name = f.name.toLowerCase(), msg = $('#pr-msg'); msg.textContent = 'קורא את הקובץ…';
@@ -7432,6 +7442,8 @@ function prOpen(piece, savedId){
   piece.dur = Math.max(...piece.notes.map(n => n.s + n.d));
   piece.lo = Math.min(...piece.notes.map(n => n.midi)); piece.hi = Math.max(...piece.notes.map(n => n.midi));
   piece.barNums = piece.barNums && piece.barNums.length === piece.bars.length ? piece.barNums : piece.bars.map((_, i) => i + 1);
+  if(!piece.xml || !piece.barIdx || piece.barIdx.length !== piece.bars.length) piece.barIdx = piece.bars.map((_, i) => i);
+  PRN.key = null; PRN.pick = null;
   renderPiano();
 }
 const r100 = v => Math.round(v * 100);
@@ -7477,15 +7489,156 @@ function pnRoll(){
         ${PR.loop.a != null ? '<button class="btn ghost small" data-pr="loop-clear">ביטול הלולאה</button>' : ''}
         <span class="muted" id="pr-loop-txt">${PR.loop.a != null ? '' : 'או גוררים למעלה או למטה על התצוגה כדי לסמן קטע.'}</span>
       </div>
+      <div class="row pr-ntools">
+        <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-notes-on" ${PRN.on ? 'checked' : ''}> הצגת תווים</label>
+        <button class="btn small" data-pr="pick" aria-pressed="${!!PRN.picking}" ${PRN.on ? '' : 'disabled'}>סימון קטע ללופ בתווים</button>
+        <span class="muted" id="pr-pick-msg"></span>
+      </div>
+      <div class="pr-notes-scroll" id="pr-notes-slot" ${PRN.on ? '' : 'hidden'}></div>
       <div class="pr-wrap" dir="ltr"><canvas id="pr-canvas"></canvas></div>
       <input type="range" id="pr-scroll" min="0" max="${Math.ceil(P.dur * 10)}" value="${Math.round(PR.t * 10)}" dir="ltr" aria-label="מיקום ביצירה" style="width:100%">
-      <p class="hint">התווים יורדים אל המקלדת, והקו האדום הוא הרגע הנוכחי. גלגלת העכבר או הפס שמתחת מזיזים את המיקום. גרירה למעלה או למטה מסמנת קטע ללולאה.</p>
+      <p class="hint">התווים יורדים אל המקלדת, והקו האדום הוא הרגע הנוכחי. גלגלת העכבר או הפס שמתחת מזיזים את המיקום. בדף התווים: לחיצה על תיבה מתחילה לנגן ממנה, והתיבה שמתנגנת מסומנת. לולאה מסמנים בכפתור "סימון קטע ללופ בתווים", במספרי התיבות, או בגרירה על התצוגה.</p>
     </div>`;
   }
   $('#pn-main').innerHTML = h;
   updateSampState();
-  if(P){ prResize(); prDraw(); }
+  if(P){ prResize(); prDraw(); prNotationRender(); prPickMsg(); }
 }
+/* ================== תווים מעל ה־Piano Roll ================== */
+const PRN = {on:(() => { try{ return localStorage.getItem('pritah.prnotes') !== '0'; }catch(e){ return true; } })(), el:null, osmd:null, key:null, boxes:[], cur:-1, pick:null, lib:null, msg:''};
+function loadOSMD(){
+  if(window.opensheetmusicdisplay) return Promise.resolve(window.opensheetmusicdisplay);
+  if(PRN.lib) return PRN.lib;
+  PRN.lib = new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.8/build/opensheetmusicdisplay.min.js';
+    sc.onload = () => window.opensheetmusicdisplay ? res(window.opensheetmusicdisplay) : rej(new Error('no lib'));
+    sc.onerror = () => { PRN.lib = null; rej(new Error('load failed')); };
+    document.head.appendChild(sc);
+  });
+  return PRN.lib;
+}
+/* ממיר תווים (מ־MIDI או מיצירה שמורה) לדף MusicXML משוער: יישור לשש־עשריות, יד ימין במפתח סול ויד שמאל במפתח פה */
+function notesToMusicXML(P){
+  const ts = P.ts || [4, 4], S = Math.max(1, Math.round(ts[0] * 16 / ts[1])), B = P.bars.length ? P.bars : [0];
+  const hist = new Array(12).fill(0); P.notes.forEach(n => { hist[n.midi % 12] += n.d; });
+  let tonic = 0, best = -1; for(let t = 0; t < 12; t++){ const sc = [0, 2, 4, 5, 7, 9, 11].reduce((a, k) => a + hist[(t + k) % 12], 0); if(sc > best + 1e-9){ best = sc; tonic = t; } }
+  const FIFTHS = {0:0, 7:1, 2:2, 9:3, 4:4, 11:5, 6:6, 5:-1, 10:-2, 3:-3, 8:-4, 1:-5}, fifths = FIFTHS[tonic];
+  const SH = [['C',0],['C',1],['D',0],['D',1],['E',0],['F',0],['F',1],['G',0],['G',1],['A',0],['A',1],['B',0]];
+  const FL = [['C',0],['D',-1],['D',0],['E',-1],['E',0],['F',0],['G',-1],['G',0],['A',-1],['A',0],['B',-1],['B',0]];
+  const spell = m => { const [st, al] = (fifths < 0 ? FL : SH)[m % 12]; return `<pitch><step>${st}</step>${al ? `<alter>${al}</alter>` : ''}<octave>${Math.floor(m / 12) - 1}</octave></pitch>`; };
+  const VALS = [[16, 'whole', 0], [12, 'half', 1], [8, 'half', 0], [6, 'quarter', 1], [4, 'quarter', 0], [3, 'eighth', 1], [2, 'eighth', 0], [1, '16th', 0]];
+  const parts = L => { const out = []; let r = L; while(r > 0){ const v = VALS.find(x => x[0] <= r) || VALS[VALS.length - 1]; out.push(v); r -= v[0]; } return out; };
+  const noteXML = (pitches, L, staff, voice) => {
+    const ps = parts(L); let x = '';
+    ps.forEach((v, k) => {
+      const tieS = k < ps.length - 1, tieE = k > 0;
+      pitches.forEach((m, j) => {
+        x += `<note>${j ? '<chord/>' : ''}${m == null ? '<rest/>' : spell(m)}<duration>${v[0]}</duration>${m != null && tieE ? '<tie type="stop"/>' : ''}${m != null && tieS ? '<tie type="start"/>' : ''}<voice>${voice}</voice><type>${v[1]}</type>${v[2] ? '<dot/>' : ''}<staff>${staff}</staff>${m != null && (tieS || tieE) ? `<notations>${tieE ? '<tied type="stop"/>' : ''}${tieS ? '<tied type="start"/>' : ''}</notations>` : ''}</note>`;
+      });
+    });
+    return x;
+  };
+  let xml = `<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1">`;
+  B.forEach((t0, i) => {
+    const t1 = i + 1 < B.length ? B[i + 1] : P.dur, D = Math.max(.01, t1 - t0);
+    xml += `<measure number="${i + 1}">`;
+    if(i === 0) xml += `<attributes><divisions>4</divisions><key><fifths>${fifths}</fifths></key><time><beats>${ts[0]}</beats><beat-type>${ts[1]}</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes>`;
+    [1, 2].forEach(h => {
+      if(h === 2) xml += `<backup><duration>${S}</duration></backup>`;
+      const voice = h === 1 ? 1 : 5, grp = {};
+      P.notes.forEach(n => {
+        if(n.hand !== h || n.s < t0 - .02 || n.s >= t1 - .02) return;
+        const on = Math.min(S - 1, Math.max(0, Math.round((n.s - t0) / D * S))), len = Math.max(1, Math.round(n.d / D * S));
+        (grp[on] = grp[on] || {ms:new Set(), len:0}); grp[on].ms.add(n.midi); grp[on].len = Math.max(grp[on].len, len);
+      });
+      const ons = Object.keys(grp).map(Number).sort((a, b) => a - b);
+      if(!ons.length){ xml += `<note><rest measure="yes"/><duration>${S}</duration><voice>${voice}</voice><staff>${h}</staff></note>`; return; }
+      let cur = 0;
+      ons.forEach((on, k) => {
+        if(on > cur) xml += noteXML([null], on - cur, h, voice);
+        const next = k + 1 < ons.length ? ons[k + 1] : S, L = Math.max(1, Math.min(grp[on].len, next - on));
+        xml += noteXML([...grp[on].ms].sort((a, b) => a - b), L, h, voice); cur = on + L;
+      });
+      if(cur < S) xml += noteXML([null], S - cur, h, voice);
+    });
+    xml += '</measure>';
+  });
+  return xml + '</part></score-partwise>';
+}
+async function prNotationRender(){
+  const P = PR.piece, slot = $('#pr-notes-slot'); if(!P || !slot) return;
+  if(!PRN.el){ PRN.el = document.createElement('div'); PRN.el.className = 'pr-notes'; PRN.el.dir = 'ltr'; PRN.el.addEventListener('click', prNotesClick); }
+  slot.hidden = !PRN.on;
+  slot.appendChild(PRN.el);
+  if(!PRN.on) return;
+  if(PRN.key === P){ prNotesBoxes(); return; }
+  PRN.key = P; PRN.cur = -1; PRN.boxes = [];
+  PRN.el.innerHTML = '<p class="pr-notes-msg">טוען את התווים…</p>';
+  let lib;
+  try{ lib = await loadOSMD(); }catch(e){ PRN.el.innerHTML = '<p class="pr-notes-msg">לא הצלחתי לטעון את תצוגת התווים. צריך חיבור לאינטרנט. הנגינה עובדת גם בלי זה.</p>'; PRN.key = null; return; }
+  if(PRN.key !== P) return;
+  try{
+    PRN.el.innerHTML = '';
+    const host = document.createElement('div'); host.className = 'pr-notes-svg'; PRN.el.appendChild(host);
+    const osmd = new lib.OpenSheetMusicDisplay(host, {autoResize:false, backend:'svg', drawTitle:false, drawSubtitle:false, drawComposer:false, drawLyricist:false, drawPartNames:false, drawPartAbbreviations:false, drawCredits:false, drawMeasureNumbers:true, followCursor:false});
+    await osmd.load(P.xml || notesToMusicXML(P));
+    if(PRN.key !== P) return;
+    osmd.zoom = innerWidth < 700 ? .6 : .8;
+    osmd.render();
+    PRN.osmd = osmd;
+    ['hl', 'pk'].forEach(c => { const d = document.createElement('div'); d.className = 'prn-' + c; d.hidden = true; PRN.el.appendChild(d); });
+    const lp = document.createElement('div'); lp.className = 'prn-loops'; PRN.el.appendChild(lp);
+    if(!P.xml){ const n = document.createElement('p'); n.className = 'pr-notes-msg small'; n.textContent = 'התווים נבנו מתוך הנגינה (MIDI או יצירה שמורה), ולכן הם בקירוב: המקצבים מיושרים לשש־עשריות, והחזרות כבר פרוסות.'; PRN.el.prepend(n); }
+    prNotesBoxes(); prNotesSync(true);
+  }catch(e){ PRN.el.innerHTML = `<p class="pr-notes-msg">לא הצלחתי להציג את התווים של הקובץ הזה (${esc(e.message || e)}). הנגינה עובדת כרגיל.</p>`; }
+}
+function prNotesBoxes(){
+  const o = PRN.osmd; if(!o || !o.GraphicSheet || !PRN.el) return;
+  const u = 10 * o.zoom, host = PRN.el.querySelector('.pr-notes-svg'), off = host ? host.offsetTop : 0, offX = host ? host.offsetLeft : 0;
+  PRN.boxes = (o.GraphicSheet.MeasureList || []).map(staves => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    (staves || []).forEach(gm => { if(!gm || !gm.PositionAndShape) return; const ps = gm.PositionAndShape, a = ps.AbsolutePosition, sz = ps.Size; x0 = Math.min(x0, a.x); x1 = Math.max(x1, a.x + sz.width); y0 = Math.min(y0, a.y + (ps.BorderTop || 0)); y1 = Math.max(y1, a.y + (ps.BorderBottom || sz.height)); });
+    return x0 === Infinity ? null : {x:offX + x0 * u, y:off + y0 * u - 6, w:(x1 - x0) * u, h:(y1 - y0) * u + 12};
+  });
+  prNotesLoop();
+}
+function place(el, b){ if(!el) return; if(!b){ el.hidden = true; return; } el.hidden = false; Object.assign(el.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px'}); }
+function prNotesSync(force){
+  const P = PR.piece; if(!P || !PRN.osmd || !PRN.on || !PRN.el || !PRN.el.isConnected) return;
+  const mi = P.barIdx[prBarAt(PR.t) - 1];
+  if(mi === PRN.cur && !force) return;
+  PRN.cur = mi; const b = PRN.boxes[mi];
+  place(PRN.el.querySelector('.prn-hl'), b);
+  if(b){ const sc = PRN.el.parentElement; if(sc && (b.y < sc.scrollTop + 10 || b.y + b.h > sc.scrollTop + sc.clientHeight - 10)) sc.scrollTo({top:Math.max(0, b.y - 30), behavior:PR.playing ? 'smooth' : 'auto'}); }
+}
+function prNotesLoop(){
+  const P = PR.piece, lp = PRN.el && PRN.el.querySelector('.prn-loops'); if(!P || !lp) return;
+  lp.innerHTML = '';
+  if(PR.loop.a != null){
+    const a = prBarAt(PR.loop.a) - 1, b = prBarAt(PR.loop.b - .001) - 1, seen = new Set();
+    for(let k = a; k <= b; k++){ const mi = P.barIdx[k]; if(seen.has(mi) || !PRN.boxes[mi]) continue; seen.add(mi); const d = document.createElement('div'); d.className = 'prn-loop'; lp.appendChild(d); place(d, PRN.boxes[mi]); }
+  }
+  const pk = PRN.el.querySelector('.prn-pk'); place(pk, PRN.pick != null ? PRN.boxes[P.barIdx[PRN.pick]] : null);
+}
+function prNotesClick(e){
+  const P = PR.piece; if(!P || !PRN.boxes.length) return;
+  const r = PRN.el.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const mi = PRN.boxes.findIndex(b => b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h); if(mi < 0) return;
+  const occ = P.barIdx.map((v, k) => v === mi ? k : -1).filter(k => k >= 0); if(!occ.length) return;
+  if(PRN.picking){
+    if(PRN.pick == null){ PRN.pick = occ[0]; prNotesLoop(); prPickMsg(); return; }
+    const a = PRN.pick, b = occ.find(k => k >= a) != null ? occ.find(k => k >= a) : occ[occ.length - 1], lo = Math.min(a, b), hi = Math.max(a, b), n = P.bars.length;
+    PRN.pick = null; PRN.picking = false;
+    prSetLoop(prBarTime(lo + 1), hi + 2 <= n ? prBarTime(hi + 2) : P.dur);
+    return;
+  }
+  const k = occ.find(x => P.bars[x] >= PR.t - .01) != null && PR.loop.a == null ? occ[0] : occ[0];
+  prSeek(P.bars[k]);
+}
+function prPickMsg(){ const m = $('#pr-pick-msg'); if(m) m.textContent = !PRN.picking ? '' : PRN.pick == null ? 'לחצו בתווים על התיבה שבה הקטע מתחיל.' : 'עכשיו לחצו על התיבה שבה הקטע נגמר.'; const b = $('[data-pr="pick"]'); if(b) b.setAttribute('aria-pressed', !!PRN.picking); }
+window.addEventListener('resize', () => { clearTimeout(PRN.rt); PRN.rt = setTimeout(() => { if(PRN.osmd && PRN.el && PRN.el.isConnected){ try{ PRN.osmd.render(); }catch(e){} prNotesBoxes(); prNotesSync(true); } }, 250); });
+
 const PR_H = 560, PR_KH = 96;
 function prResize(){ const c = $('#pr-canvas'); if(!c) return; const w = c.parentElement.clientWidth, dpr = window.devicePixelRatio || 1; c.style.width = w + 'px'; c.style.height = PR_H + 'px'; c.width = w * dpr; c.height = PR_H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
 function prKeys(W){
@@ -7532,6 +7685,7 @@ function prDraw(){
   for(let m = K.lo; m <= K.hi; m++){ const k = K.pos[m]; if(!k || !k.black) continue; const h = sounding[m]; ctx.fillStyle = h ? (h === 1 ? '#316EE6' : '#20A578') : '#1E2330'; ctx.fillRect(k.x, NH, k.w, PR_KH * .62); }
   const tEl = $('#pr-time'); if(tEl) tEl.textContent = `תיבה ${P.barNums[prBarAt(PR.t) - 1] || prBarAt(PR.t)} · ${Math.floor(PR.t / 60)}:${String(Math.floor(PR.t % 60)).padStart(2, '0')} / ${Math.floor(P.dur / 60)}:${String(Math.floor(P.dur % 60)).padStart(2, '0')}`;
   const sc = $('#pr-scroll'); if(sc && document.activeElement !== sc) sc.value = Math.round(PR.t * 10);
+  prNotesSync();
 }
 function prPlay(){
   const P = PR.piece; if(!P) return;
@@ -7575,13 +7729,15 @@ async function onRoll(e){
     if(!a || !bb || a < 1 || bb < a || a > n){ $('#pr-loop-txt').textContent = `בחרו תיבות בין 1 ל־${n}.`; return true; }
     prSetLoop(prBarTime(a), bb + 1 <= n ? prBarTime(bb + 1) : PR.piece.dur);
   }
-  if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; renderPiano(); }
-  if(act === 'open'){ const it = prItems().find(i => i.id === b.dataset.id); prOpen({title:it.data.title, notes:decodeNotes(it.data.notes), bars:it.data.bars || [], barNums:it.data.barNums, bpm:it.data.bpm, repeated:it.data.repeated, pedal:it.data.pedal}, it.id); }
+  if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; PRN.pick = null; renderPiano(); }
+  if(act === 'pick'){ PRN.picking = !PRN.picking; PRN.pick = null; prNotesLoop(); prPickMsg(); if(PRN.picking && PRN.el) PRN.el.parentElement.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+  if(act === 'open'){ const it = prItems().find(i => i.id === b.dataset.id); prOpen({title:it.data.title, notes:decodeNotes(it.data.notes), bars:it.data.bars || [], barNums:it.data.barNums, bpm:it.data.bpm, repeated:it.data.repeated, pedal:it.data.pedal, ts:it.data.ts || null, xml:it.data.xml || '', barIdx:it.data.barIdx || null}, it.id); }
   if(act === 'del'){ const it = prItems().find(i => i.id === b.dataset.id); if(!confirm(`למחוק את "${it.data.title}" מהרשימה?`)) return true; const r = await tCall('teacherDeleteContent', {id:it.id}); LIB.items = r.items; T.data.pvoices = r.items.filter(i => ['pvoice','pgrid','psong','plink','proll'].includes(i.kind)); if(PR.savedId === it.id) PR.savedId = null; renderPiano(); }
   if(act === 'save'){
     const P = PR.piece, enc = encodeNotes(P.notes), bars = P.bars.map(v => Math.round(v * 100) / 100), seq = P.barNums.every((n, i) => n === i + 1) ? null : P.barNums;
     if(enc.length + JSON.stringify(bars).length + (seq ? JSON.stringify(seq).length : 0) > 42000){ alert('היצירה ארוכה מדי לשמירה ברשימה. אפשר לטעון אותה מהקובץ בכל פעם.'); return true; }
-    try{ const r = await saveItems([{id:'', kind:'proll', data:{title:P.title, notes:enc, bars, barNums:seq, bpm:P.bpm, repeated:P.repeated, pedal:P.pedal}}]); PR.savedId = r[0].id; toast('היצירה נשמרה ברשימה'); renderPiano(); }catch(err){ alert(err.message); }
+    const keepXml = P.xml && enc.length + P.xml.length + JSON.stringify(bars).length < 44000;
+    try{ const r = await saveItems([{id:'', kind:'proll', data:{title:P.title, notes:enc, bars, barNums:seq, bpm:P.bpm, repeated:P.repeated, pedal:P.pedal, ts:P.ts || null, xml:keepXml ? P.xml : '', barIdx:keepXml ? P.barIdx : null}}]); PR.savedId = r[0].id; toast('היצירה נשמרה ברשימה'); renderPiano(); }catch(err){ alert(err.message); }
   }
   return true;
 }
@@ -8532,6 +8688,7 @@ function init(){
     if(e.target.id === 'pr-loop-on'){ PR.loop.on = e.target.checked; }
   });
   $('#pn-main').addEventListener('input', e => { if(e.target.id === 'pr-scroll') prSeek(Number(e.target.value) / 10); });
+  $('#pn-main').addEventListener('change', e => { if(e.target.id === 'pr-notes-on'){ PRN.on = e.target.checked; try{ localStorage.setItem('pritah.prnotes', PRN.on ? '1' : '0'); }catch(err){} PRN.picking = false; PRN.pick = null; renderPiano(); } });
   $('#pn-main').addEventListener('pointerdown', e => {
     const cv = e.target.closest('#pr-canvas'); if(!cv || !PR.piece) return;
     const r = cv.getBoundingClientRect(), yy = e.clientY - r.top; if(yy > PR_H - PR_KH) return;
