@@ -7816,7 +7816,7 @@ function pnRoll(){
   $('#sh-roll') && ($('#sh-roll').innerHTML = '');
   $('#pn-main').innerHTML = h;
   updateSampState();
-  if(P){ prResize(); prDraw(); prNotationRender(); prPickMsg(); }
+  if(P){ prResize(); try{ prDraw(); }catch(e){ console.warn(e); } prNotationRender(); }
 }
 const PRI = {
   play:'<svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>',
@@ -8321,9 +8321,9 @@ function renderSongFiles(){
 }
 function renderSongRoll(){
   const el = $('#sh-roll'); if(!el || !PR.piece) return;
-  if($('#pn-main') && $('#pn-main').querySelector('#pr-canvas')) $('#pn-main').innerHTML = '';
+  const stray = $('#pn-main') && $('#pn-main').querySelector('#pr-canvas'); if(stray && !el.contains(stray)){ const pl = stray.closest('.pr-player'); if(pl) pl.remove(); }
   el.innerHTML = prPlayerHTML(PR.piece, true);
-  prResize(); prDraw(); prNotationRender(); prPickMsg();
+  prResize(); try{ prDraw(); }catch(e){ console.warn(e); } prNotationRender();
 }
 const b64ToBytes = b => { const bin = atob(b), u = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
 async function sfPlay(f){
@@ -8378,8 +8378,23 @@ async function sfUpload(file){
 document.addEventListener('click', e => { if(e.target.closest('.sf-box [data-sf]') && !e.target.closest('#sh-roll')) onSongFiles(e); });
 document.addEventListener('change', e => { if(e.target.id === 'sf-file' && e.target.files[0]){ const f = e.target.files[0]; e.target.value = ''; sfUpload(f); } });
 
-function prRerender(){ if(PR.host === 'song') renderSongRoll(); else renderPiano(); }
-function prSetLoop(a, b){ if(b - a < .1) return; PR.loop = {a, b, on:true}; const was = PR.playing; prStop(); PR.t = a; prRerender(); if(was) prPlay(); }
+function prRerender(){
+  const sy = window.scrollY, sc = $('#pr-notes-slot'), st = sc ? sc.scrollTop : 0;
+  try{ if(PR.host === 'song') renderSongRoll(); else renderPiano(); }
+  finally{ const ns = $('#pr-notes-slot'); if(ns && !PRN.focus) ns.scrollTop = st; if(Math.abs(window.scrollY - sy) > 2) window.scrollTo(0, sy); }
+}
+/* עדכון של הפס העליון והלשוניות בלבד, בלי לבנות מחדש את התווים וה־Piano Roll */
+function prSoftRerender(){
+  const pl = document.querySelector('.pr-player'), P = PR.piece;
+  if(!pl || !P || !$('#pr-notes-slot') || !PRN.el || !PRN.el.isConnected){ prRerender(); return; }
+  const tmp = document.createElement('div'); tmp.innerHTML = prPlayerHTML(P, PR.host === 'song');
+  ['.pr-transport', '.pr-tabs', '.pr-panel', '#pr-chords'].forEach(q => { const o = pl.querySelector(q), n = tmp.querySelector(q); if(o && n) o.replaceWith(n); });
+  try{ prDraw(); }catch(e){ console.warn(e); }
+  try{ prNotesLoop(); }catch(e){ console.warn(e); }
+  try{ prChordOverlay(); }catch(e){}
+  if(!PRN.focus) try{ prNotesSync(true); }catch(e){}
+}
+function prSetLoop(a, b){ if(b - a < .1) return; PR.loop = {a, b, on:true}; const was = PR.playing; prStop(); PR.t = a; prSoftRerender(); if(was) prPlay(); }
 function prSnap(t){ const B = PR.piece.bars; if(!B.length) return t; let best = t, bd = .35 * 60 / (PR.piece.bpm || 100); B.concat([PR.piece.dur]).forEach(x => { if(Math.abs(x - t) < bd){ bd = Math.abs(x - t); best = x; } }); return best; }
 function prTimeAtY(yPx){ return PR.t + (PR_H - PR_KH - yPx) / PR.pps; }
 function prDraw(){
@@ -8473,9 +8488,9 @@ async function onRoll(e){
     if(ta == null || tb == null || a > n || tb - ta < .1){ $('#pr-loop-txt').textContent = `בחרו תיבות בין 1 ל־${n}. אפשר גם חצי תיבה, למשל 3.5.`; return true; }
     prSetLoop(ta, tb);
   }
-  if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; PRN.pick = null; PRN.focus = false; prRerender(); }
-  if(act === 'panel'){ PRUI.panel = PRUI.panel === b.dataset.v ? '' : b.dataset.v; try{ localStorage.setItem('pritah.prpanel', PRUI.panel); }catch(err){} prRerender(); }
-  if(act === 'focus'){ PRN.focus = !PRN.focus; prRerender(); }
+  if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; PRN.pick = null; PRN.focus = false; prSoftRerender(); }
+  if(act === 'panel'){ PRUI.panel = PRUI.panel === b.dataset.v ? '' : b.dataset.v; try{ localStorage.setItem('pritah.prpanel', PRUI.panel); }catch(err){} prSoftRerender(); }
+  if(act === 'focus'){ PRN.focus = !PRN.focus; prSoftRerender(); }
   if(act === 'names-en' || act === 'names-he'){ PRN.names = act === 'names-he' ? 'he' : 'en'; try{ localStorage.setItem('pritah.prnames', PRN.names); localStorage.setItem('pritah.prnames.lang', PRN.names); }catch(err){} $$('#pr-names-lang button').forEach(x => x.setAttribute('aria-pressed', x.dataset.pr === act)); prNotesNames(); }
   if(act === 'open'){ const it = prItems().find(i => i.id === b.dataset.id); prOpen({title:it.data.title, notes:decodeNotes(it.data.notes), bars:it.data.bars || [], barNums:it.data.barNums, bpm:it.data.bpm, repeated:it.data.repeated, pedal:it.data.pedal, ts:it.data.ts || null, xml:it.data.xml || '', barIdx:it.data.barIdx || null, chordFix:it.data.chordFix || {}}, it.id); }
   if(act === 'del'){ const it = prItems().find(i => i.id === b.dataset.id); if(!confirm(`למחוק את "${it.data.title}" מהרשימה?`)) return true; const r = await tCall('teacherDeleteContent', {id:it.id}); LIB.items = r.items; T.data.pvoices = r.items.filter(i => ['pvoice','pgrid','psong','plink','proll'].includes(i.kind)); if(PR.savedId === it.id) PR.savedId = null; renderPiano(); }
