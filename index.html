@@ -6583,7 +6583,7 @@ function psClose(){ const st = $('#print-studio'); if(st) st.hidden = true; docu
 function psRenderPanel(){
   const o = PS.o, c = PS.ctx, hasSheet = !!c.sheet.trim(), hasNotes = psNotationReady();
   const k = hasSheet ? keyLabel(detectKey(c.sheet, c.key), o.shift) : '';
-  $('#print-studio').innerHTML = `<div class="ps-bar"><b>תצוגה לפני הדפסה</b><span class="muted">דף A4. הקווים המקווקווים מראים בערך איפה יתחיל עמוד חדש.</span><span style="flex:1"></span><button class="btn primary" data-psa="print">הדפסה</button><button class="btn ghost" data-psa="close">סגירה</button></div>
+  $('#print-studio').innerHTML = `<div class="ps-bar"><b>תצוגה לפני הדפסה</b><small class="muted" title="גרסת ההדפסה">v4</small><span class="muted">דף A4. הקווים המקווקווים מראים בערך איפה יתחיל עמוד חדש.</span><span style="flex:1"></span><button class="btn primary" data-psa="print">הדפסה</button><button class="btn ghost" data-psa="close">סגירה</button></div>
     <div class="ps-body">
       <aside class="ps-side">
         <h4>כותרת</h4>
@@ -6604,7 +6604,8 @@ function psRenderPanel(){
         ${hasNotes ? `<label class="ps-ck"><input type="checkbox" data-po="notation" ${o.notation ? 'checked' : ''}> להדפיס את דף התווים</label>
           <label class="ps-ck"><input type="checkbox" data-po="nNames" ${o.nNames ? 'checked' : ''}> שמות התווים ליד כל תו</label>
           ${o.nNames ? `<div class="ps-row"><span>שמות</span><div class="seg"><button data-psa="nl-en" aria-pressed="${o.nLang === 'en'}">C D E</button><button data-psa="nl-he" aria-pressed="${o.nLang === 'he'}">דו רה מי</button></div></div>` : ''}
-          <label class="ps-ck"><input type="checkbox" data-po="nChords" ${o.nChords ? 'checked' : ''}> האקורדים שזוהו מעל התווים</label>`
+          <label class="ps-ck"><input type="checkbox" data-po="nChords" ${o.nChords ? 'checked' : ''}> האקורדים שזוהו מעל התווים</label>
+          <p class="hint ps-nrows"></p>`
         : '<p class="hint">כדי להדפיס תווים, פותחים בדף השיר את "תווים ונגינה" של קובץ MusicXML או MIDI (או את ה־Piano Roll), ואז לוחצים "הדפסה".</p>'}
         <h4>תחתית הדף</h4>
         <label class="field">טקסט קטן בתחתית <small>(לא חובה)</small><input data-po="footer" value="${esc(o.footer)}" placeholder="למשל: אורי – שיעורי גיטרה"></label>
@@ -6637,7 +6638,7 @@ function psNotationHTML(){
   const ck = [o.nNames, o.nLang, o.nChords, PR.piece && PR.piece.title, JSON.stringify(PR.piece && PR.piece.chordFix || {})].join('|');
   if(PS.nCache && PS.nCache.k === ck && PS.nCache.osmd === osmd) return PS.nCache.html;
   const W = 760, keep = {w:el.style.width, z:osmd.zoom, names:PRN.names, ch:CH.show};
-  let html = '';
+  let html = null;
   try{
     el.style.width = W + 'px'; osmd.zoom = .72; osmd.render();
     PRN.names = o.nNames ? o.nLang : ''; CH.show = !!o.nChords;
@@ -6645,20 +6646,41 @@ function psNotationHTML(){
     const H = el.scrollHeight || el.offsetHeight;
     const rows = [];
     PRN.boxes.forEach(b => { if(!b) return; const r = rows.find(x => Math.abs(x.y - b.y) < 10); if(r){ r.b = Math.max(r.b, b.y + b.h); r.y = Math.min(r.y, b.y); } else rows.push({y:b.y, b:b.y + b.h}); });
+    // גיבוי: אם לא התקבלו מיקומי תיבות, מוצאים את השורות לפי החמשות עצמן בציור
+    if(!rows.length){
+      const er = el.getBoundingClientRect();
+      el.querySelectorAll('.vf-stave, g.staffline, .vf-stavenote').forEach(g => { const r = g.getBoundingClientRect(); if(!r.height) return; const y = r.top - er.top, b2 = r.bottom - er.top; const x = rows.find(q => y < q.b + 4 && b2 > q.y - 4); if(x){ x.y = Math.min(x.y, y); x.b = Math.max(x.b, b2); } else rows.push({y, b:b2}); });
+    }
     rows.sort((a, b) => a.y - b.y);
-    const cl = el.cloneNode(true);
-    cl.querySelectorAll('.prn-hl, .prn-cur, .prn-loops, .prn-pk, .pr-notes-msg').forEach(x => x.remove());
-    if(!o.nChords) cl.querySelectorAll('.prn-chords').forEach(x => x.remove());
-    cl.querySelectorAll('.prn-ch.cur').forEach(x => x.classList.remove('cur'));
-    cl.style.width = W + 'px'; cl.style.height = H + 'px'; cl.style.cursor = 'default';
-    const inner = cl.outerHTML;
-    if(!rows.length) html = `<div class="ps-sys" style="height:${H}px">${inner}</div>`;
-    else html = rows.map((r, i) => {
-      const top = i === 0 ? 0 : Math.round((rows[i - 1].b + r.y) / 2), bot = i === rows.length - 1 ? H : Math.round((r.b + rows[i + 1].y) / 2);
-      return `<div class="ps-sys" style="height:${Math.max(20, bot - top)}px"><div style="margin-top:${-top}px">${inner}</div></div>`;
-    }).join('');
-    html = `<div class="ps-notation" dir="ltr" style="width:${W}px;zoom:${(680 / W).toFixed(4)}">${html}</div>`;
-  }catch(e){ html = `<p class="hint">לא הצלחתי להכין את התווים להדפסה (${esc(e.message || e)}).</p>`; }
+    // מאחדים שורות שחופפות (יד ימין ויד שמאל של אותה מערכת)
+    for(let i = rows.length - 1; i > 0; i--){ if(rows[i].y < rows[i - 1].b + 6){ rows[i - 1].b = Math.max(rows[i - 1].b, rows[i].b); rows.splice(i, 1); } }
+    PS.nRows = rows.length;
+    // בונים כל שורה בנפרד, רק עם החלקים של הציור שנמצאים בה (בלי לשכפל את כל הדף לכל שורה)
+    const er = el.getBoundingClientRect(), RC = new WeakMap();
+    const rect = n => { if(RC.has(n)) return RC.get(n); let r = null; try{ const b = n.getBoundingClientRect(); r = {t:b.top - er.top, b:b.bottom - er.top, h:b.height, w:b.width}; }catch(e){} RC.set(n, r); return r; };
+    const crop = (n, top, bot) => {
+      if(n.nodeType !== 1) return n.cloneNode(true);
+      const tag = n.tagName.toLowerCase(); if(tag === 'defs' || tag === 'style') return n.cloneNode(true);
+      const r = rect(n);
+      if(!r || (!r.h && !r.w)) return tag === 'svg' || tag === 'g' ? null : n.cloneNode(true);
+      if(r.b < top - 2 || r.t > bot + 2) return null;
+      if(r.t >= top - 2 && r.b <= bot + 2) return n.cloneNode(true);
+      if(n.children.length){ const c = n.cloneNode(false); [...n.childNodes].forEach(ch => { const x = crop(ch, top, bot); if(x) c.appendChild(x); }); return c; }
+      return n.cloneNode(true);
+    };
+    const host = el.querySelector('.pr-notes-svg'), svgs = host ? [...host.querySelectorAll('svg')] : [];
+    const spans = [...el.querySelectorAll('.prn-names .prn-nm' + (o.nChords ? ', .prn-chords .prn-ch' : ''))];
+    const wrap = document.createElement('div'); wrap.className = 'ps-notation'; wrap.dir = 'ltr'; wrap.style.width = W + 'px'; wrap.style.zoom = (680 / W).toFixed(4);
+    const cuts = rows.length ? rows.map((r, i) => [i === 0 ? 0 : Math.round((rows[i - 1].b + r.y) / 2), i === rows.length - 1 ? H : Math.round((r.b + rows[i + 1].y) / 2)]) : (() => { const a = []; for(let y = 0; y < H; y += 900) a.push([y, Math.min(H, y + 900)]); return a; })();
+    cuts.forEach(([top, bot]) => {
+      const sys = document.createElement('div'); sys.className = 'ps-sys'; sys.style.height = Math.max(20, bot - top) + 'px';
+      const inner = document.createElement('div'); inner.style.cssText = `position:relative;width:${W}px;height:${H}px;margin-top:${-top}px`;
+      svgs.forEach(sv => { const r = rect(sv); if(!r) return; const c = crop(sv, top, bot); if(!c) return; c.style.position = 'absolute'; c.style.left = '0'; c.style.top = r.t + 'px'; inner.appendChild(c); });
+      spans.forEach(sp => { const r = rect(sp); if(!r || r.b < top || r.t > bot) return; const c = sp.cloneNode(true); c.classList.remove('cur'); c.style.position = 'absolute'; c.style.zIndex = '3'; inner.appendChild(c); });
+      sys.appendChild(inner); wrap.appendChild(sys);
+    });
+    html = wrap;
+  }catch(e){ html = document.createElement('p'); html.className = 'hint'; html.textContent = `לא הצלחתי להכין את התווים להדפסה (${e.message || e}).`; }
   el.style.width = keep.w; osmd.zoom = keep.z; PRN.names = keep.names; CH.show = keep.ch;
   try{ osmd.render(); }catch(e){}
   prNotesBoxes(); prNotesSync(true);
@@ -6675,9 +6697,12 @@ function psBuild(){
     if(o.diagrams) h += psDiagramsHTML(sh.used);
     h += `<div class="sheet ps-sheet${o.cols ? ' ps-cols' : ''}${o.color === 'black' ? ' ps-black' : ''}" dir="${c.dir || (hasHebrew(c.sheet) ? 'rtl' : 'ltr')}" style="font-size:${o.size}pt" ${o.edit ? 'contenteditable="true" spellcheck="false"' : ''}>${PS.sheetOverride != null ? PS.sheetOverride : sh.html}</div>`;
   }
-  if(o.notation && psNotationReady()) h += `<section class="ps-nsec">${o.sheet && c.sheet.trim() ? '<h2 class="ps-h2">תווים</h2>' : ''}${psNotationHTML()}</section>`;
+  const wantN = o.notation && psNotationReady();
+  if(wantN) h += `<section class="ps-nsec">${o.sheet && c.sheet.trim() ? '<h2 class="ps-h2">תווים</h2>' : ''}<div id="ps-nslot"></div></section>`;
   if(o.footer) h += `<footer class="ps-foot">${esc(o.footer)}</footer>`;
   doc.innerHTML = h;
+  if(wantN){ const node = psNotationHTML(); if(node) $('#ps-nslot').appendChild(node); }
+  const nr = $('.ps-nrows'); if(nr) nr.textContent = o.notation && PS.nRows != null ? (PS.nRows ? `התווים חולקו ל־${PS.nRows} שורות. עמוד חדש מתחיל רק בין שורות.` : 'לא זוהו שורות בתווים, אז הם חולקו לפי גובה.') : '';
   const ed = doc.querySelector('.ps-sheet[contenteditable]'); if(ed) ed.addEventListener('input', () => { PS.sheetOverride = ed.innerHTML; });
 }
 function psOnInput(e){
@@ -6702,7 +6727,7 @@ function psOnClick(e){
 function psPrint(){
   const doc = $('#ps-doc'); if(!doc) return;
   let area = $('#print-area'); if(!area){ area = document.createElement('div'); area.id = 'print-area'; document.body.appendChild(area); }
-  area.innerHTML = `<div class="ps-doc">${doc.innerHTML}</div>`;
+  area.innerHTML = ''; const dc = doc.cloneNode(true); dc.removeAttribute('id'); dc.querySelectorAll('[id]').forEach(x => x.removeAttribute('id')); area.appendChild(dc);
   area.querySelectorAll('[contenteditable]').forEach(x => x.removeAttribute('contenteditable'));
   const t = document.title; document.title = PS.o.title || t;
   setTimeout(() => { window.print(); document.title = t; }, 60);
