@@ -657,9 +657,56 @@ a.btn.wa{ background:#1F9D55; border-color:#1F9D55; color:#fff; }
 #ied-ta{ min-height:440px; font-family:'Assistant',Arial,sans-serif; font-size:16px; line-height:1.5; white-space:pre; overflow:auto; resize:vertical; }
 .ied-prev{ min-height:440px; max-height:70vh; overflow:auto; font-size:16px; }
 #print-area{ display:none; }
+/* חלון התצוגה לפני הדפסה */
+#print-studio{ position:fixed; inset:0; z-index:200; background:#e9ecf2; display:flex; flex-direction:column; }
+#print-studio[hidden]{ display:none; }
+body.ps-open{ overflow:hidden; }
+.ps-bar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:10px 18px; background:var(--surface); border-bottom:1px solid var(--line); }
+.ps-bar b{ font-size:1.1rem; }
+.ps-body{ flex:1; display:flex; min-height:0; }
+.ps-side{ width:320px; flex:none; overflow:auto; padding:14px 18px 30px; background:var(--surface); border-inline-end:1px solid var(--line); display:flex; flex-direction:column; gap:10px; }
+.ps-side h4{ margin:10px 0 0; font-size:.95rem; color:var(--ink-2); text-transform:none; }
+.ps-ck{ display:flex; gap:8px; align-items:center; font-weight:600; }
+.ps-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-weight:600; }
+.ps-row .seg [aria-pressed="true"]{ background:var(--blue); color:#fff; }
+.ps-key{ min-width:56px; font-weight:800; opacity:1 !important; }
+.ps-view{ flex:1; overflow:auto; padding:26px; display:flex; justify-content:center; }
+.ps-paper{ width:210mm; min-height:297mm; box-shadow:0 8px 30px rgba(20,30,60,.18); padding:15mm 14mm; box-sizing:border-box; flex:none;
+  background:repeating-linear-gradient(to bottom, transparent 0, transparent calc(267mm - 1px), rgba(49,110,230,.5) calc(267mm - 1px), rgba(49,110,230,.5) 267mm) content-box, #fff; }
+@media (max-width:820px){ .ps-body{ flex-direction:column; } .ps-side{ width:auto; max-height:42vh; border:0; border-bottom:1px solid var(--line); } .ps-view{ padding:12px; } .ps-paper{ zoom:.48; } }
+/* הדף עצמו (גם בתצוגה וגם בהדפסה) */
+.ps-doc{ color:#111; font-family:'Assistant', Arial, sans-serif; direction:rtl; }
+.ps-head{ text-align:center; padding-bottom:10pt; margin-bottom:12pt; border-bottom:1.5pt solid #1b2333; }
+.ps-head h1{ font-family:'Secular One', 'Assistant', Arial, sans-serif; font-weight:400; font-size:24pt; line-height:1.15; margin:0; color:#111; }
+.ps-sub{ margin:3pt 0 0; font-size:13pt; color:#555; }
+.ps-meta{ margin:6pt 0 0; font-size:10pt; color:#444; }
+.ps-dot{ margin:0 7pt; color:#aaa; }
+.ps-h2{ font-family:'Secular One', Arial, sans-serif; font-weight:400; font-size:14pt; margin:16pt 0 8pt; border-bottom:.8pt solid #ccc; padding-bottom:3pt; }
+.ps-diag{ display:flex; flex-wrap:wrap; justify-content:center; gap:6pt 10pt; margin:0 0 12pt; direction:ltr; }
+.ps-dg{ display:grid; justify-items:center; width:58pt; }
+.ps-dg b{ font:800 10pt Arial, sans-serif; }
+.ps-dg svg{ width:58pt; height:auto; }
+.ps-diag-p .pchords{ justify-content:center; }
+.ps-sheet{ border:0 !important; box-shadow:none !important; padding:0 !important; background:#fff !important; color:#111; line-height:1.35; }
+.ps-sheet .ln.chords, .ps-sheet .ch{ color:#1F55C9; font-weight:700; }
+.ps-sheet.ps-black .ln.chords, .ps-sheet.ps-black .ch{ color:#000; }
+.ps-sheet .ln.sec{ background:#eef1f6; color:#1b2333; }
+.ps-sheet .ln.mk{ background:none !important; }
+.ps-sheet .blk, .ps-sheet .ln{ break-inside:avoid; }
+.ps-doc .blk, .ps-doc .sheet{ background:transparent !important; box-shadow:none !important; border:0 !important; }
+.ps-sheet.ps-cols{ columns:2; column-gap:12mm; column-rule:.6pt solid #ddd; }
+.ps-sheet .inline-notes .ncard{ font-size:9pt; }
+.ps-sheet[contenteditable="true"]{ outline:2px dashed rgba(49,110,230,.5); outline-offset:6px; }
+.ps-nsec{ break-before:auto; }
+.ps-notation{ background:#fff; }
+.ps-notation .pr-notes{ cursor:default; }
+.ps-foot{ margin-top:16pt; padding-top:6pt; border-top:.6pt solid #ccc; text-align:center; font-size:9pt; color:#777; }
+@page{ size:A4; margin:15mm 14mm; }
 @media print{
   body > *:not(#print-area){ display:none !important; }
   #print-area{ display:block !important; color:#000; }
+  #print-area *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  html, body{ background:#fff !important; }
   #print-area h1{ font-family:'Secular One',Arial,sans-serif; font-weight:400; font-size:20pt; margin:0 0 10pt; }
   #print-area .sheet{ border:0; box-shadow:none; padding:0; font-size:12pt; background:#fff; }
   #print-area .sheet .ln.sec{ background:#eee; color:#000; }
@@ -3943,7 +3990,7 @@ async function deleteShape(){
 
 /* ================== שירים מ־YouTube ================== */
 const SG = {player:null, ready:false, song:null, orig:0, target:0, rate:1, sync:store.get('pritah.songSync') === '1', loop:{a:null, b:null, on:false}, poll:null, alignPending:false, taps:[], loading:null};
-function songModel(d){ return {fromBand:d.fromBand || '', id:d.id || '', name:d.name || '', url:d.url || '', bpm:Number(d.bpm) || 0, note:d.note || '', sheet:d.sheet || '', dir:d.dir || '', key:d.key || '', shape:d.shape || '', mode:d.mode || 'maj', genreId:d.genreId || '', files:Array.isArray(d.files) ? d.files : [], loops:(d.loops || []).map(l => ({name:String(l.name || ''), a:Number(l.a) || 0, b:Number(l.b) || 0}))}; }
+function songModel(d){ return {fromBand:d.fromBand || '', id:d.id || '', name:d.name || '', artist:d.artist || '', url:d.url || '', bpm:Number(d.bpm) || 0, note:d.note || '', sheet:d.sheet || '', dir:d.dir || '', key:d.key || '', shape:d.shape || '', mode:d.mode || 'maj', genreId:d.genreId || '', files:Array.isArray(d.files) ? d.files : [], loops:(d.loops || []).map(l => ({name:String(l.name || ''), a:Number(l.a) || 0, b:Number(l.b) || 0}))}; }
 function allSongs(){ return libOf('song').map(i => songModel(Object.assign({}, i.data, {id:i.id}))); }
 // מה שמוצג בלשונית "שירים": תלמיד מחובר רואה רק את השירים שלו, גם אם במכשיר מחובר גם המורה
 function viewSongs(){ if(S.student){ const ids = new Set((S.songs || []).map(i => i.id)); return allSongs().filter(x => ids.has(x.id)); } return T.data ? allSongs() : []; }
@@ -6504,14 +6551,141 @@ function wireInline(onSave, onClose){
 window.addEventListener('beforeunload', e => { if(INL.ctx && INL.dirty){ e.preventDefault(); e.returnValue = ''; } });
 
 /* הדפסה */
-function printSheet(btn){
-  const panel = btn.closest('.sub-panel'), sheet = panel && panel.querySelector('.sheet:not(.ied-prev)'); if(!sheet) return;
-  const view = btn.closest('.view'), title = (view.querySelector('#sg-title, #vb-main h2, #yo-main h2, #pn-main h2') || {}).textContent || '';
-  let area = $('#print-area'); if(!area){ area = document.createElement('div'); area.id = 'print-area'; document.body.appendChild(area); }
-  const clone = sheet.cloneNode(true); clone.removeAttribute('id'); clone.querySelectorAll('.nbadge, .inline-notes, .media-link').forEach(x => x.remove()); clone.style.fontSize = '';
-  area.innerHTML = `<h1>${esc(title)}</h1>`; area.appendChild(clone);
-  window.print();
+/* ================== הדפסה: תצוגה מקדימה ושינויים לפני הדפסה, דף A4 ================== */
+const PS = {ctx:null, o:null, sheetOverride:null};
+function psContext(){
+  const v = currentView;
+  const mk = (d, shift, sheetSel, kind, id) => ({title:d.name || '', artist:d.artist || '', bpm:Number(d.bpm) || 0, sheet:d.sheet || '', key:d.key || '', dir:d.dir || '', shift:shift || 0, sheetSel, kind, id});
+  if(v === 'songs' && SG.song) return mk(SG.song, SH.shift, '#sh-body', 'guitar', SG.song.id);
+  if(v === 'velvet' && B.songId && bGet(B.songId)) return mk(bGet(B.songId).data, B.viewShift, '#vb-sheet', 'guitar', B.songId);
+  if(v === 'youth' && Y.songId && yGet(Y.songId)) return mk(yGet(Y.songId).data, Y.shift, '#yo-sheet', 'guitar', Y.songId);
+  if(v === 'piano'){
+    if(PN.songId){ const it = pSongs().find(i => i.id === PN.songId); if(it) return mk(it.data, PN.shift, '#ps-sheet', 'piano', it.id); }
+    if(PR.piece) return {title:PR.piece.title || '', artist:'', bpm:PR.piece.bpm || 0, sheet:'', key:'', dir:'', shift:0, sheetSel:'', kind:'piano', id:''};
+  }
+  return null;
 }
+function psNotationReady(){ return !!(PRN.osmd && PRN.el && PRN.el.isConnected && PRN.on && PRN.el.closest('.view') === document.querySelector('.view.active')); }
+function openPrintStudio(onlyNotes){
+  const c = psContext(); if(!c){ toast('אין כאן מה להדפיס.'); return; }
+  const hasSheet = !!c.sheet.trim(), hasNotes = psNotationReady();
+  PS.ctx = c; PS.sheetOverride = null;
+  PS.o = {title:c.title, sub:c.artist, meta:true, size:12, cols:false, diagrams:hasSheet, notes:true, color:'blue', shift:c.shift, sheet:hasSheet && !onlyNotes, notation:hasNotes && (onlyNotes || !hasSheet), nNames:!!PRN.names, nLang:PRN.names === 'he' ? 'he' : 'en', nChords:CH.show, footer:'', edit:false};
+  let st = $('#print-studio');
+  if(!st){ st = document.createElement('div'); st.id = 'print-studio'; st.setAttribute('role', 'dialog'); st.setAttribute('aria-modal', 'true'); st.setAttribute('aria-label', 'תצוגה לפני הדפסה'); document.body.appendChild(st);
+    st.addEventListener('input', psOnInput); st.addEventListener('change', psOnInput); st.addEventListener('click', psOnClick);
+    document.addEventListener('keydown', e => { if(e.key === 'Escape' && $('#print-studio') && !$('#print-studio').hidden && !e.target.closest('[contenteditable="true"]')) psClose(); }); }
+  st.hidden = false; document.body.classList.add('ps-open');
+  psRenderPanel(); psBuild();
+}
+function psClose(){ const st = $('#print-studio'); if(st) st.hidden = true; document.body.classList.remove('ps-open'); }
+function psRenderPanel(){
+  const o = PS.o, c = PS.ctx, hasSheet = !!c.sheet.trim(), hasNotes = psNotationReady();
+  const k = hasSheet ? keyLabel(detectKey(c.sheet, c.key), o.shift) : '';
+  $('#print-studio').innerHTML = `<div class="ps-bar"><b>תצוגה לפני הדפסה</b><span class="muted">דף A4. הקווים המקווקווים מראים בערך איפה יתחיל עמוד חדש.</span><span style="flex:1"></span><button class="btn primary" data-psa="print">הדפסה</button><button class="btn ghost" data-psa="close">סגירה</button></div>
+    <div class="ps-body">
+      <aside class="ps-side">
+        <h4>כותרת</h4>
+        <label class="field">שם השיר<input data-po="title" value="${esc(o.title)}"></label>
+        <label class="field">שורה שנייה <small>(אמן, מלחין…)</small><input data-po="sub" value="${esc(o.sub)}"></label>
+        <label class="ps-ck"><input type="checkbox" data-po="meta" ${o.meta ? 'checked' : ''}> שורת פרטים (סולם, קצב, קאפו)</label>
+        ${hasSheet ? `<h4>מילים ואקורדים</h4>
+        <label class="ps-ck"><input type="checkbox" data-po="sheet" ${o.sheet ? 'checked' : ''}> להדפיס מילים ואקורדים</label>
+        <div class="ps-row"><span>סולם</span><div class="seg"><button data-psa="sh-" aria-label="חצי טון למטה">−½</button><button disabled class="ps-key" dir="ltr">${esc(k || '–')}</button><button data-psa="sh+" aria-label="חצי טון למעלה">+½</button></div></div>
+        <label class="field">גודל טקסט <small>${o.size}pt</small><input type="range" min="9" max="18" step="0.5" data-po="size" value="${o.size}"></label>
+        <label class="ps-ck"><input type="checkbox" data-po="cols" ${o.cols ? 'checked' : ''}> שני טורים (חוסך מקום)</label>
+        <label class="ps-ck"><input type="checkbox" data-po="diagrams" ${o.diagrams ? 'checked' : ''}> תרשימי האקורדים למעלה</label>
+        <label class="ps-ck"><input type="checkbox" data-po="notes" ${o.notes ? 'checked' : ''}> הערות לשורות (כמו בדף)</label>
+        <div class="ps-row"><span>צבע אקורדים</span><div class="seg"><button data-psa="col-blue" aria-pressed="${o.color === 'blue'}">כחול</button><button data-psa="col-black" aria-pressed="${o.color === 'black'}">שחור</button></div></div>
+        <label class="ps-ck"><input type="checkbox" data-po="edit" ${o.edit ? 'checked' : ''}> עריכת הטקסט ישירות בתצוגה</label>
+        ${o.edit ? '<p class="hint">לוחצים על הטקסט בדף וכותבים. השינויים הם רק להדפסה, והשיר עצמו לא משתנה.</p>' : ''}` : ''}
+        <h4>תווים</h4>
+        ${hasNotes ? `<label class="ps-ck"><input type="checkbox" data-po="notation" ${o.notation ? 'checked' : ''}> להדפיס את דף התווים</label>
+          <label class="ps-ck"><input type="checkbox" data-po="nNames" ${o.nNames ? 'checked' : ''}> שמות התווים ליד כל תו</label>
+          ${o.nNames ? `<div class="ps-row"><span>שמות</span><div class="seg"><button data-psa="nl-en" aria-pressed="${o.nLang === 'en'}">C D E</button><button data-psa="nl-he" aria-pressed="${o.nLang === 'he'}">דו רה מי</button></div></div>` : ''}
+          <label class="ps-ck"><input type="checkbox" data-po="nChords" ${o.nChords ? 'checked' : ''}> האקורדים שזוהו מעל התווים</label>`
+        : '<p class="hint">כדי להדפיס תווים, פותחים בדף השיר את "תווים ונגינה" של קובץ MusicXML או MIDI (או את ה־Piano Roll), ואז לוחצים "הדפסה".</p>'}
+        <h4>תחתית הדף</h4>
+        <label class="field">טקסט קטן בתחתית <small>(לא חובה)</small><input data-po="footer" value="${esc(o.footer)}" placeholder="למשל: אורי – שיעורי גיטרה"></label>
+        <button class="btn primary" data-psa="print" style="width:100%;margin-top:10px">הדפסה</button>
+        <p class="hint">בחלון ההדפסה אפשר לבחור גם "שמירה כ־PDF". כדאי לבטל שם את "כותרות עליונות ותחתונות".</p>
+      </aside>
+      <div class="ps-view"><div class="ps-paper"><div class="ps-doc" id="ps-doc"></div></div></div>
+    </div>`;
+}
+function psSheetHTML(){
+  const c = PS.ctx, o = PS.o;
+  const {html, used} = renderSheetHTML(c.sheet, o.shift, c.key);
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  if(o.notes && o.shift === c.shift && c.sheetSel){
+    const live = $(c.sheetSel);
+    if(live) live.querySelectorAll('.inline-notes').forEach(n => { const ln = n.nextElementSibling; const li = ln && ln.dataset ? ln.dataset.l : null; const tgt = li != null && tmp.querySelector(`.ln[data-l="${li}"]`); if(tgt){ const cl = n.cloneNode(true); cl.querySelectorAll('.ncard-acts, .lock').forEach(x => x.remove()); tgt.before(cl); } });
+  }
+  tmp.querySelectorAll('.media-link, .nbadge').forEach(x => x.remove());
+  return {html:tmp.innerHTML, used};
+}
+function psDiagramsHTML(used){
+  if(!used.length) return '';
+  if(PS.ctx.kind === 'piano' && typeof pianoStripHTML === 'function') return `<div class="ps-diag ps-diag-p">${pianoStripHTML(used)}</div>`;
+  const items = used.map(n => { const lib = libChordByName(n); return lib ? `<div class="ps-dg"><b>${esc(n)}</b>${chordSVG(lib)}</div>` : ''; }).filter(Boolean);
+  return items.length ? `<div class="ps-diag">${items.join('')}</div>` : '';
+}
+function psNotationHTML(){
+  const o = PS.o, el = PRN.el; if(!el) return '';
+  const keepNames = PRN.names, keepCh = CH.show;
+  PRN.names = o.nNames ? o.nLang : ''; prNotesNames();
+  if(o.nChords && !CH.show){ CH.show = true; prChordOverlay(); }
+  const cl = el.cloneNode(true);
+  PRN.names = keepNames; prNotesNames(); if(CH.show !== keepCh){ CH.show = keepCh; prChordOverlay(); }
+  cl.querySelectorAll('.prn-hl, .prn-cur, .prn-loops, .prn-pk, .pr-notes-msg').forEach(x => x.remove());
+  if(!o.nChords) cl.querySelectorAll('.prn-chords').forEach(x => x.remove());
+  cl.querySelectorAll('.prn-ch.cur').forEach(x => x.classList.remove('cur'));
+  const w = el.scrollWidth || el.offsetWidth || 900, h = el.scrollHeight || el.offsetHeight;
+  return `<div class="ps-notation" dir="ltr" style="width:${w}px;zoom:${(680 / w).toFixed(4)}">${cl.outerHTML.replace('class="pr-notes"', `class="pr-notes" style="height:${h}px;cursor:default"`)}</div>`;
+}
+function psBuild(){
+  const o = PS.o, c = PS.ctx, doc = $('#ps-doc'); if(!doc) return;
+  const k = c.sheet.trim() ? keyLabel(detectKey(c.sheet, c.key), o.shift) : '';
+  const meta = [k ? 'סולם: <b dir="ltr">' + esc(k) + '</b>' : '', c.bpm ? 'קצב: <b>' + c.bpm + '</b>' : '', o.shift && o.shift !== 0 ? (o.shift > 0 ? `קאפו בסריג <b>${o.shift}</b> עם האקורדים המקוריים` : `נמוך ב־${-o.shift} חצאי טונים מהמקור`) : ''].filter(Boolean);
+  let h = `<header class="ps-head"><h1 dir="auto">${esc(o.title || 'בלי שם')}</h1>${o.sub ? `<p class="ps-sub" dir="auto">${esc(o.sub)}</p>` : ''}${o.meta && meta.length ? `<p class="ps-meta">${meta.join('<span class="ps-dot">·</span>')}</p>` : ''}</header>`;
+  if(o.sheet && c.sheet.trim()){
+    const sh = psSheetHTML();
+    if(o.diagrams) h += psDiagramsHTML(sh.used);
+    h += `<div class="sheet ps-sheet${o.cols ? ' ps-cols' : ''}${o.color === 'black' ? ' ps-black' : ''}" dir="${c.dir || (hasHebrew(c.sheet) ? 'rtl' : 'ltr')}" style="font-size:${o.size}pt" ${o.edit ? 'contenteditable="true" spellcheck="false"' : ''}>${PS.sheetOverride != null ? PS.sheetOverride : sh.html}</div>`;
+  }
+  if(o.notation && psNotationReady()) h += `<section class="ps-nsec">${o.sheet && c.sheet.trim() ? '<h2 class="ps-h2">תווים</h2>' : ''}${psNotationHTML()}</section>`;
+  if(o.footer) h += `<footer class="ps-foot">${esc(o.footer)}</footer>`;
+  doc.innerHTML = h;
+  const ed = doc.querySelector('.ps-sheet[contenteditable]'); if(ed) ed.addEventListener('input', () => { PS.sheetOverride = ed.innerHTML; });
+}
+function psOnInput(e){
+  const t = e.target.closest('[data-po]'); if(!t) return;
+  const key = t.dataset.po, o = PS.o;
+  if(t.type === 'checkbox') o[key] = t.checked; else if(t.type === 'range') o[key] = Number(t.value); else o[key] = t.value;
+  if(key === 'notes' && PS.sheetOverride != null && !confirm('השינויים שכתבת בטקסט יימחקו. להמשיך?')){ o.notes = !o.notes; t.checked = o.notes; return; }
+  if(key === 'notes') PS.sheetOverride = null;
+  if(t.type === 'checkbox' || t.type === 'range') psRenderPanel();
+  psBuild();
+}
+function psOnClick(e){
+  const b = e.target.closest('[data-psa]'); if(!b) return;
+  const a = b.dataset.psa, o = PS.o;
+  if(a === 'close') return psClose();
+  if(a === 'print') return psPrint();
+  if(a === 'sh-' || a === 'sh+'){ if(PS.sheetOverride != null && !confirm('השינויים שכתבת בטקסט יימחקו. להמשיך?')) return; PS.sheetOverride = null; o.shift = Math.max(-11, Math.min(11, o.shift + (a === 'sh+' ? 1 : -1))); }
+  if(a === 'col-blue' || a === 'col-black') o.color = a.slice(4);
+  if(a === 'nl-en' || a === 'nl-he') o.nLang = a.slice(3);
+  psRenderPanel(); psBuild();
+}
+function psPrint(){
+  const doc = $('#ps-doc'); if(!doc) return;
+  let area = $('#print-area'); if(!area){ area = document.createElement('div'); area.id = 'print-area'; document.body.appendChild(area); }
+  area.innerHTML = `<div class="ps-doc">${doc.innerHTML}</div>`;
+  area.querySelectorAll('[contenteditable]').forEach(x => x.removeAttribute('contenteditable'));
+  const t = document.title; document.title = PS.o.title || t;
+  setTimeout(() => { window.print(); document.title = t; }, 60);
+}
+function printSheet(btn){ openPrintStudio(btn && btn.dataset.print === 'notes'); }
 
 /* ================== פסנתר (אזור פרטי למורה) ================== */
 const PN = {tab:'scales', root:0, scale:'major', all:false, qual:'maj', edit:null, songId:null, shift:0};
@@ -7576,6 +7750,7 @@ function prPlayerHTML(P, inSong){
         <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-names-on" ${PRN.names ? 'checked' : ''} ${PRN.on ? '' : 'disabled'}> שמות התווים</label>
         <div class="seg" ${PRN.names ? '' : 'hidden'} id="pr-names-lang"><button type="button" data-pr="names-en" aria-pressed="${PRN.names !== 'he'}">C D E</button><button type="button" data-pr="names-he" aria-pressed="${PRN.names === 'he'}">דו רה מי</button></div>
         <button class="btn small" data-pr="pick" aria-pressed="${!!PRN.picking}" ${PRN.on ? '' : 'disabled'}>סימון קטע ללופ בתווים</button>
+        <button class="btn small" data-print="notes" type="button" ${PRN.on ? '' : 'disabled'}>הדפסת התווים</button>
         <span class="muted" id="pr-pick-msg"></span>
       </div>
       <div class="row pr-ctools">
