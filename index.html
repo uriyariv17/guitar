@@ -700,6 +700,7 @@ body.ps-open{ overflow:hidden; }
 .ps-nsec{ break-before:auto; }
 .ps-notation{ background:#fff; }
 .ps-notation .pr-notes{ cursor:default; }
+.ps-sys{ overflow:hidden; break-inside:avoid; page-break-inside:avoid; position:relative; }
 .ps-foot{ margin-top:16pt; padding-top:6pt; border-top:.6pt solid #ccc; text-align:center; font-size:9pt; color:#777; }
 @page{ size:A4; margin:15mm 14mm; }
 @media print{
@@ -6569,7 +6570,7 @@ function psNotationReady(){ return !!(PRN.osmd && PRN.el && PRN.el.isConnected &
 function openPrintStudio(onlyNotes){
   const c = psContext(); if(!c){ toast('אין כאן מה להדפיס.'); return; }
   const hasSheet = !!c.sheet.trim(), hasNotes = psNotationReady();
-  PS.ctx = c; PS.sheetOverride = null;
+  PS.ctx = c; PS.sheetOverride = null; PS.nCache = null;
   PS.o = {title:c.title, sub:c.artist, meta:true, size:12, cols:false, diagrams:hasSheet, notes:true, color:'blue', shift:c.shift, sheet:hasSheet && !onlyNotes, notation:hasNotes && (onlyNotes || !hasSheet), nNames:!!PRN.names, nLang:PRN.names === 'he' ? 'he' : 'en', nChords:CH.show, footer:'', edit:false};
   let st = $('#print-studio');
   if(!st){ st = document.createElement('div'); st.id = 'print-studio'; st.setAttribute('role', 'dialog'); st.setAttribute('aria-modal', 'true'); st.setAttribute('aria-label', 'תצוגה לפני הדפסה'); document.body.appendChild(st);
@@ -6630,18 +6631,39 @@ function psDiagramsHTML(used){
   const items = used.map(n => { const lib = libChordByName(n); return lib ? `<div class="ps-dg"><b>${esc(n)}</b>${chordSVG(lib)}</div>` : ''; }).filter(Boolean);
   return items.length ? `<div class="ps-diag">${items.join('')}</div>` : '';
 }
+/* התווים להדפסה: מציירים מחדש ברוחב של דף A4, ומחלקים לשורות (מערכות) כדי שעמוד חדש יתחיל רק בין שורות */
 function psNotationHTML(){
-  const o = PS.o, el = PRN.el; if(!el) return '';
-  const keepNames = PRN.names, keepCh = CH.show;
-  PRN.names = o.nNames ? o.nLang : ''; prNotesNames();
-  if(o.nChords && !CH.show){ CH.show = true; prChordOverlay(); }
-  const cl = el.cloneNode(true);
-  PRN.names = keepNames; prNotesNames(); if(CH.show !== keepCh){ CH.show = keepCh; prChordOverlay(); }
-  cl.querySelectorAll('.prn-hl, .prn-cur, .prn-loops, .prn-pk, .pr-notes-msg').forEach(x => x.remove());
-  if(!o.nChords) cl.querySelectorAll('.prn-chords').forEach(x => x.remove());
-  cl.querySelectorAll('.prn-ch.cur').forEach(x => x.classList.remove('cur'));
-  const w = el.scrollWidth || el.offsetWidth || 900, h = el.scrollHeight || el.offsetHeight;
-  return `<div class="ps-notation" dir="ltr" style="width:${w}px;zoom:${(680 / w).toFixed(4)}">${cl.outerHTML.replace('class="pr-notes"', `class="pr-notes" style="height:${h}px;cursor:default"`)}</div>`;
+  const o = PS.o, el = PRN.el, osmd = PRN.osmd; if(!el || !osmd) return '';
+  const ck = [o.nNames, o.nLang, o.nChords, PR.piece && PR.piece.title, JSON.stringify(PR.piece && PR.piece.chordFix || {})].join('|');
+  if(PS.nCache && PS.nCache.k === ck && PS.nCache.osmd === osmd) return PS.nCache.html;
+  const W = 760, keep = {w:el.style.width, z:osmd.zoom, names:PRN.names, ch:CH.show};
+  let html = '';
+  try{
+    el.style.width = W + 'px'; osmd.zoom = .72; osmd.render();
+    PRN.names = o.nNames ? o.nLang : ''; CH.show = !!o.nChords;
+    prNotesBoxes();
+    const H = el.scrollHeight || el.offsetHeight;
+    const rows = [];
+    PRN.boxes.forEach(b => { if(!b) return; const r = rows.find(x => Math.abs(x.y - b.y) < 10); if(r){ r.b = Math.max(r.b, b.y + b.h); r.y = Math.min(r.y, b.y); } else rows.push({y:b.y, b:b.y + b.h}); });
+    rows.sort((a, b) => a.y - b.y);
+    const cl = el.cloneNode(true);
+    cl.querySelectorAll('.prn-hl, .prn-cur, .prn-loops, .prn-pk, .pr-notes-msg').forEach(x => x.remove());
+    if(!o.nChords) cl.querySelectorAll('.prn-chords').forEach(x => x.remove());
+    cl.querySelectorAll('.prn-ch.cur').forEach(x => x.classList.remove('cur'));
+    cl.style.width = W + 'px'; cl.style.height = H + 'px'; cl.style.cursor = 'default';
+    const inner = cl.outerHTML;
+    if(!rows.length) html = `<div class="ps-sys" style="height:${H}px">${inner}</div>`;
+    else html = rows.map((r, i) => {
+      const top = i === 0 ? 0 : Math.round((rows[i - 1].b + r.y) / 2), bot = i === rows.length - 1 ? H : Math.round((r.b + rows[i + 1].y) / 2);
+      return `<div class="ps-sys" style="height:${Math.max(20, bot - top)}px"><div style="margin-top:${-top}px">${inner}</div></div>`;
+    }).join('');
+    html = `<div class="ps-notation" dir="ltr" style="width:${W}px;zoom:${(680 / W).toFixed(4)}">${html}</div>`;
+  }catch(e){ html = `<p class="hint">לא הצלחתי להכין את התווים להדפסה (${esc(e.message || e)}).</p>`; }
+  el.style.width = keep.w; osmd.zoom = keep.z; PRN.names = keep.names; CH.show = keep.ch;
+  try{ osmd.render(); }catch(e){}
+  prNotesBoxes(); prNotesSync(true);
+  PS.nCache = {k:ck, osmd, html};
+  return html;
 }
 function psBuild(){
   const o = PS.o, c = PS.ctx, doc = $('#ps-doc'); if(!doc) return;
