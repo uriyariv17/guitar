@@ -1002,7 +1002,7 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .deg-tog[aria-pressed="true"]{ background:var(--blue); color:#fff; border-color:var(--blue); }
 .pr-ntools{ margin:10px 0 6px; align-items:center; }
 .pr-ntools [aria-pressed="true"]{ background:#E0A400; color:#1b1300; border-color:#E0A400; }
-.pr-notes-scroll{ max-height:340px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:12px; margin-bottom:10px; position:relative; }
+.pr-notes-scroll{ overflow:auto; background:#fff; border:1px solid var(--line); border-radius:12px; margin-bottom:10px; position:relative; }
 .pr-notes{ position:relative; min-height:60px; cursor:pointer; color:#111; }
 .pr-notes-svg svg{ display:block; }
 .pr-notes-msg{ margin:0; padding:14px 16px; color:#5b667a; direction:rtl; text-align:right; font-size:.95rem; }
@@ -1040,6 +1040,49 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .prn-ch{ position:absolute; transform:translateY(-100%); font:800 14px/1 Arial, sans-serif; color:#316ee6; background:rgba(255,255,255,.92); padding:2px 5px; border-radius:5px; white-space:nowrap; }
 .prn-ch.cur{ background:#316ee6; color:#fff; }
 .prn-ch .dq{ font-size:.7em; vertical-align:super; }
+/* נגן: עיצוב נקי יותר */
+.pr-player h3{ margin:0; }
+.pr-transport{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:14px 0 10px; padding:10px 12px; border-radius:16px; background:color-mix(in srgb, var(--blue) 6%, var(--surface)); border:1px solid color-mix(in srgb, var(--blue) 18%, var(--line)); }
+.pr-play{ width:52px; height:52px; border-radius:50%; border:0; background:var(--blue); color:#fff; display:grid; place-items:center; cursor:pointer; box-shadow:0 6px 16px rgba(49,110,230,.35); flex:none; }
+.pr-play svg{ width:24px; height:24px; }
+.pr-play:hover{ filter:brightness(1.08); }
+.pr-ibtn{ width:40px; height:40px; border-radius:50%; border:1.5px solid var(--line); background:var(--surface); color:var(--ink); display:grid; place-items:center; cursor:pointer; flex:none; }
+.pr-ibtn svg{ width:18px; height:18px; }
+.pr-time{ font:700 15px/1 'Assistant', Arial, sans-serif; color:var(--ink); min-width:120px; }
+.pr-sep{ flex:1; }
+.pr-speed{ display:flex; align-items:center; gap:6px; font-weight:600; font-size:.92rem; }
+.pr-speed select{ width:auto; padding:6px 8px; border-radius:10px; }
+.tg{ display:inline-flex; align-items:center; gap:7px; padding:7px 13px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface); color:var(--ink-2, #5b667a); font-weight:700; font-size:.9rem; cursor:pointer; user-select:none; line-height:1.1; font-family:inherit; }
+.tg input{ position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
+.tg .ic, .pr-tab .ic, .pr-loopflag .ic, .btn .ic{ display:inline-grid; width:18px; height:18px; flex:none; }
+.tg .ic svg, .pr-tab .ic svg, .pr-loopflag .ic svg, .btn .ic svg{ width:100%; height:100%; }
+.btn .ic{ margin-inline-end:6px; vertical-align:-3px; }
+.tg.on{ background:color-mix(in srgb, var(--blue) 12%, var(--surface)); border-color:var(--blue); color:var(--blue); }
+.tg.hand.r.on{ background:rgba(49,110,230,.12); border-color:#316EE6; color:#316EE6; }
+.tg.hand.l.on{ background:rgba(32,165,120,.12); border-color:#20A578; color:#178a63; }
+.tg:has(input:focus-visible){ outline:3px solid var(--blue); outline-offset:2px; }
+.tg[disabled], .tg:has(input:disabled){ opacity:.45; cursor:default; }
+.pr-loopflag{ display:inline-flex; align-items:center; gap:6px; padding:5px 6px 5px 12px; border-radius:999px; background:#FFF3CF; color:#7a5600; font-weight:700; font-size:.88rem; border:1.5px solid #E0A400; }
+.pr-loopflag button{ width:24px; height:24px; border-radius:50%; border:0; background:rgba(0,0,0,.06); color:inherit; display:grid; place-items:center; cursor:pointer; padding:5px; }
+.pr-tabs{ display:flex; gap:4px; flex-wrap:wrap; border-bottom:1.5px solid var(--line); margin-top:4px; }
+.pr-tab{ display:inline-flex; align-items:center; gap:7px; padding:9px 14px; border:0; background:none; color:var(--ink-2, #5b667a); font:700 .95rem 'Assistant', Arial, sans-serif; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-1.5px; }
+.pr-tab[aria-pressed="true"]{ color:var(--blue); border-bottom-color:var(--blue); }
+.pr-tab:hover{ color:var(--ink); }
+.pr-panel{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:12px 4px 14px; min-height:20px; }
+.pr-panel:empty{ display:none; }
+.pr-panel .seg [aria-pressed="true"]{ background:var(--surface); box-shadow:0 1px 3px rgba(0,0,0,.12); }
+.pr-num{ display:flex; align-items:center; gap:6px; font-weight:700; }
+.pr-num input{ width:78px; text-align:center; padding:7px 6px; border-radius:10px; }
+.pr-lbl{ font-weight:700; color:var(--ink-2, #5b667a); font-size:.9rem; }
+.pr-hint{ color:var(--ink-2, #5b667a); font-size:.86rem; flex-basis:100%; }
+.pr-grip{ height:14px; margin:2px 0 8px; cursor:ns-resize; display:grid; place-items:center; touch-action:none; border-radius:8px; }
+.pr-grip::after{ content:''; width:64px; height:5px; border-radius:3px; background:#c3cad8; }
+.pr-grip:hover::after, .pr-grip.drag::after{ background:var(--blue); }
+.pr-notes-scroll{ margin-bottom:0 !important; }
+.pr-notes-scroll.focus{ overflow:hidden; border-color:#E0A400; box-shadow:0 0 0 3px rgba(224,164,0,.15); }
+.prn-loop.drag{ background:rgba(49,110,230,.16); border-color:#316EE6; }
+.prn-dim{ position:absolute; background:rgba(255,255,255,.88); pointer-events:none; z-index:5; }
+.pr-notes{ touch-action:pan-y; }
 </style>
 </head>
 <body>
@@ -3157,24 +3200,25 @@ async function api(action, payload = {}){
 
 /* ================== אזור התלמיד ================== */
 const S = {pin:null, student:null, tasks:[], logs:[], pending:new Map(), openShapes:new Set(), timerSec:0, timerOn:false, timerId:null};
+function stuApply(r, pin){ S.recs = r.recs || []; S.snotes = r.snotes || []; S.pin = pin; S.student = r.student; S.tasks = r.tasks; S.logs = r.logs; S.lessons = r.lessons || []; S.songs = r.songs || []; dropPrivateSongs(); }
 async function studentLogin(pin, silent){
   $('#stu-err').textContent = '';
   autoStart('#stu-login', '#stu-go', silent);
   try{
     const r = await apiRetry('studentLogin', {pin}, silent);
-    S.recs = r.recs || []; S.snotes = r.snotes || []; S.pin = pin; S.student = r.student; S.tasks = r.tasks; S.logs = r.logs; S.lessons = r.lessons || []; S.songs = r.songs || [];
-    dropPrivateSongs();
-    store.set('pritah.pin', pin);
+    stuApply(r, pin);
+    store.set('pritah.pin', pin); LC.set('s', r);
     renderStudent();
     if(currentView === 'student') mountMetro($('#stu-metro-slot'));
   }catch(e){
     if(!silent) $('#stu-err').textContent = e.message;
-    else if(isAuthErr(e)) store.del('pritah.pin');
+    else if(isAuthErr(e)){ LC.del('s'); if(S.student && S.pin === pin) studentLogout(); else store.del('pritah.pin'); }
+    else if(S.student && S.pin === pin){}
     else { $('#stu-err').textContent = 'לא הצלחנו להתחבר אוטומטית. בדקו את האינטרנט ונסו שוב.'; $('#stu-pin').value = pin; }
   }finally{ autoEnd('#stu-login', '#stu-go'); }
 }
 function studentLogout(){
-  S.pin = null; S.student = null; S.tasks = []; S.logs = []; S.songs = [];
+  LC.del('s'); S.pin = null; S.student = null; S.tasks = []; S.logs = []; S.songs = [];
   setTimeout(dropPrivateSongs, 0);
   store.del('pritah.pin');
   if(MetroUI.el.parentElement === $('#stu-metro-slot')){ Metro.stop(); mountMetro($('#metro-slot')); }
@@ -3322,7 +3366,14 @@ async function saveLog(){
 /* ================== אזור המורה ================== */
 const T = {pw:null, data:null, sel:null, editTask:null, editStudent:null};
 /* כניסה אוטומטית: מנסים שוב כשהשרת איטי, ולא מוחקים את פרטי הכניסה בגלל תקלת רשת */
-const isAuthErr = e => /סיסמה|הקוד לא|קוד לא|לא נמצא|לא נכון|שגוי/.test(String(e && e.message || ''));
+// רק שגיאה מפורשת של סיסמה או קוד שגויים מנתקת. כל תקלה אחרת (אינטרנט, שרת איטי) משאירה מחובר.
+const isAuthErr = e => /הסיסמה שגויה|הקוד לא נמצא|הסיסמה או הקוד לא נכונים/.test(String(e && e.message || ''));
+/* זיכרון מקומי של הנתונים האחרונים: האזור נפתח מיד כמחובר, ומתעדכן מהשרת ברקע */
+const LC = {
+  set(k, v){ try{ const s = JSON.stringify(v); if(s.length < 2500000) localStorage.setItem('pritah.c.' + k, s); else localStorage.removeItem('pritah.c.' + k); }catch(e){ try{ localStorage.removeItem('pritah.c.' + k); }catch(e2){} } },
+  get(k){ try{ return JSON.parse(localStorage.getItem('pritah.c.' + k) || 'null'); }catch(e){ return null; } },
+  del(k){ try{ localStorage.removeItem('pritah.c.' + k); }catch(e){} }
+};
 async function apiRetry(action, payload, silent){
   const tries = silent ? 3 : 2; let err;
   for(let i = 0; i < tries; i++){
@@ -3338,17 +3389,18 @@ async function teacherLogin(pw, silent){
   try{
     T.data = await apiRetry('teacherLoad', {password:pw}, silent);
     dropPrivateSongs();
-    T.pw = pw;
+    T.pw = pw; LC.set('t', T.data);
     try{ sessionStorage.setItem('pritah.tpw', pw); }catch(e){}
     if(!silent || store.get('pritah.tpw')){ if($('#t-remember').checked) store.set('pritah.tpw', pw); else store.del('pritah.tpw'); }
     renderTeacher();
   }catch(e){
     if(!silent) $('#t-err2').textContent = e.message;
-    else if(isAuthErr(e)) store.del('pritah.tpw');
+    else if(isAuthErr(e)){ if(T.data && T.pw === pw) teacherLogout(); else store.del('pritah.tpw'); LC.del('t'); }
+    else if(T.data && T.pw === pw) toast('אין חיבור לשרת כרגע. מוצגים הנתונים האחרונים שנשמרו במכשיר.');
     else $('#t-err2').textContent = 'לא הצלחנו להתחבר אוטומטית. בדקו את האינטרנט ונסו שוב.';
   }finally{ autoEnd('#t-login', '#t-go'); }
 }
-function teacherLogout(){ T.pw = null; T.data = null; T.sel = null; setTimeout(dropPrivateSongs, 0); store.del('pritah.tpw'); try{ sessionStorage.removeItem('pritah.tpw'); }catch(e){} $('#t-pw').value = ''; renderTeacher(); }
+function teacherLogout(){ LC.del('t'); T.pw = null; T.data = null; T.sel = null; setTimeout(dropPrivateSongs, 0); store.del('pritah.tpw'); try{ sessionStorage.removeItem('pritah.tpw'); }catch(e){} $('#t-pw').value = ''; renderTeacher(); }
 function sStats(sid){
   const tasks = T.data.tasks.filter(t => t.studentId === sid), logs = T.data.logs.filter(l => l.studentId === sid);
   const last = logs.reduce((m, l) => l.date > m ? l.date : m, '');
@@ -4836,12 +4888,12 @@ async function bandLogin(pin, silent){
   try{
     const r = await apiRetry('bandLogin', {pin}, silent);
     B.pin = pin; B.member = r.member; B.members = r.members; B.items = r.items;
-    store.set('pritah.bandpin', pin);
+    store.set('pritah.bandpin', pin); LC.set('b', {member:r.member, members:r.members, items:r.items});
     updateBandTab(); renderBand();
-  }catch(e){ if(!silent) $('#vb-err').textContent = e.message; else if(isAuthErr(e)) store.del('pritah.bandpin'); else { $('#vb-err').textContent = 'לא הצלחנו להתחבר אוטומטית. נסו שוב.'; $('#vb-pin').value = pin; } }
+  }catch(e){ if(!silent) $('#vb-err').textContent = e.message; else if(isAuthErr(e)){ LC.del('b'); if(B.member) bandLogout(); else store.del('pritah.bandpin'); } else if(B.member && B.pin === pin){} else { $('#vb-err').textContent = 'לא הצלחנו להתחבר אוטומטית. נסו שוב.'; $('#vb-pin').value = pin; } }
   finally{ autoEnd('#vb-login', '#vb-go'); }
 }
-function bandLogout(){ Object.assign(B, {pin:null, member:null, members:[], items:[], songId:null}); store.del('pritah.bandpin'); $('#vb-pin').value = ''; updateBandTab(); renderBand(); }
+function bandLogout(){ LC.del('b'); Object.assign(B, {pin:null, member:null, members:[], items:[], songId:null}); store.del('pritah.bandpin'); $('#vb-pin').value = ''; updateBandTab(); renderBand(); }
 function updateBandTab(){ updateAreas(); if(currentView === 'home') renderHomeState(); }
 
 function renderBand(){
@@ -5720,12 +5772,12 @@ async function youthLogin(pin, silent){
     Object.assign(Y, {pin, me:r.me, people:r.people, items:r.items, recs:r.recs || []});
     const saved = store.get('pritah.ygid');
     Y.gid = r.me.staff ? (yGroups().some(g => g.id === saved) ? saved : (yGroups()[0] || {}).id || '') : r.me.groupId;
-    store.set('pritah.youthpin', pin);
+    store.set('pritah.youthpin', pin); LC.set('y', {me:r.me, people:r.people, items:r.items, recs:r.recs || []});
     updateYouthTab(); renderYouth();
-  }catch(e){ if(!silent) $('#yo-err').textContent = e.message; else if(isAuthErr(e)) store.del('pritah.youthpin'); else { $('#yo-err').textContent = 'לא הצלחנו להתחבר אוטומטית. נסו שוב.'; $('#yo-pin').value = pin; } }
+  }catch(e){ if(!silent) $('#yo-err').textContent = e.message; else if(isAuthErr(e)){ LC.del('y'); if(Y.me) youthLogout(); else store.del('pritah.youthpin'); } else if(Y.me && Y.pin === pin){} else { $('#yo-err').textContent = 'לא הצלחנו להתחבר אוטומטית. נסו שוב.'; $('#yo-pin').value = pin; } }
   finally{ autoEnd('#yo-login', '#yo-go'); }
 }
-function youthLogout(){ $('#yo-fuck').hidden = true; Object.assign(Y, {pin:null, me:null, people:[], items:[], songId:null, rehId:null}); store.del('pritah.youthpin'); $('#yo-pin').value = ''; updateYouthTab(); renderYouth(); }
+function youthLogout(){ LC.del('y'); $('#yo-fuck').hidden = true; Object.assign(Y, {pin:null, me:null, people:[], items:[], songId:null, rehId:null}); store.del('pritah.youthpin'); $('#yo-pin').value = ''; updateYouthTab(); renderYouth(); }
 function updateYouthTab(){ updateAreas(); if(currentView === 'home') renderHomeState(); }
 
 function renderYouth(){
@@ -7766,55 +7818,85 @@ function pnRoll(){
   updateSampState();
   if(P){ prResize(); prDraw(); prNotationRender(); prPickMsg(); }
 }
+const PRI = {
+  play:'<svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>',
+  pause:'<svg viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1" fill="currentColor"/></svg>',
+  restart:'<svg viewBox="0 0 24 24"><path d="M6 5v14M19 5.5 9 12l10 6.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+  loop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>',
+  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="17" cy="16" r="3" fill="currentColor"/></svg>',
+  chord:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M5 8h14M5 13h14M10 3v18M14 3v18"/><circle cx="12" cy="10.5" r="1.6" fill="currentColor"/><circle cx="16.5" cy="15.5" r="1.6" fill="currentColor"/></svg>',
+  print:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z" fill="var(--surface)"/></svg>',
+  piano:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M8 4v16M13 4v16M18 4v16"/><path d="M6.5 4v9M11 4v9M16 4v9" stroke-width="3"/></svg>',
+  hand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4a1.5 1.5 0 0 1 3 0v8M14 11V5.5a1.5 1.5 0 0 1 3 0V14c0 4-2.5 7-6 7-2.5 0-4-1.2-5.2-3.2L4 14.5a1.5 1.5 0 0 1 2.4-1.7L8 14.5"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>'
+};
+const PRUI = {panel:(() => { try{ return localStorage.getItem('pritah.prpanel') || 'loop'; }catch(e){ return 'loop'; } })(), roll:(() => { try{ return localStorage.getItem('pritah.prroll') !== '0'; }catch(e){ return true; } })()};
+function prBarVal(t, isEnd){
+  const P = PR.piece, B = P.bars; let i = prBarAt(isEnd ? t - .001 : t) - 1;
+  const s0 = B[i], s1 = i + 1 < B.length ? B[i + 1] : P.dur, f = (t - s0) / Math.max(.001, s1 - s0);
+  if(isEnd && f > .97) return String(i + 1);
+  const v = Math.round((i + 1 + f) * 4) / 4; return String(v);
+}
+function prValTime(v, isEnd){
+  const P = PR.piece, B = P.bars, n = B.length; v = Number(v); if(!(v >= 1)) return null;
+  const i = Math.min(n, Math.floor(v)), f = v - Math.floor(v), s0 = B[i - 1], s1 = i < n ? B[i] : P.dur;
+  if(isEnd && f < 1e-6) return s1;
+  return s0 + f * (s1 - s0);
+}
 function prPlayerHTML(P, inSong){
-  let h = '';
-  {
-    const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-    const facts = [`${P.notes.length} תווים`, `${P.bars.length} תיבות`, fmt(P.dur), `טמפו פתיחה ${Math.round(P.bpm)}`, P.repeated ? 'חזרות נפרסו' : '', P.pedal ? 'עם פדל' : ''].filter(Boolean).join(', ');
-    h += `<div class="sub-panel" style="margin-top:14px">
-      <div class="spread"><div><h3>${esc(P.title)}</h3><p class="muted">${esc(facts)}</p></div>
+  const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const facts = [`${P.bars.length} תיבות`, fmt(P.dur), `טמפו ${Math.round(P.bpm)}`, P.repeated ? 'חזרות נפרסו' : '', P.pedal ? 'עם פדל' : ''].filter(Boolean).join(' · ');
+  const hasLoop = PR.loop.a != null, canFix = inSong ? sfCan() : !!T.data;
+  const chip = (id, on, icon, label, extra = '') => `<label class="tg${on ? ' on' : ''}"><input type="checkbox" id="${id}" ${on ? 'checked' : ''} ${extra}>${icon ? `<span class="ic">${icon}</span>` : ''}${label}</label>`;
+  const tab = (v, icon, label) => `<button type="button" class="pr-tab" data-pr="panel" data-v="${v}" aria-pressed="${PRUI.panel === v}"><span class="ic">${icon}</span>${label}</button>`;
+  let panel = '';
+  if(PRUI.panel === 'view') panel = `
+      ${chip('pr-notes-on', PRN.on, PRI.note, 'תווים')}
+      ${chip('pr-names-on', !!PRN.names, '', 'שמות התווים', PRN.on ? '' : 'disabled')}
+      <div class="seg" ${PRN.names ? '' : 'hidden'} id="pr-names-lang"><button type="button" data-pr="names-en" aria-pressed="${PRN.names !== 'he'}">C D E</button><button type="button" data-pr="names-he" aria-pressed="${PRN.names === 'he'}">דו רה מי</button></div>
+      ${chip('pr-roll-on', PRUI.roll, PRI.piano, 'Piano Roll')}
+      ${PRUI.roll ? '<span class="pr-lbl">מרווח</span><div class="seg"><button data-pr="zoom-out" aria-label="פחות מרווח">−</button><button data-pr="zoom-in" aria-label="יותר מרווח">+</button></div>' : ''}
+      <span class="pr-hint">את הגובה של התווים ושל ה־Piano Roll משנים בגרירת הפס שמתחת לכל אחד.</span>`;
+  if(PRUI.panel === 'loop') panel = `
+      <label class="pr-num">מתיבה<input type="number" id="pr-la" min="1" max="${P.bars.length}" step="0.25" value="${hasLoop ? prBarVal(PR.loop.a) : ''}" placeholder="1"></label>
+      <label class="pr-num">עד תיבה<input type="number" id="pr-lb" min="1" max="${P.bars.length}" step="0.25" value="${hasLoop ? prBarVal(PR.loop.b, true) : ''}" placeholder="${Math.min(4, P.bars.length)}"></label>
+      <button class="btn small primary" data-pr="loop-bars">קביעה</button>
+      ${hasLoop ? `${chip('pr-loop-on', PR.loop.on, PRI.loop, 'חזרה שוב ושוב')}
+      <button type="button" class="tg${PRN.focus ? ' on' : ''}" data-pr="focus" aria-pressed="${!!PRN.focus}" ${PRN.on ? '' : 'disabled'}><span class="ic">${PRI.eye}</span>רק הקטע בתווים</button>
+      <button class="btn small ghost" data-pr="loop-clear">ביטול הקטע</button>` : ''}
+      <span class="pr-hint" id="pr-loop-txt">${hasLoop ? '' : 'אפשר גם חצי תיבה, למשל 3.5. או פשוט גוררים עם העכבר על התווים (או על ה־Piano Roll) מתחילת הקטע ועד סופו.'}</span>`;
+  if(PRUI.panel === 'chords') panel = `
+      ${chip('pr-ch-on', CH.show, PRI.chord, 'הצגת אקורדים')}
+      ${CH.show ? `<button type="button" class="tg${CH.only ? ' on' : ''}" data-pr="ch-only" aria-pressed="${CH.only}" title="במקום התווים, הנגינה משמיעה את האקורדים שזוהו">רק אקורדים, בלי מלודיה</button>${degBtnHTML()}${canFix ? `<button class="btn small" data-pr="ch-edit" aria-pressed="${CH.edit}">${CH.edit ? 'סיום ושמירה' : 'תיקון אקורדים'}</button>` : ''}` : ''}`;
+  if(PRUI.panel === 'print') panel = `
+      <button class="btn small primary" data-print="notes" type="button" ${PRN.on ? '' : 'disabled'}><span class="ic">${PRI.print}</span>הדפסת התווים</button>
+      <span class="pr-hint">נפתחת תצוגה לפני הדפסה, ואפשר לבחור בה שמות תווים, אקורדים ועוד.</span>`;
+  return `<div class="sub-panel pr-player" style="margin-top:14px">
+      <div class="spread"><div><h3>${esc(P.title)}</h3><p class="muted" style="margin:2px 0 0">${esc(facts)}</p></div>
         ${inSong ? '<button class="btn small ghost" data-pr="song-close">סגירת הנגן</button>' : PR.savedId ? '' : '<button class="btn small" data-pr="save">שמירה ברשימה</button>'}</div>
-      <div class="row pr-ctl">
-        <button class="btn primary" data-pr="play" id="pr-play">${PR.playing ? 'השהיה' : 'נגינה'}</button>
-        <button class="btn" data-pr="restart">להתחלה</button>
-        <label class="row" style="gap:6px;font-weight:600">מהירות<select id="pr-speed">${[.5,.6,.75,.9,1,1.25,1.5].map(v => `<option value="${v}" ${v === PR.speed ? 'selected' : ''}>${Math.round(v * 100)}%</option>`).join('')}</select></label>
-        <label class="row pr-hand r" style="gap:6px;font-weight:600"><input type="checkbox" data-hand="1" ${PR.hands[1] ? 'checked' : ''}> יד ימין</label>
-        <label class="row pr-hand l" style="gap:6px;font-weight:600"><input type="checkbox" data-hand="2" ${PR.hands[2] ? 'checked' : ''}> יד שמאל</label>
-        <div class="seg"><button data-pr="zoom-out" aria-label="פחות מרווח">−</button><button data-pr="zoom-in" aria-label="יותר מרווח">+</button></div>
-        <span class="muted" id="pr-time" dir="ltr"></span>
+      <div class="pr-transport">
+        <button class="pr-play" data-pr="play" id="pr-play" aria-label="${PR.playing ? 'השהיה' : 'נגינה'}">${PR.playing ? PRI.pause : PRI.play}</button>
+        <button class="pr-ibtn" data-pr="restart" title="${hasLoop && PR.loop.on ? 'לתחילת הקטע' : 'להתחלה'}" aria-label="להתחלה">${PRI.restart}</button>
+        <span class="pr-time" id="pr-time" dir="ltr"></span>
+        <span class="pr-sep"></span>
+        <label class="pr-speed"><span>מהירות</span><select id="pr-speed">${[.5,.6,.75,.9,1,1.25,1.5].map(v => `<option value="${v}" ${v === PR.speed ? 'selected' : ''}>${Math.round(v * 100)}%</option>`).join('')}</select></label>
+        <label class="tg hand r${PR.hands[1] ? ' on' : ''}"><input type="checkbox" data-hand="1" ${PR.hands[1] ? 'checked' : ''}><span class="ic">${PRI.hand}</span>ימין</label>
+        <label class="tg hand l${PR.hands[2] ? ' on' : ''}"><input type="checkbox" data-hand="2" ${PR.hands[2] ? 'checked' : ''}><span class="ic" style="transform:scaleX(-1)">${PRI.hand}</span>שמאל</label>
+        ${hasLoop ? `<span class="pr-loopflag"><span class="ic">${PRI.loop}</span>קטע: תיבות <bdi dir="ltr">${prBarVal(PR.loop.a)}–${prBarVal(PR.loop.b, true)}</bdi><button data-pr="loop-clear" aria-label="ביטול הקטע">${PRI.x}</button></span>` : ''}
       </div>
-      <div class="row pr-loop">
-        <b>לולאה לתרגול</b>
-        <label class="row" style="gap:4px">מתיבה<input type="number" id="pr-la" min="1" max="${P.bars.length}" style="width:70px" value="${PR.loop.a != null ? prBarAt(PR.loop.a) : ''}"></label>
-        <label class="row" style="gap:4px">עד תיבה<input type="number" id="pr-lb" min="1" max="${P.bars.length}" style="width:70px" value="${PR.loop.b != null ? prBarAt(PR.loop.b - .001) : ''}"></label>
-        <button class="btn small" data-pr="loop-bars">קביעה</button>
-        <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-loop-on" ${PR.loop.on ? 'checked' : ''} ${PR.loop.a == null ? 'disabled' : ''}> לחזור שוב ושוב</label>
-        ${PR.loop.a != null ? '<button class="btn ghost small" data-pr="loop-clear">ביטול הלולאה</button>' : ''}
-        <span class="muted" id="pr-loop-txt">${PR.loop.a != null ? '' : 'או גוררים למעלה או למטה על התצוגה כדי לסמן קטע.'}</span>
-      </div>
-      <div class="row pr-ntools">
-        <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-notes-on" ${PRN.on ? 'checked' : ''}> הצגת תווים</label>
-        <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-names-on" ${PRN.names ? 'checked' : ''} ${PRN.on ? '' : 'disabled'}> שמות התווים</label>
-        <div class="seg" ${PRN.names ? '' : 'hidden'} id="pr-names-lang"><button type="button" data-pr="names-en" aria-pressed="${PRN.names !== 'he'}">C D E</button><button type="button" data-pr="names-he" aria-pressed="${PRN.names === 'he'}">דו רה מי</button></div>
-        <button class="btn small" data-pr="pick" aria-pressed="${!!PRN.picking}" ${PRN.on ? '' : 'disabled'}>סימון קטע ללופ בתווים</button>
-        <button class="btn small" data-print="notes" type="button" ${PRN.on ? '' : 'disabled'}>הדפסת התווים</button>
-        <span class="muted" id="pr-pick-msg"></span>
-      </div>
-      <div class="row pr-ctools">
-        <label class="row" style="gap:6px;font-weight:600"><input type="checkbox" id="pr-ch-on" ${CH.show ? 'checked' : ''}> אקורדים</label>
-        ${CH.show ? `<button class="btn small" data-pr="ch-only" aria-pressed="${CH.only}" title="במקום התווים, הנגינה משמיעה את האקורדים שזוהו">רק אקורדים (בלי מלודיה)</button>${degBtnHTML()}${(inSong ? sfCan() : !!T.data) ? `<button class="btn small" data-pr="ch-edit" aria-pressed="${CH.edit}">${CH.edit ? 'סיום ושמירה' : 'תיקון אקורדים'}</button>` : ''}` : ''}
-      </div>
-      <div id="pr-chords">${prChordStripHTML()}</div>
-      <div class="pr-notes-scroll" id="pr-notes-slot" ${PRN.on ? '' : 'hidden'}></div>
-      <div class="pr-wrap" dir="ltr"><canvas id="pr-canvas"></canvas></div>
+      <div class="pr-tabs" role="toolbar" aria-label="אפשרויות">${tab('loop', PRI.loop, 'קטע לתרגול')}${tab('view', PRI.eye, 'תצוגה')}${tab('chords', PRI.chord, 'אקורדים')}${tab('print', PRI.print, 'הדפסה')}</div>
+      <div class="pr-panel">${panel}</div>
+      ${CH.show ? `<div id="pr-chords">${prChordStripHTML()}</div>` : '<div id="pr-chords"></div>'}
+      <div class="pr-notes-scroll" id="pr-notes-slot" ${PRN.on ? '' : 'hidden'} style="height:${PRN.h}px"></div>
+      ${PRN.on ? '<div class="pr-grip" data-grip="notes" title="גררו כדי לשנות את גובה התווים" role="separator" aria-orientation="horizontal" aria-label="גובה התווים"></div>' : ''}
+      <div class="pr-wrap" dir="ltr" ${PRUI.roll ? '' : 'hidden'}><canvas id="pr-canvas"></canvas></div>
+      ${PRUI.roll ? '<div class="pr-grip" data-grip="roll" title="גררו כדי לשנות את גובה ה־Piano Roll" role="separator" aria-orientation="horizontal" aria-label="גובה ה־Piano Roll"></div>' : ''}
       <input type="range" id="pr-scroll" min="0" max="${Math.ceil(P.dur * 10)}" value="${Math.round(PR.t * 10)}" dir="ltr" aria-label="מיקום ביצירה" style="width:100%">
-      <p class="hint">התווים יורדים אל המקלדת, והקו האדום הוא הרגע הנוכחי. גלגלת העכבר או הפס שמתחת מזיזים את המיקום. בדף התווים: לחיצה על תיבה מתחילה לנגן ממנה, והתיבה שמתנגנת מסומנת. לולאה מסמנים בכפתור "סימון קטע ללופ בתווים", במספרי התיבות, או בגרירה על התצוגה.</p>
     </div>`;
-  }
-  return h;
 }
 /* ================== תווים מעל ה־Piano Roll ================== */
-const PRN = {names:(() => { try{ return localStorage.getItem('pritah.prnames') || ''; }catch(e){ return ''; } })(), ents:[], on:(() => { try{ return localStorage.getItem('pritah.prnotes') !== '0'; }catch(e){ return true; } })(), el:null, osmd:null, key:null, boxes:[], cur:-1, pick:null, lib:null, msg:''};
+const PRN = {h:(() => { const v = Number(localStorage.getItem('pritah.prnh')); return v >= 120 && v <= 1400 ? v : 340; })(), focus:false, names:(() => { try{ return localStorage.getItem('pritah.prnames') || ''; }catch(e){ return ''; } })(), ents:[], on:(() => { try{ return localStorage.getItem('pritah.prnotes') !== '0'; }catch(e){ return true; } })(), el:null, osmd:null, key:null, boxes:[], cur:-1, pick:null, lib:null, msg:''};
 function loadOSMD(){
   if(window.opensheetmusicdisplay) return Promise.resolve(window.opensheetmusicdisplay);
   if(PRN.lib) return PRN.lib;
@@ -7877,7 +7959,7 @@ function notesToMusicXML(P){
 }
 async function prNotationRender(){
   const P = PR.piece, slot = $('#pr-notes-slot'); if(!P || !slot) return;
-  if(!PRN.el){ PRN.el = document.createElement('div'); PRN.el.className = 'pr-notes'; PRN.el.dir = 'ltr'; PRN.el.addEventListener('click', prNotesClick); }
+  if(!PRN.el){ PRN.el = document.createElement('div'); PRN.el.className = 'pr-notes'; PRN.el.dir = 'ltr'; PRN.el.addEventListener('click', prNotesClick); PRN.el.addEventListener('pointerdown', prNotesPointer); }
   slot.hidden = !PRN.on;
   slot.appendChild(PRN.el);
   if(!PRN.on) return;
@@ -7992,19 +8074,80 @@ function prNotesSync(force){
   if(mi === PRN.cur && !force) return;
   PRN.cur = mi; const b = PRN.boxes[mi];
   place(PRN.el.querySelector('.prn-hl'), b);
-  if(b){ const sc = PRN.el.parentElement; if(sc && (b.y < sc.scrollTop + 10 || b.y + b.h > sc.scrollTop + sc.clientHeight - 10)) sc.scrollTo({top:Math.max(0, b.y - 30), behavior:PR.playing ? 'smooth' : 'auto'}); }
+  if(b && !PRN.focus){ const sc = PRN.el.parentElement; if(sc && (b.y < sc.scrollTop + 10 || b.y + b.h > sc.scrollTop + sc.clientHeight - 10)) sc.scrollTo({top:Math.max(0, b.y - 30), behavior:PR.playing ? 'smooth' : 'auto'}); }
+}
+function prXAt(bi, t){
+  const P = PR.piece, mi = P.barIdx[bi], s0 = P.bars[bi], s1 = bi + 1 < P.bars.length ? P.bars[bi + 1] : P.dur;
+  return prCursorX(mi, Math.min(1, Math.max(0, (t - s0) / Math.max(.001, s1 - s0))));
 }
 function prNotesLoop(){
   const P = PR.piece, lp = PRN.el && PRN.el.querySelector('.prn-loops'); if(!P || !lp) return;
   lp.innerHTML = '';
-  if(PR.loop.a != null){
-    const a = prBarAt(PR.loop.a) - 1, b = prBarAt(PR.loop.b - .001) - 1, seen = new Set();
-    for(let k = a; k <= b; k++){ const mi = P.barIdx[k]; if(seen.has(mi) || !PRN.boxes[mi]) continue; seen.add(mi); const d = document.createElement('div'); d.className = 'prn-loop'; lp.appendChild(d); place(d, PRN.boxes[mi]); }
+  const L = PRN.drag ? {a:Math.min(PRN.drag.a, PRN.drag.b), b:Math.max(PRN.drag.a, PRN.drag.b)} : PR.loop;
+  const rects = [];
+  if(L.a != null && L.b > L.a){
+    const a = prBarAt(L.a) - 1, b = prBarAt(L.b - .001) - 1, seen = new Set();
+    for(let k = a; k <= b; k++){
+      const mi = P.barIdx[k], bx = PRN.boxes[mi]; if(!bx || seen.has(mi + ':' + (k === a) + (k === b))) continue; seen.add(mi + ':' + (k === a) + (k === b));
+      const x1 = k === a ? prXAt(k, L.a) : bx.x, x2 = k === b ? (L.b >= (k + 1 < P.bars.length ? P.bars[k + 1] : P.dur) - .01 ? bx.x + bx.w : prXAt(k, L.b)) : bx.x + bx.w;
+      if(x1 == null || x2 == null || x2 - x1 < 2) continue;
+      const r = {x:x1, y:bx.y, w:x2 - x1, h:bx.h}; rects.push(r);
+      const d = document.createElement('div'); d.className = 'prn-loop' + (PRN.drag ? ' drag' : ''); lp.appendChild(d); place(d, r);
+    }
   }
-  const pk = PRN.el.querySelector('.prn-pk'); place(pk, PRN.pick != null ? PRN.boxes[P.barIdx[PRN.pick]] : null);
+  // מצב "רק הקטע": מסתירים את שאר התווים
+  const sc = $('#pr-notes-slot');
+  if(sc){
+    if(PRN.focus && !PRN.drag && rects.length){
+      const top = Math.min(...rects.map(r => r.y)), bot = Math.max(...rects.map(r => r.y + r.h));
+      const rows = []; PRN.boxes.forEach(b => { if(!b || b.y + b.h < top - 2 || b.y > bot + 2) return; const r = rows.find(q => Math.abs(q.y - b.y) < 10); if(r){ r.x1 = Math.min(r.x1, b.x); r.x2 = Math.max(r.x2, b.x + b.w); r.h = Math.max(r.h, b.h); } else rows.push({y:b.y, h:b.h, x1:b.x, x2:b.x + b.w}); });
+      rows.forEach(r => {
+        const inRow = rects.filter(q => Math.abs(q.y - r.y) < 10); if(!inRow.length) return;
+        const a = Math.min(...inRow.map(q => q.x)), b = Math.max(...inRow.map(q => q.x + q.w));
+        [[r.x1 - 30, a], [b, r.x2 + 30]].forEach(([x1, x2]) => { if(x2 - x1 < 3) return; const d = document.createElement('div'); d.className = 'prn-dim'; lp.appendChild(d); place(d, {x:x1, y:r.y - 40, w:x2 - x1, h:r.h + 80}); });
+      });
+      sc.classList.add('focus'); sc.style.height = Math.round(bot - top + 70) + 'px'; sc.scrollTop = Math.max(0, top - 40);
+    } else if(sc.classList.contains('focus') && !PRN.drag){ sc.classList.remove('focus'); sc.style.height = PRN.h + 'px'; }
+  }
+}
+/* זמן לפי נקודה בתווים: התיבה שמתחת לעכבר והמקום בתוכה */
+function prTimeAtXY(x, y){
+  const P = PR.piece; if(!P || !PRN.boxes.length) return null;
+  let mi = PRN.boxes.findIndex(b => b && x >= b.x && x <= b.x + b.w && y >= b.y - 20 && y <= b.y + b.h + 20);
+  if(mi < 0){ let bd = Infinity; PRN.boxes.forEach((b, i) => { if(!b) return; if(y < b.y - 40 || y > b.y + b.h + 40) return; const d = x < b.x ? b.x - x : x > b.x + b.w ? x - b.x - b.w : 0; if(d < bd){ bd = d; mi = i; } }); }
+  if(mi < 0) return null;
+  const b = PRN.boxes[mi], E = PRN.ents[mi];
+  let f;
+  if(E && E.list.length){
+    const L = E.list, end = {ts:E.dur, x:b.x + b.w - 4};
+    if(x <= L[0].x) f = 0;
+    else { let i = L.length - 1; for(let k = 0; k < L.length; k++){ if(L[k].x > x){ i = k - 1; break; } } const a = L[i], nx = i + 1 < L.length ? L[i + 1] : end; f = (a.ts + (nx.x > a.x ? (x - a.x) / (nx.x - a.x) : 0) * (nx.ts - a.ts)) / E.dur; }
+  } else f = (x - b.x) / Math.max(1, b.w);
+  f = Math.min(1, Math.max(0, f));
+  const occ = P.barIdx.map((v, k) => v === mi ? k : -1).filter(k => k >= 0); if(!occ.length) return null;
+  const pick = PRN.dragOcc != null ? (occ.find(k => k >= PRN.dragOcc) != null ? occ.find(k => k >= PRN.dragOcc) : occ[0]) : occ[0];
+  const s0 = P.bars[pick], s1 = pick + 1 < P.bars.length ? P.bars[pick + 1] : P.dur;
+  return {t:s0 + f * (s1 - s0), bi:pick};
+}
+function prNotesPointer(e){
+  if(e.button || !PR.piece || !PRN.boxes.length) return;
+  const r = PRN.el.getBoundingClientRect(), p0 = prTimeAtXY(e.clientX - r.left, e.clientY - r.top); if(!p0) return;
+  const x0 = e.clientX, y0 = e.clientY; let moved = false; PRN.dragOcc = p0.bi;
+  const move = ev => {
+    if(!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+    moved = true; ev.preventDefault();
+    const rr = PRN.el.getBoundingClientRect(), p = prTimeAtXY(ev.clientX - rr.left, ev.clientY - rr.top); if(!p) return;
+    PRN.drag = {a:p0.t, b:p.t}; prNotesLoop();
+  };
+  const up = () => {
+    window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+    const d = PRN.drag; PRN.drag = null; PRN.dragOcc = null;
+    if(moved && d){ PRN.noClick = true; setTimeout(() => { PRN.noClick = false; }, 50); const a = Math.min(d.a, d.b), b = Math.max(d.a, d.b); if(b - a > .15){ PRUI.panel = 'loop'; prSetLoop(a, b); } else prNotesLoop(); }
+  };
+  window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
 }
 function prNotesClick(e){
-  const P = PR.piece; if(!P || !PRN.boxes.length) return;
+  const P = PR.piece; if(!P || !PRN.boxes.length || PRN.noClick) return;
   const r = PRN.el.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
   const mi = PRN.boxes.findIndex(b => b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h); if(mi < 0) return;
   const occ = P.barIdx.map((v, k) => v === mi ? k : -1).filter(k => k >= 0); if(!occ.length) return;
@@ -8018,11 +8161,11 @@ function prNotesClick(e){
   const k = occ.find(x => P.bars[x] >= PR.t - .01) != null && PR.loop.a == null ? occ[0] : occ[0];
   prSeek(P.bars[k]);
 }
-function prPickMsg(){ const m = $('#pr-pick-msg'); if(m) m.textContent = !PRN.picking ? '' : PRN.pick == null ? 'לחצו בתווים על התיבה שבה הקטע מתחיל.' : 'עכשיו לחצו על התיבה שבה הקטע נגמר.'; const b = $('[data-pr="pick"]'); if(b) b.setAttribute('aria-pressed', !!PRN.picking); }
+function prPickMsg(){ return; const m = $('#pr-pick-msg'); if(m) m.textContent = !PRN.picking ? '' : PRN.pick == null ? 'לחצו בתווים על התיבה שבה הקטע מתחיל.' : 'עכשיו לחצו על התיבה שבה הקטע נגמר.'; const b = $('[data-pr="pick"]'); if(b) b.setAttribute('aria-pressed', !!PRN.picking); }
 window.addEventListener('resize', () => { clearTimeout(PRN.rt); PRN.rt = setTimeout(() => { if(PRN.osmd && PRN.el && PRN.el.isConnected){ try{ PRN.osmd.render(); }catch(e){} prNotesBoxes(); prNotesSync(true); } }, 250); });
 
-const PR_H = 560, PR_KH = 96;
-function prResize(){ const c = $('#pr-canvas'); if(!c) return; const w = c.parentElement.clientWidth, dpr = window.devicePixelRatio || 1; c.style.width = w + 'px'; c.style.height = PR_H + 'px'; c.width = w * dpr; c.height = PR_H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
+let PR_H = (() => { const v = Number(localStorage.getItem('pritah.prh')); return v >= 160 && v <= 1000 ? v : 380; })(), PR_KH = 96;
+function prResize(){ const c = $('#pr-canvas'); if(!c) return; PR_KH = PR_H < 300 ? 64 : 96; const w = c.parentElement.clientWidth, dpr = window.devicePixelRatio || 1; c.style.width = w + 'px'; c.style.height = PR_H + 'px'; c.width = w * dpr; c.height = PR_H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
 function prKeys(W){
   const P = PR.piece; let lo = Math.max(21, P.lo - 2), hi = Math.min(108, P.hi + 2);
   while(hi - lo < 28){ if(lo > 21) lo--; if(hi < 108) hi++; }
@@ -8306,9 +8449,9 @@ function prPlay(){
   tick();
   const frame = () => { if(!PR.playing) return; PR.t = Math.max(PR.songStart, PR.songStart + (ctx.currentTime - PR.acStart) * PR.speed); prDraw(); PR.raf = requestAnimationFrame(frame); };
   PR.raf = requestAnimationFrame(frame);
-  const b = $('#pr-play'); if(b) b.textContent = 'השהיה';
+  const b = $('#pr-play'); if(b){ b.innerHTML = PRI.pause; b.setAttribute('aria-label', 'השהיה'); }
 }
-function prStop(){ PR.playing = false; clearTimeout(PR.timer); cancelAnimationFrame(PR.raf); const b = $('#pr-play'); if(b) b.textContent = 'נגינה'; }
+function prStop(){ PR.playing = false; clearTimeout(PR.timer); cancelAnimationFrame(PR.raf); const b = $('#pr-play'); if(b){ b.innerHTML = PRI.play; b.setAttribute('aria-label', 'נגינה'); } }
 function prSeek(t){ const was = PR.playing; prStop(); PR.t = clamp(t, 0, PR.piece.dur); prDraw(); if(was) prPlay(); }
 async function onRoll(e){
   if(e.currentTarget && e.currentTarget.id === 'pn-main' && PN.tab !== 'roll' && !e.target.closest('#sh-roll')) return false;
@@ -8319,19 +8462,21 @@ async function onRoll(e){
   const act = b.dataset.pr;
   if(act === 'file') $('#pr-file').click();
   if(act === 'play'){ if(SAMP.state === 'idle') loadPianoSamples(); PR.playing ? prStop() : prPlay(); }
-  if(act === 'ch-only'){ CH.only = !CH.only; b.setAttribute('aria-pressed', CH.only); const was = PR.playing; prStop(); if(was) prPlay(); prDraw(); return true; }
+  if(act === 'ch-only'){ CH.only = !CH.only; b.setAttribute('aria-pressed', CH.only); b.classList.toggle('on', CH.only); const was = PR.playing; prStop(); if(was) prPlay(); prDraw(); return true; }
   if(act === 'ch-edit'){ if(CH.edit) await prSaveChordFix(); CH.edit = !CH.edit; prRerender(); return true; }
   if(act === 'song-close'){ prStop(); PR.songFile = null; PR.piece = null; PR.host = 'piano'; PRN.key = null; $('#sh-roll').innerHTML = ''; renderSongFiles(); return true; }
   if(act === 'restart') prSeek(PR.loop.on && PR.loop.a != null ? PR.loop.a : 0);
   if(act === 'zoom-in' || act === 'zoom-out'){ PR.pps = clamp(PR.pps * (act === 'zoom-in' ? 1.3 : 1 / 1.3), 25, 600); prDraw(); }
   if(act === 'loop-bars'){
-    const a = Number($('#pr-la').value), bb = Number($('#pr-lb').value), n = PR.piece.bars.length;
-    if(!a || !bb || a < 1 || bb < a || a > n){ $('#pr-loop-txt').textContent = `בחרו תיבות בין 1 ל־${n}.`; return true; }
-    prSetLoop(prBarTime(a), bb + 1 <= n ? prBarTime(bb + 1) : PR.piece.dur);
+    const n = PR.piece.bars.length, a = Number($('#pr-la').value), bb = Number($('#pr-lb').value || a);
+    const ta = prValTime(a, false), tb = prValTime(Math.min(bb, n), true);
+    if(ta == null || tb == null || a > n || tb - ta < .1){ $('#pr-loop-txt').textContent = `בחרו תיבות בין 1 ל־${n}. אפשר גם חצי תיבה, למשל 3.5.`; return true; }
+    prSetLoop(ta, tb);
   }
-  if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; PRN.pick = null; prRerender(); }
+  if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; PRN.pick = null; PRN.focus = false; prRerender(); }
+  if(act === 'panel'){ PRUI.panel = PRUI.panel === b.dataset.v ? '' : b.dataset.v; try{ localStorage.setItem('pritah.prpanel', PRUI.panel); }catch(err){} prRerender(); }
+  if(act === 'focus'){ PRN.focus = !PRN.focus; prRerender(); }
   if(act === 'names-en' || act === 'names-he'){ PRN.names = act === 'names-he' ? 'he' : 'en'; try{ localStorage.setItem('pritah.prnames', PRN.names); localStorage.setItem('pritah.prnames.lang', PRN.names); }catch(err){} $$('#pr-names-lang button').forEach(x => x.setAttribute('aria-pressed', x.dataset.pr === act)); prNotesNames(); }
-  if(act === 'pick'){ PRN.picking = !PRN.picking; PRN.pick = null; prNotesLoop(); prPickMsg(); if(PRN.picking && PRN.el) PRN.el.parentElement.scrollIntoView({block:'nearest', behavior:'smooth'}); }
   if(act === 'open'){ const it = prItems().find(i => i.id === b.dataset.id); prOpen({title:it.data.title, notes:decodeNotes(it.data.notes), bars:it.data.bars || [], barNums:it.data.barNums, bpm:it.data.bpm, repeated:it.data.repeated, pedal:it.data.pedal, ts:it.data.ts || null, xml:it.data.xml || '', barIdx:it.data.barIdx || null, chordFix:it.data.chordFix || {}}, it.id); }
   if(act === 'del'){ const it = prItems().find(i => i.id === b.dataset.id); if(!confirm(`למחוק את "${it.data.title}" מהרשימה?`)) return true; const r = await tCall('teacherDeleteContent', {id:it.id}); LIB.items = r.items; T.data.pvoices = r.items.filter(i => ['pvoice','pgrid','psong','plink','proll'].includes(i.kind)); if(PR.savedId === it.id) PR.savedId = null; renderPiano(); }
   if(act === 'save'){
@@ -9172,7 +9317,7 @@ function init(){
   $('#yp-gen').addEventListener('click', () => { $('#yp-pin').value = genYouthPin(); });
   $('#t-youth').addEventListener('click', onTeacherYouth);
   const ypin = store.get('pritah.youthpin');
-  if(ypin) youthLogin(ypin, true);
+  if(ypin){ const c = LC.get('y'); if(c && c.me){ Object.assign(Y, {pin:ypin, me:c.me, people:c.people || [], items:c.items || [], recs:c.recs || []}); const sv = store.get('pritah.ygid'); Y.gid = c.me.staff ? (yGroups().some(g => g.id === sv) ? sv : (yGroups()[0] || {}).id || '') : c.me.groupId; try{ updateYouthTab(); renderYouth(); }catch(e){} } youthLogin(ypin, true); }
   // VELVET
   $('#vb-go').addEventListener('click', () => { const p = $('#vb-pin').value.trim(); if(p) bandLogin(p); else $('#vb-err').textContent = 'הכניסו את הקוד שלכם.'; });
   $('#vb-pin').addEventListener('keydown', e => { if(e.key === 'Enter') $('#vb-go').click(); });
@@ -9217,7 +9362,7 @@ function init(){
   $('#fmb').addEventListener('submit', saveMember);
   $('#mb-gen').addEventListener('click', () => { $('#mb-pin').value = genMemberPin(); });
   const bpin = store.get('pritah.bandpin');
-  if(bpin) bandLogin(bpin, true);
+  if(bpin){ const c = LC.get('b'); if(c && c.member){ Object.assign(B, {pin:bpin, member:c.member, members:c.members || [], items:c.items || []}); try{ updateBandTab(); renderBand(); }catch(e){} } bandLogin(bpin, true); }
 
   // מעקב ותזכורות
   renderRemind();
@@ -9292,6 +9437,8 @@ function init(){
     if(e.target.id === 'pr-speed'){ const was = PR.playing; prStop(); PR.speed = Number(e.target.value); if(was) prPlay(); }
     const hc = e.target.closest('[data-hand]'); if(hc){ PR.hands[hc.dataset.hand] = hc.checked; prDraw(); }
     if(e.target.id === 'pr-loop-on'){ PR.loop.on = e.target.checked; }
+    if(e.target.id === 'pr-roll-on'){ PRUI.roll = e.target.checked; try{ localStorage.setItem('pritah.prroll', PRUI.roll ? '1' : '0'); }catch(err){} prRerender(); return; }
+    const tgl = e.target.closest('label.tg'); if(tgl) tgl.classList.toggle('on', e.target.checked);
   });
   host.addEventListener('input', e => { if(e.target.id === 'pr-scroll') prSeek(Number(e.target.value) / 10); });
   host.addEventListener('change', e => {
@@ -9305,7 +9452,17 @@ function init(){
     }
   });
   host.addEventListener('change', e => { if(e.target.id === 'pr-names-on'){ PRN.names = e.target.checked ? (localStorage.getItem('pritah.prnames.lang') || 'en') : ''; try{ localStorage.setItem('pritah.prnames', PRN.names); }catch(err){} $('#pr-names-lang').hidden = !PRN.names; $$('#pr-names-lang button').forEach(x => x.setAttribute('aria-pressed', (x.dataset.pr === 'names-he') === (PRN.names === 'he'))); prNotesNames(); return; }
-    if(e.target.id === 'pr-notes-on'){ PRN.on = e.target.checked; try{ localStorage.setItem('pritah.prnotes', PRN.on ? '1' : '0'); }catch(err){} PRN.picking = false; PRN.pick = null; prRerender(); } });
+    if(e.target.id === 'pr-notes-on'){ PRN.on = e.target.checked; try{ localStorage.setItem('pritah.prnotes', PRN.on ? '1' : '0'); }catch(err){} PRN.picking = false; PRN.pick = null; PRN.focus = false; prRerender(); } });
+  // שינוי גובה בגרירה
+  host.addEventListener('pointerdown', e => {
+    const g = e.target.closest('[data-grip]'); if(!g) return; e.preventDefault();
+    const which = g.dataset.grip, y0 = e.clientY, h0 = which === 'roll' ? PR_H : PRN.h, el = which === 'notes' ? $('#pr-notes-slot') : null;
+    g.classList.add('drag');
+    const move = ev => { const h = Math.round(clamp(h0 + ev.clientY - y0, which === 'roll' ? 160 : 120, which === 'roll' ? 1000 : 1400));
+      if(which === 'roll'){ PR_H = h; prResize(); prDraw(); } else { PRN.h = h; if(el){ el.style.height = h + 'px'; if(!PRN.focus) el.style.maxHeight = ''; } } };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); g.classList.remove('drag'); try{ localStorage.setItem(which === 'roll' ? 'pritah.prh' : 'pritah.prnh', which === 'roll' ? PR_H : PRN.h); }catch(err){} if(which === 'notes') prNotesLoop(); };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+  });
   host.addEventListener('pointerdown', e => {
     const cv = e.target.closest('#pr-canvas'); if(!cv || !PR.piece) return;
     const r = cv.getBoundingClientRect(), yy = e.clientY - r.top; if(yy > PR_H - PR_KH) return;
@@ -9334,6 +9491,8 @@ function init(){
   // כניסה אוטומטית
   const savedPin = store.get('pritah.pin');
   let tpw = store.get('pritah.tpw'); if(!tpw){ try{ tpw = sessionStorage.getItem('pritah.tpw'); }catch(e){} }
+  if(tpw){ const c = LC.get('t'); if(c){ T.data = c; T.pw = tpw; try{ dropPrivateSongs(); renderTeacher(); updateAreas(); }catch(e){} } }
+  if(savedPin){ const c = LC.get('s'); if(c && c.student){ try{ stuApply(c, savedPin); renderStudent(); updateAreas(); }catch(e){} } }
   (async () => { if(tpw) await teacherLogin(tpw, true); if(savedPin) await studentLogin(savedPin, true); })();
   renderStudent(); renderTeacher();
   $('#v-home').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if(b) showView(b.dataset.go); });
