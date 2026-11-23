@@ -311,6 +311,26 @@ tr.click:hover td{ background:var(--surface-2); }
 .chord.mini .cname{ font-size:1.05rem; }
 .att{ display:grid; gap:8px; }
 .att-chords{ display:flex; flex-wrap:wrap; gap:8px; }
+.att-part, .att-scale{ display:grid; gap:6px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
+.att-sheet{ font-size:15px; max-height:340px; overflow:auto; background:var(--surface); border-radius:8px; padding:8px 10px; }
+.ftx{ display:grid; gap:8px; }
+.ftx-card{ border:1px solid var(--line); border-radius:12px; padding:8px 10px; display:grid; gap:8px; background:var(--surface); }
+.ftx-card.open{ border-color:color-mix(in srgb, var(--blue) 45%, var(--line)); box-shadow:0 2px 10px rgba(30,60,120,.07); }
+.ftx-head{ font-size:.94rem; }
+.ftx-hint{ margin:0; font-size:.88rem; }
+.ftx-secs{ gap:6px; }
+.ftx-secs .chip{ border:1px solid var(--line); cursor:pointer; font:600 .85rem 'Assistant',Arial,sans-serif; }
+.ftx-secs .chip.on{ background:var(--blue); color:#fff; border-color:var(--blue); }
+.ftx-sheet{ font-size:14px; max-height:300px; overflow:auto; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--surface); }
+.ftx-sheet .ln[data-l]{ cursor:pointer; border-radius:5px; }
+.ftx-sheet .ln[data-l]:hover{ background:color-mix(in srgb, var(--blue) 8%, transparent); }
+.ftx-sheet .ln.in, .sheet .ln.mk{ background:color-mix(in srgb, #f5c400 26%, transparent); box-shadow:-4px 0 0 #e0a800 inset; }
+.ftx-sheet .ln.pa{ outline:2px dashed var(--blue); }
+.ftx-scale-opts{ gap:8px; align-items:end; }
+.ftx-scale-opts .field{ min-width:110px; flex:1; }
+.ftx-board{ overflow-x:auto; }
+.mk-banner{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; padding:8px 12px; margin:6px 0 10px; border-radius:12px; background:color-mix(in srgb, #f5c400 18%, var(--surface)); border:1px solid color-mix(in srgb, #e0a800 45%, var(--line)); }
+.sheet.mk-only .ln:not(.mk), .sheet.mk-only .blk:not(:has(.mk)){ display:none; }
 .fb-band{ fill:var(--amber); opacity:.24; }
 .fb-hit{ fill:transparent; cursor:pointer; }
 .fb-hit:hover{ fill:rgba(255,255,255,.18); }
@@ -1587,6 +1607,10 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
       <div class="assign" id="ft-assign"></div>
     </div>
     <details class="field" id="ft-att"><summary id="ft-att-sum">צירוף אקורדים, צורות ושירים</summary><input type="search" id="ft-att-q" placeholder="חיפוש אקורד, צורה או שיר" style="margin-top:8px" aria-label="חיפוש בחומרים"><div class="assign" id="ft-att-list" style="margin-top:8px;max-height:240px"></div><button type="button" class="btn small" id="ft-new-song" style="margin-top:8px;justify-self:start">שיר חדש לספרייה</button></details>
+    <div class="field ftx"><span>קטע משיר וסולם על הצוואר</span>
+      <div id="ftx-list"></div>
+      <div class="row" style="gap:6px"><button type="button" class="btn small" id="ftx-add-part">＋ קטע משיר</button><button type="button" class="btn small" id="ftx-add-scale">＋ סולם על הצוואר</button></div>
+    </div>
     <label class="row" id="ft-reset-wrap" style="gap:8px;font-weight:600"><input type="checkbox" id="ft-reset"> אפס את מונה הביצועים</label>
     <p class="err" id="ft-err"></p>
     <div class="row"><button class="btn primary" type="submit" id="ft-submit">שמור משימה</button><button class="btn ghost" type="button" data-close>ביטול</button></div>
@@ -3271,7 +3295,7 @@ function studentTaskHTML(t){
   return `<article class="task ${t.done ? 'done' : ''}" data-id="${esc(t.id)}">
     <div class="task-top"><h4>${esc(t.title)}</h4>${t.done ? '<span class="chip ok">הושלם</span>' : dueChip(t)}</div>
     ${t.description ? `<p class="desc">${linkifyAnswer(t.description)}</p>` : ''}
-    ${att ? `<details class="task-more" data-more="att" ${op.has(t.id + ':att') ? 'open' : ''}><summary>חומרים למשימה (${nAtt})</summary>${att}</details>` : ''}
+    ${att ? `<details class="task-more" data-more="att" ${op.has(t.id + ':att') || (!op.has(t.id + ':att-x') && /(^|,)(vp|x):/.test(t.attachments || '')) ? 'open' : ''}><summary>חומרים למשימה (${nAtt})</summary>${att}</details>` : ''}
     ${(t.targetReps || t.targetBpm) ? `<div class="chips">${t.targetReps ? `<span class="chip">יעד: ${t.targetReps} פעמים</span>` : ''}${t.targetBpm ? `<span class="chip">קצב ${t.targetBpm}</span>` : ''}</div>` : ''}
     <div class="counter">
       <button class="btn minus" data-act="minus" aria-label="הורד ביצוע">−</button>
@@ -3304,7 +3328,7 @@ function queueTaskSave(t){
     }catch(e){ setSync('לא נשמר: ' + e.message); }
   }, 600));
 }
-document.addEventListener('toggle', e => { const d = e.target; if(!d.matches || !d.matches('.task-more')) return; const card = d.closest('.task'); if(!card || !S.openCards) return; const k = card.dataset.id + ':' + d.dataset.more; d.open ? S.openCards.add(k) : S.openCards.delete(k); }, true);
+document.addEventListener('toggle', e => { const d = e.target; if(!d.matches || !d.matches('.task-more')) return; const card = d.closest('.task'); if(!card || !S.openCards) return; const k = card.dataset.id + ':' + d.dataset.more; if(d.open){ S.openCards.add(k); S.openCards.delete(k + '-x'); } else { S.openCards.delete(k); S.openCards.add(k + '-x'); } }, true);
 function onStudentTask(e){
   const note = e.target.closest('.fb-note');
   if(note){ pluck(midiFreq(OPEN[Number(note.dataset.s)] + Number(note.dataset.f)), 0, .35); return; }
@@ -3312,7 +3336,7 @@ function onStudentTask(e){
   const card = btn.closest('.task'), t = S.tasks.find(x => x.id === card.dataset.id); if(!t) return;
   const act = btn.dataset.act;
   if(act === 'chord'){ const c = findChord(btn.dataset.key); if(c){ strumFrets(c.frets); flash(btn); } return; }
-  if(act === 'song'){ playSongFromTask(btn.dataset.vid, t.targetBpm); return; }
+  if(act === 'song'){ playSongFromTask(btn.dataset.vid, t.targetBpm, btn.dataset.pa != null ? {a:Number(btn.dataset.pa), b:Number(btn.dataset.pb)} : null); return; }
   if(act === 'shape'){
     const k = t.id + ':' + btn.dataset.sid;
     S.openShapes.has(k) ? S.openShapes.delete(k) : S.openShapes.add(k);
@@ -3521,8 +3545,9 @@ function openTaskDlg(task, preselect){
   $('#ft-desc').value = task ? task.description : '';
   $('#ft-reps').value = task && task.targetReps ? task.targetReps : '';
   $('#ft-bpm').value = task && task.targetBpm ? task.targetBpm : '';
-  $('#ft-due').value = task ? normDate(task.dueDate) : '';
+  $('#ft-due').value = task ? normDate(task.dueDate) : localDay(new Date(Date.now() + 7 * 86400000));
   $('#ft-reset').checked = false;
+  FTX.list = ftxParse(task ? task.attachments : ''); FTX.open = -1; FTX.pickA = null; ftxRender();
   $('#ft-reset-wrap').hidden = !task;
   $('#ft-assign-wrap').hidden = !!task;
   if(!task){
@@ -3585,7 +3610,7 @@ async function onTeacherMain(e){
     T.sel = null; renderTeacher();
   }
   if(act === 'edit-task') openTaskDlg(task);
-  if(act === 'dup-task'){ openTaskDlg(null, []); $('#ft-title').textContent = 'שכפול משימה'; $('#ft-name').value = task.title; $('#ft-desc').value = task.description; $('#ft-reps').value = task.targetReps || ''; $('#ft-bpm').value = task.targetBpm || ''; $$('#ft-att-list input').forEach(b => { b.checked = (task.attachments || '').split(',').includes(b.value); }); updateAttSum(); }
+  if(act === 'dup-task'){ openTaskDlg(null, []); $('#ft-title').textContent = 'שכפול משימה'; $('#ft-name').value = task.title; $('#ft-desc').value = task.description; $('#ft-reps').value = task.targetReps || ''; $('#ft-bpm').value = task.targetBpm || ''; $$('#ft-att-list input').forEach(b => { b.checked = (task.attachments || '').split(',').includes(b.value); }); updateAttSum(); FTX.list = ftxParse(task.attachments); ftxRender(); }
   if(act === 'new-lesson') openLessonDlg(null);
   if(act === 'unassign-song'){ const st = T.data.students.find(x => x.id === T.sel), ids = new Set(st.songs || []); ids.delete(btn.dataset.song); setStudentSongs(st, ids); }
   if(act === 'edit-lesson') openLessonDlg((T.data.lessons || []).find(l => l.id === btn.dataset.lid));
@@ -3641,8 +3666,9 @@ function shapeRange(sh){
   let from = open ? 0 : lo - 1, to = Math.max(hi, from + 4);
   return {from, to};
 }
-function shapeMiniSVG(sh){
-  const {from, to} = shapeRange(sh), n = to - from, FW = 62, gap = 22, nutX = 42, top = 22, H = top + gap * 5 + 40;
+function shapeMiniSVG(sh, opt){
+  opt = opt || {};
+  const {from, to} = opt.range || shapeRange(sh), n = to - from, FW = 62, gap = 22, nutX = 42, top = 22, H = top + gap * 5 + 40;
   const W = nutX + n * FW + 14, yOf = s => top + (5 - s) * gap, xOf = f => f === 0 ? nutX - 20 : nutX + (f - from - .5) * FW;
   let s = `<svg class="fb fb-mini" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(sh.name || 'צורה')}">`;
   s += `<rect class="fb-wood" x="${nutX}" y="${top - 10}" width="${n * FW}" height="${gap * 5 + 20}" rx="3"/>`;
@@ -3656,6 +3682,7 @@ function shapeMiniSVG(sh){
   s += from === 0 ? `<rect class="fb-nut" x="${nutX - 4}" y="${top - 10}" width="6" height="${gap * 5 + 20}"/>` : `<line class="fb-fret" x1="${nutX}" y1="${top - 10}" x2="${nutX}" y2="${top + gap * 5 + 10}"/>`;
   for(let st = 0; st < 6; st++) s += `<line class="fb-string" x1="${from === 0 ? nutX - 32 : nutX}" y1="${yOf(st)}" x2="${nutX + n * FW}" y2="${yOf(st)}" stroke-width="${(2.5 - st * .3).toFixed(2)}"/>`;
   shapeMarks(sh).forEach(m => { if(m.f < from || m.f > to) return; s += `<g class="fb-note ${m.cls || ''}" data-s="${m.s}" data-f="${m.f}"><circle cx="${xOf(m.f)}" cy="${yOf(m.s)}" r="10"/><text x="${xOf(m.f)}" y="${yOf(m.s) + 4}" text-anchor="middle">${esc(m.text)}</text></g>`; });
+  if(opt.edit) for(let st = 0; st < 6; st++) for(let f = from; f <= to; f++){ const x1 = f === 0 ? nutX - 34 : f === from ? nutX : nutX + (f - from - 1) * FW, w = f === 0 || f === from ? (f === 0 ? 32 : 0) : FW; if(w) s += `<rect class="fb-hit" data-s="${st}" data-f="${f}" x="${x1}" y="${yOf(st) - gap / 2}" width="${w}" height="${gap}"/>`; }
   return s + '</svg>';
 }
 function shapeSVG(sh, edit){ return fretboardSVG({frets:SHAPE_FRETS, marks:shapeMarks(sh), band:sh.band, edit, label:sh.name || 'צורה על הצוואר'}); }
@@ -3732,19 +3759,32 @@ function renderShapesPanel(){
 
 /* צירופים למשימות */
 function resolveAttachments(str){
-  const out = {chords:[], shapes:[], songs:[]};
+  const out = {chords:[], shapes:[], songs:[], parts:[], scales:[]};
+  ftxParse(str).forEach(x => {
+    if(x.type === 'part'){ const sg = findSong(x.id); if(sg) out.parts.push(Object.assign({song:sg}, x)); }
+    else out.scales.push(x);
+  });
+  const partSongs = new Set(out.parts.map(x => x.id));
   String(str || '').split(',').filter(Boolean).forEach(k => {
+    if(k.indexOf('v:') === 0 && partSongs.has(k.slice(2))) return;
     if(k.indexOf('c:') === 0){ const c = findChord(k.slice(2)); if(c) out.chords.push(c); }
     if(k.indexOf('s:') === 0){ const s = findShape(k.slice(2)); if(s) out.shapes.push(s); }
     if(k.indexOf('v:') === 0){ const s = findSong(k.slice(2)); if(s) out.songs.push(s); }
   });
   return out;
 }
-function attachmentNames(t){ const a = resolveAttachments(t.attachments); return a.chords.map(c => c.name).concat(a.shapes.map(s => s.name), a.songs.map(s => s.name)); }
+function attachmentNames(t){ const a = resolveAttachments(t.attachments); return a.chords.map(c => c.name).concat(a.shapes.map(s => s.name), a.songs.map(s => s.name), a.parts.map(x => `${x.song.name}: ${partLabel(x.song, x.a, x.b)}`), a.scales.map(scaleName)); }
 function attachmentsHTML(t){
   const a = resolveAttachments(t.attachments);
-  if(!a.chords.length && !a.shapes.length && !a.songs.length) return '';
+  if(!a.chords.length && !a.shapes.length && !a.songs.length && !a.parts.length && !a.scales.length) return '';
   let h = '<div class="att">';
+  a.parts.forEach(x => {
+    const sg = x.song, hb = hasHebrew(sg.sheet);
+    h += `<div class="att-part"><b>קטע לתרגול מתוך "${esc(sg.name)}": ${esc(partLabel(sg, x.a, x.b))}</b>
+      ${x.mode === 'o' && sg.sheet ? `<div class="sheet att-sheet" dir="${sg.dir || (hb ? 'rtl' : 'ltr')}">${renderSheetHTML(partText(sg.sheet, x.a, x.b), 0, sg.key).html}</div>` : ''}
+      <div><button class="btn small" data-act="song" data-vid="${esc(sg.id)}" data-pa="${x.a}" data-pb="${x.b}">${x.mode === 'o' ? 'פתיחת השיר המלא, עם הקטע מסומן' : 'פתיחת השיר, הקטע מסומן בו'}${t.targetBpm ? ` · קצב ${t.targetBpm}` : ''}</button></div></div>`;
+  });
+  a.scales.forEach(x => { h += `<div class="att-scale"><b>${esc(scaleName(x))}</b><div class="fb-wrap fbm">${shapeMiniSVG(scaleShape(x))}</div>${x.marks.some(m => m.hl) ? '<small class="muted">התווים הירוקים מסומנים במיוחד.</small>' : ''}</div>`; });
   if(a.chords.length) h += `<div class="att-chords">${a.chords.map(c => `<button class="chord mini" data-act="chord" data-key="${esc(chordKey(c))}" aria-label="אקורד ${esc(c.name)}, לחצו לשמיעה"><span class="cname">${esc(c.name)}</span>${chordSVG(c)}</button>`).join('')}</div>`;
   a.songs.forEach(sg => { h += `<div><button class="btn small" data-act="song" data-vid="${esc(sg.id)}">תרגול עם השיר: ${esc(sg.name)}${t.targetBpm ? ` ב־${t.targetBpm}` : ''}</button></div>`; });
   a.shapes.forEach(sh => {
@@ -3757,6 +3797,147 @@ function attachmentsHTML(t){
 function updateAttSum(){
   const n = $$('#ft-att-list input:checked').length;
   $('#ft-att-sum').textContent = 'צירוף אקורדים, צורות ושירים' + (n ? ` (${n})` : '');
+}
+
+/* ===== קטע משיר וסולם על הצוואר בתוך משימה =====
+   נשמרים בשדה הצירופים: vp:שיר~משורה~עד שורה~o|f  ו־ x:טוניקה~סולם~פוזיציה~תוויות~תווים */
+const FTX = {list:[], open:-1, pickA:null};
+function ftxParse(str){
+  const out = [];
+  String(str || '').split(',').forEach(k => {
+    if(k.indexOf('vp:') === 0){ const [id, a, b, mode] = k.slice(3).split('~'); if(id) out.push({type:'part', id, a:Number(a) || 0, b:Number(b) || 0, mode:mode === 'f' ? 'f' : 'o'}); }
+    if(k.indexOf('x:') === 0){
+      const [root, scale, pos, lab, marks] = k.slice(2).split('~');
+      out.push({type:'scale', root:Number(root) || 0, scale:scale || 'pmin', pos:Number(pos) || 0, lab:lab || 'notes', marks:String(marks || '').split('.').filter(Boolean).map(c => ({s:Number(c[0]), f:parseInt(c[1], 36), hl:c[2] === '*'})).filter(m => m.s >= 0 && m.s < 6 && m.f >= 0)});
+    }
+  });
+  return out;
+}
+const ftxKey = x => x.type === 'part' ? `vp:${x.id}~${x.a}~${x.b}~${x.mode}` : `x:${x.root}~${x.scale}~${x.pos}~${x.lab}~${x.marks.map(m => m.s + m.f.toString(36) + (m.hl ? '*' : '')).join('.')}`;
+function ftxMerge(keys){
+  const out = keys.filter(k => k.indexOf('vp:') !== 0 && k.indexOf('x:') !== 0);
+  FTX.list.forEach(x => { if(x.type === 'part' && !x.id) return; if(x.type === 'part' && !out.includes('v:' + x.id)) out.push('v:' + x.id); out.push(ftxKey(x)); });
+  return out;
+}
+function scaleDefMarks(root, scaleId, pos){
+  const sc = SCALES.find(x => x.id === scaleId) || SCALES[0];
+  if(pos){ const p = scalePositions(sc, root)[pos - 1]; if(p) return p.map(m => ({s:m.s, f:m.f, hl:false})); }
+  const out = []; for(let st = 0; st < 6; st++) for(let f = 0; f <= 12; f++) if(sc.iv.includes(((OPEN[st] + f) % 12 - root + 12) % 12)) out.push({s:st, f, hl:false});
+  return out;
+}
+function scaleName(x){ const sc = SCALES.find(q => q.id === x.scale) || SCALES[0]; return `${NOTES[x.root]} ${sc.label}${x.pos ? `, פוזיציה ${x.pos}` : ', כל הצוואר'}`; }
+function scaleRange(x){
+  if(!x.pos) return {from:0, to:12};
+  const def = scaleDefMarks(x.root, x.scale, x.pos), fs = def.concat(x.marks).map(m => m.f), lo = Math.min(...fs), hi = Math.max(...fs);
+  const from = lo <= 2 ? 0 : lo - 1; return {from, to:Math.max(hi + 1, from + 5)};
+}
+function scaleShape(x){
+  const def = x.pos ? scaleDefMarks(x.root, x.scale, x.pos) : null, band = def ? {from:Math.min(...def.map(m => m.f)), to:Math.max(...def.map(m => m.f))} : null;
+  return shapeModel({name:scaleName(x), root:x.root, labelMode:x.lab, band, marks:x.marks});
+}
+/* חלקי השיר לפי הכותרות (פזמון:, [בית 1] וכו׳) */
+function songSections(sheet){
+  const L = String(sheet || '').replace(/\r/g, '').split('\n'), heads = [];
+  L.forEach((ln, i) => { const t = ln.trim(); const m = t.match(/^\[([^\]]{1,24})\]$/); if((/^[^\s][^:]{0,28}:$/.test(t)) || (m && !parseChord(m[1]))) heads.push({i, name:t.replace(/^\[|\]$/g, '').replace(/:$/, '').trim()}); });
+  return heads.map((h, k) => { let b = (k + 1 < heads.length ? heads[k + 1].i : L.length) - 1; while(b > h.i && !L[b].trim()) b--; return {name:h.name, a:h.i, b}; });
+}
+function partLabel(song, a, b){
+  const secs = songSections(song.sheet), ex = secs.find(q => q.a === a && q.b === b);
+  if(ex) return ex.name;
+  const hit = secs.filter(q => q.a <= b && q.b >= a);
+  if(hit.length && hit.every(q => q.a >= a && q.b <= b)) return hit.map(q => q.name).join(' + ');
+  return `שורות ${a + 1}–${b + 1}` + (hit.length === 1 ? ` (${hit[0].name})` : '');
+}
+function partText(sheet, a, b){
+  const L = String(sheet || '').replace(/\r/g, '').split('\n'), secs = songSections(sheet), head = secs.filter(q => q.a < a && q.b >= a).pop();
+  return (head ? [L[head.a]] : []).concat(L.slice(a, b + 1)).join('\n');
+}
+function ftxStudentSongIds(){
+  const sid = T.editTask ? T.editTask.studentId : (() => { const c = $$('#ft-assign input:checked'); return c.length === 1 ? c[0].value : ''; })();
+  const st = sid && T.data.students.find(x => x.id === sid); if(!st) return null;
+  const {direct, fromTasks} = studentSongIds(st); return {name:st.name, ids:new Set([...direct, ...fromTasks])};
+}
+function ftxRender(){
+  const box = $('#ftx-list'); if(!box) return;
+  box.innerHTML = FTX.list.map((x, i) => {
+    const open = FTX.open === i;
+    let head, body = '';
+    if(x.type === 'part'){
+      const sg = x.id && findSong(x.id);
+      head = sg ? `<b>קטע משיר:</b> ${esc(sg.name)} · ${esc(partLabel(sg, x.a, x.b))} <span class="muted">(${x.mode === 'o' ? 'רק הקטע' : 'כל השיר עם סימון'})</span>` : '<b>קטע משיר</b> <span class="muted">(עוד לא נבחר שיר)</span>';
+      if(open){
+        const songs = allSongs().filter(q => q.sheet && q.sheet.trim()).sort((p, q) => p.name.localeCompare(q.name, 'he')), mine = ftxStudentSongIds();
+        const opt = q => `<option value="${esc(q.id)}" ${q.id === x.id ? 'selected' : ''}>${esc(q.name)}</option>`;
+        const mineList = mine ? songs.filter(q => mine.ids.has(q.id)) : [];
+        body += `<label class="field">שיר<select data-x="song"><option value="">בחירת שיר…</option>${mineList.length ? `<optgroup label="השירים של ${esc(mine.name)}">${mineList.map(opt).join('')}</optgroup><optgroup label="כל הספרייה">${songs.filter(q => !mine.ids.has(q.id)).map(opt).join('')}</optgroup>` : songs.map(opt).join('')}</select></label>`;
+        if(sg){
+          const secs = songSections(sg.sheet);
+          body += `<div class="seg" role="group" aria-label="מה התלמיד יראה"><button type="button" data-x="mode" data-v="o" aria-pressed="${x.mode === 'o'}">רק הקטע</button><button type="button" data-x="mode" data-v="f" aria-pressed="${x.mode === 'f'}">כל השיר, הקטע מסומן</button></div>
+            ${secs.length ? `<div class="chips ftx-secs">${secs.map(q => `<button type="button" class="chip${q.a === x.a && q.b === x.b ? ' on' : ''}" data-x="sec" data-a="${q.a}" data-b="${q.b}">${esc(q.name)}</button>`).join('')}</div>` : ''}
+            <p class="muted ftx-hint">${FTX.pickA != null ? 'עכשיו לחצו על השורה שבה הקטע נגמר.' : 'לחצו על השורה שבה הקטע מתחיל, ואז על השורה שבה הוא נגמר. או בחרו חלק מהכפתורים.'}</p>
+            <div class="sheet ftx-sheet" dir="${sg.dir || (hasHebrew(sg.sheet) ? 'rtl' : 'ltr')}">${renderSheetHTML(sg.sheet, 0, sg.key).html}</div>`;
+        }
+      }
+    } else {
+      head = `<b>סולם:</b> ${esc(scaleName(x))}${x.marks.some(m => m.hl) ? ` <span class="muted">(${x.marks.filter(m => m.hl).length} מסומנים)</span>` : ''}`;
+      if(open) body += `<div class="row ftx-scale-opts">
+          <label class="field">טוניקה<select data-x="root">${NOTES.map((n, k) => `<option value="${k}" ${k === x.root ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label class="field">סולם<select data-x="scale">${SCALES.map(q => `<option value="${q.id}" ${q.id === x.scale ? 'selected' : ''}>${q.label}</option>`).join('')}</select></label>
+          <label class="field">פוזיציה<select data-x="pos"><option value="0">כל הצוואר</option>${scalePositions(SCALES.find(q => q.id === x.scale) || SCALES[0], x.root).map((_, k) => `<option value="${k + 1}" ${x.pos === k + 1 ? 'selected' : ''}>פוזיציה ${k + 1}</option>`).join('')}</select></label>
+          <label class="field">על התווים<select data-x="lab"><option value="notes" ${x.lab === 'notes' ? 'selected' : ''}>שמות תווים</option><option value="iv" ${x.lab === 'iv' ? 'selected' : ''}>מרווחים</option>${x.pos ? `<option value="finger" ${x.lab === 'finger' ? 'selected' : ''}>אצבעות</option>` : ''}</select></label>
+        </div>
+        <p class="muted ftx-hint">לחיצה על תו מסמנת אותו בירוק. לחיצה נוספת מורידה אותו מהצוואר. לחיצה על מקום ריק מוסיפה תו מסומן.</p>
+        <div class="fb-wrap fbm ftx-board">${shapeMiniSVG(scaleShape(x), {edit:true, range:scaleRange(x)})}</div>
+        <div class="row" style="gap:6px"><button type="button" class="btn ghost small" data-x="reset">איפוס לסולם המלא</button><button type="button" class="btn ghost small" data-x="clearhl">ניקוי הסימונים</button></div>`;
+    }
+    return `<div class="ftx-card${open ? ' open' : ''}" data-i="${i}"><div class="spread"><span class="ftx-head">${head}</span><span class="row" style="gap:2px"><button type="button" class="btn ghost small" data-x="toggle">${open ? 'סגירה' : 'עריכה'}</button><button type="button" class="btn ghost small danger" data-x="del" aria-label="הסרה">✕</button></span></div>${body}</div>`;
+  }).join('');
+  if(FTX.open >= 0){ const x = FTX.list[FTX.open]; if(x && x.type === 'part') $$('#ftx-list .ftx-card.open .ftx-sheet .ln[data-l]').forEach(l => { const n = Number(l.dataset.l); l.classList.toggle('in', !!x.id && n >= x.a && n <= x.b); l.classList.toggle('pa', FTX.pickA === n); }); }
+}
+function onFtx(e){
+  const card = e.target.closest('.ftx-card'); if(!card) return;
+  const i = Number(card.dataset.i), x = FTX.list[i]; if(!x) return;
+  const b = e.target.closest('[data-x]'), act = b && b.dataset.x;
+  if(e.type === 'change'){
+    if(!b) return;
+    if(act === 'song'){ x.id = b.value; const sg = findSong(x.id), secs = sg ? songSections(sg.sheet) : []; const L = sg ? sg.sheet.replace(/\r/g, '').split('\n').length : 1; if(secs.length){ x.a = secs[0].a; x.b = secs[0].b; } else { x.a = 0; x.b = Math.max(0, L - 1); } FTX.pickA = null; }
+    if(act === 'root' || act === 'scale' || act === 'pos'){ x[act] = act === 'scale' ? b.value : Number(b.value); if(act !== 'pos'){ const n = scalePositions(SCALES.find(q => q.id === x.scale) || SCALES[0], x.root).length; if(x.pos > n) x.pos = 0; } if(!x.pos && x.lab === 'finger') x.lab = 'notes'; x.marks = scaleDefMarks(x.root, x.scale, x.pos); }
+    if(act === 'lab') x.lab = b.value;
+    ftxRender(); return;
+  }
+  if(act === 'toggle'){ FTX.open = FTX.open === i ? -1 : i; FTX.pickA = null; ftxRender(); return; }
+  if(act === 'del'){ FTX.list.splice(i, 1); FTX.open = -1; ftxRender(); return; }
+  if(act === 'mode'){ x.mode = b.dataset.v; ftxRender(); return; }
+  if(act === 'sec'){ x.a = Number(b.dataset.a); x.b = Number(b.dataset.b); FTX.pickA = null; ftxRender(); return; }
+  if(act === 'reset'){ x.marks = scaleDefMarks(x.root, x.scale, x.pos); ftxRender(); return; }
+  if(act === 'clearhl'){ x.marks.forEach(m => { m.hl = false; }); ftxRender(); return; }
+  if(x.type === 'part'){
+    const ln = e.target.closest('.ftx-sheet .ln[data-l]'); if(!ln) return;
+    const n = Number(ln.dataset.l);
+    if(FTX.pickA == null){ FTX.pickA = n; x.a = n; x.b = n; }
+    else { x.a = Math.min(FTX.pickA, n); x.b = Math.max(FTX.pickA, n); FTX.pickA = null; }
+    const sc = card.querySelector('.ftx-sheet'), top = sc ? sc.scrollTop : 0; ftxRender(); const sc2 = $('#ftx-list .ftx-card.open .ftx-sheet'); if(sc2) sc2.scrollTop = top; return;
+  }
+  const hit = e.target.closest('.fb-hit'); if(!hit) return;
+  const st = Number(hit.dataset.s), f = Number(hit.dataset.f), k = x.marks.findIndex(m => m.s === st && m.f === f);
+  if(k < 0) x.marks.push({s:st, f, hl:true});
+  else if(!x.marks[k].hl) x.marks[k].hl = true;
+  else x.marks.splice(k, 1);
+  pluck(midiFreq(OPEN[st] + f), 0, .3);
+  ftxRender();
+}
+/* סימון הקטע בדף השיר */
+function sheetMark(body, s){
+  const old = $('#sh-mark'); if(old) old.remove();
+  body.classList.remove('mk-only');
+  const M = SG.mark; if(!M || M.id !== s.id) return;
+  body.querySelectorAll('.ln[data-l]').forEach(l => { const n = Number(l.dataset.l); l.classList.toggle('mk', n >= M.a && n <= M.b); });
+  body.classList.toggle('mk-only', !!M.only);
+  const bn = document.createElement('div'); bn.id = 'sh-mark'; bn.className = 'mk-banner';
+  bn.innerHTML = `<span>הקטע לתרגול מסומן: <b>${esc(partLabel(s, M.a, M.b))}</b></span><span class="row" style="gap:4px"><button type="button" class="btn small" data-mk="only" aria-pressed="${!!M.only}">${M.only ? 'הצגת כל השיר' : 'רק הקטע'}</button><button type="button" class="btn ghost small" data-mk="off" aria-label="ביטול הסימון">✕</button></span>`;
+  bn.addEventListener('click', e => { const b = e.target.closest('[data-mk]'); if(!b) return; if(b.dataset.mk === 'off') SG.mark = null; else M.only = !M.only; renderSheet(); });
+  body.before(bn);
+  if(!M.shown){ M.shown = true; setTimeout(() => { const f = body.querySelector('.ln.mk'); if(f) f.scrollIntoView({block:'center', behavior:'smooth'}); }, 80); }
 }
 
 /* מסכי המורה */
@@ -4073,6 +4254,7 @@ async function openSong(song, targetBpm){
   const vid = parseYouTube(song.url);
   if(!vid && !(song.sheet && song.sheet.trim()) && !song.id){ $('#sg-err').textContent = 'זה לא נראה כמו קישור ליוטיוב. העתיקו את הקישור מכפתור השיתוף של הסרטון.'; return; }
   SG.song = song; SG.loop = {a:null, b:null, on:false}; SG.taps = [];
+  SG.mark = SG.markNext && SG.markNext.id === song.id ? SG.markNext : null; SG.markNext = null;
   SG.orig = song.bpm || 0;
   SG.target = targetBpm || SG.orig;
   loadShift(song);
@@ -4222,7 +4404,7 @@ async function saveCurrentLoop(){
   const loops = (item.data.loops || []).concat([{name:name.trim(), a:Math.round(SG.loop.a * 10) / 10, b:Math.round(SG.loop.b * 10) / 10}]);
   try{ await saveItems([{id:item.id, kind:'song', data:Object.assign({}, item.data, {loops})}]); SG.song.loops = songModel(Object.assign({}, item.data, {loops})).loops; renderLoop(); }catch(e){}
 }
-function playSongFromTask(id, bpm){ const s = findSong(id); if(!s) return; showView('songs'); openSong(s, bpm || 0); }
+function playSongFromTask(id, bpm, mark){ const s = findSong(id); if(!s) return; SG.markNext = mark ? Object.assign({id}, mark) : null; showView('songs'); SGF.view = 'list'; applySongView(); openSong(s, bpm || 0); renderSongList(); }
 
 /* ניהול שירים אצל המורה */
 function renderTeacherSongs(){
@@ -4529,6 +4711,7 @@ function renderSheet(){
   body.dir = s.dir || (hasHebrew(s.sheet) ? 'rtl' : 'ltr');
   body.style.fontSize = SH.size + 'px';
   snApply('#sh-body', s.id, s.sheet, renderSheet);
+  sheetMark(body, s);
   $('#sh-degbox').innerHTML = degBtnHTML();
   $('#sh-nhint').hidden = !(snMe() && s.id);
   $('#sh-nhint').textContent = T.data ? 'לחיצה על שורה בשיר, או על שם של חלק, מוסיפה הערה לפניה. אפשר לבחור אם רק אתה רואה אותה, כל התלמידים שיש להם את השיר, או תלמידים מסוימים.' : 'לחיצה על שורה בשיר מוסיפה לך הערה לפניה. אפשר לבחור אם היא רק שלך או שגם המורה רואה אותה.';
@@ -9188,7 +9371,7 @@ function init(){
   $('#ft-all').addEventListener('click', () => { const boxes = $$('#ft-assign input'); const all = boxes.every(b => b.checked); boxes.forEach(b => { b.checked = !all; }); });
   $('#ft').addEventListener('submit', async e => {
     e.preventDefault();
-    const task = {title:$('#ft-name').value, description:$('#ft-desc').value, targetReps:$('#ft-reps').value, targetBpm:$('#ft-bpm').value, dueDate:$('#ft-due').value, attachments:$$('#ft-att-list input:checked').map(b => b.value).join(',')};
+    const task = {title:$('#ft-name').value, description:$('#ft-desc').value, targetReps:$('#ft-reps').value, targetBpm:$('#ft-bpm').value, dueDate:$('#ft-due').value, attachments:ftxMerge($$('#ft-att-list input:checked').map(b => b.value)).join(',')};
     const payload = {task};
     if(T.editTask){ task.id = T.editTask.id; task.resetReps = $('#ft-reset').checked; }
     else payload.studentIds = $$('#ft-assign input:checked').map(b => b.value);
@@ -9223,6 +9406,10 @@ function init(){
   $('#fsh').addEventListener('submit', saveShape);
   $('#se-del').addEventListener('click', deleteShape);
   $('#ft-att-list').addEventListener('change', updateAttSum);
+  $('#ftx-list').addEventListener('click', onFtx);
+  $('#ftx-list').addEventListener('change', onFtx);
+  $('#ftx-add-part').addEventListener('click', () => { FTX.list.push({type:'part', id:'', a:0, b:0, mode:'o'}); FTX.open = FTX.list.length - 1; FTX.pickA = null; ftxRender(); });
+  $('#ftx-add-scale').addEventListener('click', () => { FTX.list.push({type:'scale', root:9, scale:'pmin', pos:1, lab:'notes', marks:scaleDefMarks(9, 'pmin', 1)}); FTX.open = FTX.list.length - 1; ftxRender(); });
   $('#sp-cats').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ SP.cat = b.dataset.v; SP.id = null; renderShapesPanel(); } });
   $('#fb-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(b) fbTab(b.dataset.v); });
   $('#fs-panel').addEventListener('click', e => {
