@@ -324,13 +324,13 @@ tr.click:hover td{ background:var(--surface-2); }
 .ftx-sheet{ font-size:14px; max-height:300px; overflow:auto; border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--surface); }
 .ftx-sheet .ln[data-l]{ cursor:pointer; border-radius:5px; }
 .ftx-sheet .ln[data-l]:hover{ background:color-mix(in srgb, var(--blue) 8%, transparent); }
-.ftx-sheet .ln.in, .sheet .ln.mk{ background:color-mix(in srgb, #f5c400 26%, transparent); box-shadow:-4px 0 0 #e0a800 inset; }
+.ftx-sheet .ln.in, .sheet .ln.tmk{ background:color-mix(in srgb, #f5c400 26%, transparent); box-shadow:-4px 0 0 #e0a800 inset; }
 .ftx-sheet .ln.pa{ outline:2px dashed var(--blue); }
 .ftx-scale-opts{ gap:8px; align-items:end; }
 .ftx-scale-opts .field{ min-width:110px; flex:1; }
 .ftx-board{ overflow-x:auto; }
 .mk-banner{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; padding:8px 12px; margin:6px 0 10px; border-radius:12px; background:color-mix(in srgb, #f5c400 18%, var(--surface)); border:1px solid color-mix(in srgb, #e0a800 45%, var(--line)); }
-.sheet.mk-only .ln:not(.mk), .sheet.mk-only .blk:not(:has(.mk)){ display:none; }
+.sheet.mk-only .ln:not(.tmk), .sheet.mk-only .blk:not(:has(.tmk)){ display:none; }
 .fb-band{ fill:var(--amber); opacity:.24; }
 .fb-hit{ fill:transparent; cursor:pointer; }
 .fb-hit:hover{ fill:rgba(255,255,255,.18); }
@@ -1103,6 +1103,143 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .prn-loop.drag{ background:rgba(49,110,230,.16); border-color:#316EE6; }
 .prn-dim{ position:absolute; background:rgba(255,255,255,.88); pointer-events:none; z-index:5; }
 .pr-notes{ touch-action:pan-y; }
+
+/* ===== עיבוד והפקה ===== */
+.ar-h-sub{ font-family:'Assistant',Arial,sans-serif; font-size:.55em; font-weight:700; color:var(--blue); background:color-mix(in srgb, var(--blue) 10%, var(--surface)); padding:2px 10px; border-radius:99px; vertical-align:middle; }
+.ar-empty{ max-width:640px; }
+.ar-nav{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:0 0 14px; padding:8px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+.ar-nav button{ display:inline-flex; align-items:center; gap:6px; min-height:38px; padding:4px 12px; border:1px solid var(--line); border-radius:99px; background:var(--surface); color:var(--ink); font:700 .92rem 'Assistant',Arial,sans-serif; cursor:pointer; }
+.ar-nav button small{ font-weight:600; color:var(--ink-2); }
+.ar-nav button:hover{ background:var(--surface-2); }
+.ar-nav button[aria-pressed="true"]{ background:var(--ink); color:#fff; border-color:var(--ink); }
+.ar-nav .ar-ib .ar-ic{ color:var(--c); }
+.ar-nav .ar-ib[aria-pressed="true"]{ background:var(--c); border-color:var(--c); }
+.ar-nav .ar-ib[aria-pressed="true"] .ar-ic, .ar-nav .ar-ib[aria-pressed="true"] small{ color:#fff; }
+.ar-nav-l{ font-weight:700; color:var(--ink-2); font-size:.88rem; margin-inline-start:8px; }
+.ar-setup-b{ margin-inline-start:auto; }
+.ar-legend{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:.86rem; color:var(--ink-2); margin:8px 0 10px; align-items:center; }
+.ar-legend span{ display:inline-flex; align-items:center; gap:5px; }
+.ar-sw{ display:inline-block; width:22px; height:14px; border-radius:4px; border:1px solid #0002; }
+.ar-sw.st-on{ background:#5b8def; } .ar-sw.st-in{ background:linear-gradient(to left, #5b8def, #fff0); } .ar-sw.st-out{ background:linear-gradient(to right, #5b8def, #fff0); } .ar-sw.st-off{ background:repeating-linear-gradient(135deg, #eef0f4 0 4px, #fff 4px 8px); }
+.ar-dyn{ display:inline-flex; align-items:flex-end; gap:2px; height:13px; vertical-align:middle; }
+.ar-dyn i{ width:4px; border-radius:1px; background:#0002; }
+.ar-dyn i:nth-child(1){ height:5px; } .ar-dyn i:nth-child(2){ height:9px; } .ar-dyn i:nth-child(3){ height:13px; }
+.ar-dyn i.on{ background:currentColor; }
+.ar-map-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:12px; }
+.ar-map{ border-collapse:separate; border-spacing:0; width:100%; min-width:760px; table-layout:fixed; }
+.ar-map col.c-sec{ width:180px; }
+.ar-map th, .ar-map td{ border-bottom:1px solid var(--line); border-inline-start:1px solid var(--line); padding:0; vertical-align:top; }
+.ar-map thead th{ background:var(--surface-2); position:sticky; top:0; z-index:1; }
+.ar-map thead th button{ all:unset; box-sizing:border-box; width:100%; display:grid; justify-items:center; gap:2px; padding:8px 6px; cursor:pointer; font-weight:800; font-size:.92rem; color:var(--ink); border-bottom:3px solid var(--c); }
+.ar-map thead th button .ar-ic{ color:var(--c); }
+.ar-map thead th small{ font-weight:600; color:var(--ink-2); font-size:.78rem; }
+.ar-sec-h{ padding:8px !important; text-align:start; font-size:.85rem; color:var(--ink-2); }
+.ar-map .ar-sec{ position:sticky; inset-inline-start:0; background:var(--surface); z-index:1; min-width:150px; max-width:190px; text-align:start; border-inline-start:0; }
+.ar-map .ar-sec > button{ all:unset; box-sizing:border-box; width:100%; display:grid; gap:3px; padding:8px 10px; cursor:pointer; }
+.ar-map .ar-sec > button:disabled{ cursor:default; }
+.ar-map .ar-sec > button:not(:disabled):hover{ background:var(--surface-2); }
+.ar-map .ar-sec b{ font-size:1rem; }
+.ar-map .ar-sec small{ color:var(--ink-2); font-size:.8rem; }
+.ar-fl{ font-size:.8rem; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ar-energy{ display:inline-flex; gap:2px; }
+.ar-energy i{ width:12px; height:5px; border-radius:2px; background:#0001; }
+.ar-energy i.on{ background:linear-gradient(90deg, #f59e0b, #ef4444); }
+.ar-map .ar-sec .ar-cues{ padding:0 8px 8px; }
+.ar-cell > button{ all:unset; box-sizing:border-box; width:100%; min-height:74px; height:100%; display:flex; flex-direction:column; gap:3px; padding:7px 8px; cursor:pointer; font-size:.86rem; line-height:1.3; }
+.ar-cell > button:disabled{ cursor:default; }
+.ar-cell.st-on{ background:color-mix(in srgb, var(--c) 16%, var(--surface)); }
+.ar-cell.st-in{ background:linear-gradient(to left, color-mix(in srgb, var(--c) 22%, var(--surface)), var(--surface) 85%); }
+.ar-cell.st-out{ background:linear-gradient(to right, color-mix(in srgb, var(--c) 22%, var(--surface)), var(--surface) 85%); }
+.ar-cell.st-off{ background:repeating-linear-gradient(135deg, var(--surface-2) 0 6px, var(--surface) 6px 12px); color:var(--ink-2); }
+.ar-cell > button:not(:disabled):hover{ box-shadow:inset 0 0 0 2px var(--c); }
+.ar-cell-top{ display:flex; align-items:center; justify-content:space-between; gap:6px; color:color-mix(in srgb, var(--c) 70%, #000); }
+.ar-st{ font-weight:800; font-size:.78rem; }
+.ar-cell.st-off .ar-st{ color:var(--ink-2); }
+.ar-txt{ display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; color:var(--ink); }
+.ar-txt.ph{ color:var(--ink-2); font-size:.8rem; opacity:.8; }
+.ar-fx{ align-self:flex-start; font-size:.74rem; font-weight:700; padding:1px 7px; border-radius:99px; background:#1b2333; color:#fff; }
+.ar-cues{ display:flex; flex-wrap:wrap; gap:4px; }
+.ar-cue{ display:inline-flex; flex-wrap:wrap; gap:3px; align-items:baseline; font-size:.8rem; padding:2px 8px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); }
+.ar-cue.c-stop{ background:#fee2e2; border-color:#fca5a5; color:#991b1b; }
+.ar-cue.c-hit{ background:#fef3c7; border-color:#fcd34d; color:#92400e; }
+.ar-cue.c-break{ background:#ede9fe; border-color:#c4b5fd; color:#5b21b6; }
+.ar-cue.c-fill{ background:#dcfce7; border-color:#86efac; color:#166534; }
+.ar-cue.c-tempo{ background:#e0f2fe; border-color:#7dd3fc; color:#075985; }
+.ar-se{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px; }
+.ar-se p{ margin:4px 0 0; white-space:pre-line; }
+/* דף תפקיד */
+.ar-part-h{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:14px 16px; border-radius:16px; background:color-mix(in srgb, var(--c) 12%, var(--surface)); border:1px solid color-mix(in srgb, var(--c) 35%, var(--line)); margin-bottom:12px; }
+.ar-part-h h3{ margin:0; }
+.ar-part-h p{ margin:2px 0 0; }
+.ar-part-ic{ display:grid; place-items:center; width:54px; height:54px; border-radius:14px; background:var(--c); color:#fff; }
+.ar-part-acts{ margin-inline-start:auto; gap:6px; }
+.ar-sound{ margin-bottom:12px; }
+.ar-sound h4{ margin:0; }
+.ar-kv{ display:grid; gap:6px; margin:8px 0; }
+.ar-kv > div{ display:flex; gap:10px; align-items:baseline; }
+.ar-kv span{ min-width:54px; color:var(--ink-2); font-size:.88rem; }
+.ar-fx-t{ width:100%; border-collapse:collapse; margin:6px 0; font-size:.94rem; }
+.ar-fx-t th{ text-align:start; font-size:.8rem; color:var(--ink-2); font-weight:700; padding:4px 6px; border-bottom:1px solid var(--line); }
+.ar-fx-t td{ padding:6px; border-bottom:1px solid var(--line); }
+.ar-gnotes{ white-space:pre-line; margin:6px 0 0; padding:8px 12px; border-radius:10px; background:var(--surface-2); }
+.ar-sound.edit{ display:grid; gap:10px; }
+.ar-fx-ed{ display:grid; gap:6px; }
+.ar-fx-row{ display:grid; grid-template-columns:1fr 1.4fr 1fr auto; gap:6px; }
+@media (max-width:640px){ .ar-fx-row{ grid-template-columns:1fr 1fr; } }
+.ar-road{ list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.ar-step{ border:1px solid var(--line); border-inline-start:6px solid var(--c); border-radius:12px; padding:10px 14px; background:var(--surface); display:grid; gap:6px; }
+.ar-step.st-off{ border-inline-start-style:dashed; border-inline-start-color:#c4c9d4; background:var(--surface-2); }
+.ar-step.st-in, .ar-step.st-out{ border-inline-start-style:double; }
+.ar-step.start, .ar-step.end{ border-inline-start-color:var(--ink); display:flex; flex-wrap:wrap; gap:10px; align-items:baseline; margin:10px 0; white-space:pre-line; }
+.ar-step-h{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.ar-step-n{ display:grid; place-items:center; width:26px; height:26px; border-radius:50%; background:var(--c); color:#fff; font-weight:800; font-size:.85rem; }
+.ar-step.st-off .ar-step-n{ background:#9aa3b2; }
+.ar-step-name{ font-size:1.08rem; }
+.ar-badge{ font-size:.8rem; font-weight:800; padding:2px 10px; border-radius:99px; background:color-mix(in srgb, var(--c) 18%, var(--surface)); color:color-mix(in srgb, var(--c) 65%, #000); }
+.ar-badge.st-off{ background:#e5e7eb; color:#4b5563; }
+.ar-step-h .ar-dyn{ color:color-mix(in srgb, var(--c) 70%, #000); }
+.ar-step-ed{ margin-inline-start:auto; }
+.ar-instr{ margin:0; font-size:1.06rem; font-weight:600; white-space:pre-line; }
+.ar-fxline{ font-size:.92rem; padding:4px 10px; border-radius:8px; background:#1b2333; color:#fff; justify-self:start; }
+.ar-lyr{ font-size:14px; padding:6px 10px; border-radius:8px; background:var(--surface-2); max-height:none; }
+.ar-lyr.small .ln.sec{ display:none; }
+.ar-with{ font-size:.82rem; color:var(--ink-2); display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; }
+.ar-with span{ display:inline-flex; gap:3px; align-items:center; color:var(--ink-2); }
+.ar-with .ar-ic{ color:var(--c); }
+/* הגדרות */
+.ar-setup h4{ margin:16px 0 6px; }
+.ar-insts{ display:grid; gap:6px; margin-bottom:8px; }
+.ar-inst-row{ display:grid; grid-template-columns:auto 130px 1fr 1.2fr auto auto; gap:6px; align-items:center; }
+.ar-inst-ic{ display:grid; place-items:center; width:36px; height:36px; border-radius:10px; background:var(--c); color:#fff; }
+@media (max-width:700px){ .ar-inst-row{ grid-template-columns:auto 1fr 1fr; } }
+.ar-sec-list{ display:grid; gap:4px; padding-inline-start:22px; margin:6px 0 10px; }
+.ar-sec-list li{ display:flex; align-items:center; gap:8px; justify-content:space-between; border-bottom:1px solid var(--line); padding:2px 0; }
+.ar-ed{ cursor:pointer; }
+/* חלונית */
+.ar-dlg{ display:grid; gap:12px; padding:20px 22px; max-height:calc(100vh - 40px); overflow:auto; }
+#ar-dlg-err.info{ color:var(--ink-2); font-weight:600; }
+.ar-dlg-h{ display:flex; align-items:center; gap:8px; margin:0; }
+.ar-dlg-h .ar-ic{ color:var(--c); }
+.ar-fieldset{ display:grid; gap:6px; }
+.ar-st-pick{ display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; }
+@media (max-width:640px){ .ar-st-pick{ grid-template-columns:1fr 1fr; } }
+.ar-st-pick button{ display:grid; gap:2px; text-align:start; padding:8px 10px; border:2px solid var(--line); border-radius:12px; background:var(--surface); cursor:pointer; font:inherit; }
+.ar-st-pick button small{ color:var(--ink-2); font-size:.78rem; line-height:1.25; }
+.ar-st-pick button[aria-pressed="true"]{ border-color:var(--c, var(--blue)); background:color-mix(in srgb, var(--c, var(--blue)) 12%, var(--surface)); }
+.ar-st-pick button.st-off[aria-pressed="true"]{ border-color:#9aa3b2; background:var(--surface-2); }
+.ar-dlg-nav{ gap:6px; }
+.ar-cue-ed{ display:grid; gap:6px; }
+.ar-cue-row{ display:grid; grid-template-columns:130px 110px 1fr auto; gap:6px; }
+@media (max-width:640px){ .ar-cue-row{ grid-template-columns:1fr 1fr; } .ar-cue-row input{ grid-column:1 / -1; } }
+.ar-cue-add{ cursor:pointer; border:1px solid var(--line); font:600 .84rem 'Assistant',Arial,sans-serif; }
+.ar-chip{ background:color-mix(in srgb, var(--blue) 14%, var(--surface)); color:var(--blue); }
+@media print{
+  .ar-print h1 small{ font-size:12pt; color:#555; }
+  .ar-print .ar-part-acts, .ar-print .ar-step-ed{ display:none !important; }
+  .ar-print .ar-step{ break-inside:avoid; border-color:#bbb; }
+  .ar-print .ar-part-h, .ar-print .sub-panel{ border:1px solid #bbb; box-shadow:none; }
+  .ar-print .ar-lyr{ background:#f4f4f4; }
+}
 </style>
 </head>
 <body>
@@ -2908,7 +3045,7 @@ function serverHandle(req, store, teacherPassword){
       return {member:{id:me.id, name:me.name, role:me.role}, members:store.all('Members').map(nMember).map(m => ({id:m.id, name:m.name, role:m.role})), items:store.all('Band').map(nBand).filter(visible)};
     }
     if(a === 'bandSave'){
-      const KINDS = ['candidate','bsong','setlist','note','form'], list = req.items || [];
+      const KINDS = ['candidate','bsong','setlist','note','form','arr'], list = req.items || [];
       if(!list.length) throw new Error('אין מה לשמור.');
       const all = store.all('Band'), out = [];
       list.forEach(it => {
@@ -2919,6 +3056,7 @@ function serverHandle(req, store, teacherPassword){
         if(raw){
           if(String(raw.kind) !== it.kind) throw new Error('סוג פריט לא תואם.');
           if(it.kind === 'note' && String(raw.authorId) !== me.id) throw new Error('אפשר לערוך רק הערות שכתבת.');
+          if(it.kind === 'arr' && String(raw.authorId) !== me.id){ let od = {}; try{ od = typeof raw.data === 'string' ? JSON.parse(raw.data || '{}') : (raw.data || {}); }catch(err){} if((od.editors || []).indexOf(me.id) < 0) throw new Error('רק מי שמפיק את העיבוד, או מי שהוא הוסיף כעורך, יכול לשנות אותו.'); }
           raw.data = data; raw.updatedAt = now(); store.update('Band', raw); out.push(nBand(raw));
           if(it.kind === 'bsong') syncBandSong(String(raw.id), it.data || {});
           return;
@@ -3931,13 +4069,13 @@ function sheetMark(body, s){
   const old = $('#sh-mark'); if(old) old.remove();
   body.classList.remove('mk-only');
   const M = SG.mark; if(!M || M.id !== s.id) return;
-  body.querySelectorAll('.ln[data-l]').forEach(l => { const n = Number(l.dataset.l); l.classList.toggle('mk', n >= M.a && n <= M.b); });
+  body.querySelectorAll('.ln[data-l]').forEach(l => { const n = Number(l.dataset.l); l.classList.toggle('tmk', n >= M.a && n <= M.b); });
   body.classList.toggle('mk-only', !!M.only);
   const bn = document.createElement('div'); bn.id = 'sh-mark'; bn.className = 'mk-banner';
   bn.innerHTML = `<span>הקטע לתרגול מסומן: <b>${esc(partLabel(s, M.a, M.b))}</b></span><span class="row" style="gap:4px"><button type="button" class="btn small" data-mk="only" aria-pressed="${!!M.only}">${M.only ? 'הצגת כל השיר' : 'רק הקטע'}</button><button type="button" class="btn ghost small" data-mk="off" aria-label="ביטול הסימון">✕</button></span>`;
   bn.addEventListener('click', e => { const b = e.target.closest('[data-mk]'); if(!b) return; if(b.dataset.mk === 'off') SG.mark = null; else M.only = !M.only; renderSheet(); });
   body.before(bn);
-  if(!M.shown){ M.shown = true; setTimeout(() => { const f = body.querySelector('.ln.mk'); if(f) f.scrollIntoView({block:'center', behavior:'smooth'}); }, 80); }
+  if(!M.shown){ M.shown = true; setTimeout(() => { const f = body.querySelector('.ln.tmk'); if(f) f.scrollIntoView({block:'center', behavior:'smooth'}); }, 80); }
 }
 
 /* מסכי המורה */
@@ -5087,6 +5225,7 @@ function renderBand(){
   if(!logged) return;
   if(B.songId && !bGet(B.songId)) B.songId = null;
   $$('#vb-tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === B.tab));
+  if(B.songId && B.arr && !B.newSong) return renderArr();
   if(B.songId || B.newSong) return renderBandSong();
   if(B.tab === 'setlist') renderSetlist();
   else if(B.tab === 'songs') renderBandSongs();
@@ -5127,7 +5266,7 @@ function renderBandSongList(){
   $('#bs-list').innerHTML = list.length ? list.map(s => {
     const pos = order.indexOf(s.id);
     return `<div class="t-task" data-id="${esc(s.id)}"><div><button class="sl-name" data-act="open"><b>${esc(s.data.name)}</b>${s.data.artist ? `<small>${esc(s.data.artist)}</small>` : ''}</button>
-      <div class="chips" style="margin-top:4px">${pos >= 0 ? `<span class="chip ok">בסטליסט, מקום ${pos + 1}</span>` : '<span class="chip">לא מבוצע כרגע</span>'}${s.data.sheet ? '<span class="chip">מילים ואקורדים</span>' : ''}</div></div>
+      <div class="chips" style="margin-top:4px">${pos >= 0 ? `<span class="chip ok">בסטליסט, מקום ${pos + 1}</span>` : '<span class="chip">לא מבוצע כרגע</span>'}${s.data.sheet ? '<span class="chip">מילים ואקורדים</span>' : ''}${arOf(s.id) ? '<span class="chip ar-chip">עיבוד</span>' : ''}</div></div>
       <div class="acts"><button class="btn ghost small" data-act="toggle-set">${pos >= 0 ? 'הוצאה מהסטליסט' : 'הוספה לסטליסט'}</button></div></div>`;
   }).join('') : `<p class="empty">${bOf('bsong').length ? 'לא נמצאו שירים.' : 'עוד אין שירים. לחצו על "שיר חדש" כדי להוסיף את הראשון, אפשר גם מקובץ PDF.'}</p>`;
 }
@@ -5200,6 +5339,336 @@ function startBandEdit(isNew){
   else startInline('band', B.songId, bGet(B.songId).data);
   renderBand(); window.scrollTo(0, 0);
 }
+/* ================== עיבוד והפקה (VELVET) ==================
+   פריט אחד מסוג arr לכל שיר: כלים, סאונד ואפקטים לכל כלי, וחלקי השיר עם הוראה לכל כלי בכל חלק */
+const AR_TYPES = {
+  gtr:{label:'גיטרה', col:'#e07b24', ic:'<path d="M15 3.5l5.5 5.5M18.2 6.3l-6 6"/><path d="M11.6 9.6c-1.5-1.1-3.6-.8-4.7.6-.6.8-.6 1.8-1.7 2.4-1.7 1-2 3.4-.6 4.8l1.6 1.6c1.4 1.4 3.8 1.1 4.8-.6.6-1.1 1.6-1.1 2.4-1.7 1.4-1.1 1.7-3.2.6-4.7"/><circle cx="9.2" cy="14.8" r="1.3"/>'},
+  keys:{label:'קלידים', col:'#7b4fd6', ic:'<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M7.3 19v-6M12 19v-6M16.7 19v-6"/><path d="M5.8 5v8h3V5M10.5 5v8h3V5M15.2 5v8h3V5" fill="currentColor" stroke="none"/>'},
+  bass:{label:'בס', col:'#1f9d6b', ic:'<path d="M16 2.5l5.5 5.5M19.2 5.3l-7.8 7.8"/><path d="M10.8 10.6c-1.5-1.1-3.6-.8-4.7.6-.6.8-.6 1.8-1.7 2.4-1.7 1-2 3.4-.6 4.8l1.6 1.6c1.4 1.4 3.8 1.1 4.8-.6.6-1.1 1.6-1.1 2.4-1.7 1.4-1.1 1.7-3.2.6-4.7"/><path d="M7.2 14.6l2.2 2.2"/>'},
+  drums:{label:'תופים', col:'#d64545', ic:'<ellipse cx="12" cy="10" rx="8" ry="3"/><path d="M4 10v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/><path d="M6 3l5 6M18 3l-5 6"/>'},
+  vox:{label:'שירה', col:'#2c6bd6', ic:'<rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>'},
+  other:{label:'כלי אחר', col:'#6b7280', ic:'<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>'}
+};
+const arIcon = (type, size) => `<svg class="ar-ic" viewBox="0 0 24 24" width="${size || 20}" height="${size || 20}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${(AR_TYPES[type] || AR_TYPES.other).ic}</svg>`;
+const AR_ST = [
+  {id:'on', label:'מנגן', hint:'מנגנים לאורך כל החלק'},
+  {id:'in', label:'נכנס באמצע', hint:'מתחילים לנגן במהלך החלק. כתבו מתי בהוראה'},
+  {id:'out', label:'עוצר באמצע', hint:'מפסיקים במהלך החלק. כתבו מתי בהוראה'},
+  {id:'off', label:'לא מנגן', hint:'שקט. מחכים לחלק הבא'}
+];
+const AR_DYN = [{v:1, label:'שקט'}, {v:2, label:'בינוני'}, {v:3, label:'חזק'}];
+const AR_CUE = [
+  {t:'stop', label:'עצירה', sym:'■', hint:'כולם עוצרים יחד'},
+  {t:'hit', label:'מכה ביחד', sym:'!', hint:'דגש שכולם מנגנים באותו רגע'},
+  {t:'break', label:'ברייק', sym:'‖', hint:'רגע שבו רק חלק מהכלים מנגנים'},
+  {t:'fill', label:'מעבר', sym:'↗', hint:'מילוי או מעבר לחלק הבא'},
+  {t:'tempo', label:'קצב', sym:'♩', hint:'האטה, האצה או שינוי קצב'},
+  {t:'note', label:'הערה', sym:'✎', hint:'כל דבר אחר שחשוב לדעת'}
+];
+const AR_SEC_NAMES = ['פתיחה', 'בית', 'פרה־פזמון', 'פזמון', 'גשר', 'סולו', 'מעבר', 'ברייק', 'סיום'];
+const arOf = songId => bOf('arr').find(a => a.data.songId === songId) || null;
+function arCanEdit(a){ return !a || a.authorId === B.member.id || (a.data.editors || []).includes(B.member.id); }
+function arDefault(song){
+  const insts = ['gtr', 'keys', 'bass', 'drums', 'vox'].map(t => ({id:t, type:t, name:AR_TYPES[t].label, player:''}));
+  return {songId:song.id, editors:[], insts, gen:{}, feel:'', start:'', end:'', ref:'', secs:arSecsFromSheet(song.data.sheet, insts)};
+}
+function arSecsFromSheet(sheet, insts){
+  const list = songSections(sheet || '');
+  const mk = (name, a, b) => ({id:cid(), name, bars:'', from:a, to:b, energy:3, cues:[], p:Object.fromEntries(insts.map(i => [i.id, {st:'on', dyn:2, text:'', fx:''}]))});
+  return list.length ? list.map(q => mk(q.name, q.a, q.b)) : [mk('השיר כולו', -1, -1)];
+}
+function arPart(sec, instId){ return (sec.p && sec.p[instId]) || {st:'on', dyn:2, text:'', fx:''}; }
+function arMyInst(d){
+  const me = B.member, byPlayer = d.insts.find(i => i.player === me.id); if(byPlayer) return byPlayer.id;
+  const r = String(me.role || ''), map = [['בס', 'bass'], ['תופ', 'drums'], ['קליד', 'keys'], ['פסנתר', 'keys'], ['גיטר', 'gtr'], ['שיר', 'vox'], ['זמר', 'vox'], ['קול', 'vox']];
+  for(const [w, t] of map) if(r.includes(w)){ const i = d.insts.find(x => x.type === t); if(i) return i.id; }
+  return '';
+}
+function arLyricsHTML(song, sec, opt){
+  if(sec.from == null || sec.from < 0 || !song.data.sheet) return '';
+  const L = String(song.data.sheet).replace(/\r/g, '').split('\n'), secs = songSections(song.data.sheet);
+  const isHead = secs.some(q => q.a === sec.from);
+  const txt = L.slice(isHead ? sec.from + 1 : sec.from, sec.to + 1).join('\n').replace(/^\n+|\n+$/g, '');
+  if(!txt.trim()) return '';
+  return `<div class="sheet ar-lyr${opt && opt.small ? ' small' : ''}" dir="${song.data.dir || (hasHebrew(song.data.sheet) ? 'rtl' : 'ltr')}">${renderSheetHTML(txt, Number(song.data.shift) || 0, song.data.key).html}</div>`;
+}
+function arFirstLine(song, sec){
+  if(sec.from == null || sec.from < 0) return '';
+  const L = String(song.data.sheet || '').split('\n'); for(let i = sec.from; i <= sec.to && i < L.length; i++){ const t = plainLine(L[i]); if(t && !/:\s*$/.test(t) && !isChordLine(t)) return t; }
+  return '';
+}
+const arDynBars = v => `<span class="ar-dyn" title="${(AR_DYN.find(x => x.v === v) || AR_DYN[1]).label}">${[1, 2, 3].map(k => `<i class="${k <= v ? 'on' : ''}"></i>`).join('')}</span>`;
+const arStLabel = (pt) => pt.st === 'off' ? 'לא מנגן' : `${(AR_ST.find(x => x.id === pt.st) || AR_ST[0]).label} · ${(AR_DYN.find(x => x.v === pt.dyn) || AR_DYN[1]).label}`;
+const arCueBadge = (c, d) => { const k = AR_CUE.find(x => x.t === c.t) || AR_CUE[5], who = c.who && c.who !== 'all' ? (d.insts.find(i => i.id === c.who) || {}).name : ''; return `<span class="ar-cue c-${k.t}"><b>${k.sym} ${k.label}</b>${who ? ` <small>(${esc(who)})</small>` : ''}${c.text ? ` ${esc(c.text)}` : ''}</span>`; };
+const arCuesFor = (sec, instId) => (sec.cues || []).filter(c => !c.who || c.who === 'all' || c.who === instId);
+async function arSave(d, errEl){
+  const a = arOf(d.songId);
+  if(JSON.stringify(d).length > 44000){ alert('העיבוד ארוך מדי לשמירה. אפשר לקצר הוראות ארוכות.'); return; }
+  d.updatedAt = new Date().toISOString();
+  await bSave([{id:a ? a.id : '', kind:'arr', data:d}], errEl);
+}
+const arClone = a => JSON.parse(JSON.stringify(a.data));
+
+function renderArr(){
+  const s = bGet(B.songId), a = arOf(s.id), can = arCanEdit(a), V = B.arr;
+  let h = `<button class="btn ghost small" data-ar="close">חזרה לשיר</button>
+    <div class="spread" style="margin:8px 0"><div><h2>${esc(s.data.name)} <small class="muted ar-h-sub">עיבוד והפקה</small></h2>${s.data.artist ? `<p class="muted">${esc(s.data.artist)}</p>` : ''}</div></div>`;
+  if(!a){
+    h += `<div class="sub-panel ar-empty"><h3>עוד אין עיבוד לשיר הזה</h3>
+      <p class="muted">כאן בונים את העיבוד: מי מנגן בכל חלק, מה בדיוק לנגן, עצירות ודגשים, והסאונד והאפקטים של כל כלי. כל נגן מקבל דף תפקיד ברור משלו, עם המילים והאקורדים של כל חלק.</p>
+      <p class="muted">החלקים נבנים אוטומטית מהכותרות במילים של השיר (פתיחה:, בית:, פזמון: וכו׳). אפשר לשנות הכול אחר כך.</p>
+      <button class="btn primary" data-ar="create">יצירת עיבוד</button></div>`;
+    $('#vb-main').innerHTML = `<div id="arr">${h}</div>`; return;
+  }
+  const d = a.data;
+  if(!V.view) V.view = arMyInst(d) ? 'part' : 'map';
+  if(V.view === 'part' && !d.insts.some(i => i.id === V.inst)) V.inst = arMyInst(d) || (d.insts[0] || {}).id;
+  const chips = [s.data.bpm ? `${s.data.bpm} BPM` : '', bandKey(s, Number(s.data.shift) || 0) ? `סולם ${bandKey(s, Number(s.data.shift) || 0)}` : '', d.feel].filter(Boolean);
+  h += `${chips.length ? `<div class="chips" style="margin-bottom:10px">${chips.map(c => `<span class="chip" dir="auto">${esc(c)}</span>`).join('')}${d.ref ? `<a class="chip" href="${esc(safeUrl(d.ref))}" target="_blank" rel="noopener">רפרנס ↗</a>` : ''}</div>` : ''}
+    <nav class="ar-nav" aria-label="תצוגות העיבוד">
+      <button type="button" data-ar="view" data-v="map" aria-pressed="${V.view === 'map'}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/></svg>מפת השיר</button>
+      <span class="ar-nav-l">דף תפקיד:</span>
+      ${d.insts.map(i => `<button type="button" class="ar-ib" style="--c:${(AR_TYPES[i.type] || AR_TYPES.other).col}" data-ar="view" data-v="part" data-inst="${esc(i.id)}" aria-pressed="${V.view === 'part' && V.inst === i.id}">${arIcon(i.type, 18)}${esc(i.name)}${i.id === arMyInst(d) ? ' <small>(אני)</small>' : ''}</button>`).join('')}
+      ${can ? `<button type="button" data-ar="view" data-v="setup" aria-pressed="${V.view === 'setup'}" class="ar-setup-b"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>הגדרות</button>` : ''}
+    </nav>`;
+  if(V.view === 'map') h += arMapHTML(s, d, can);
+  else if(V.view === 'setup' && can) h += arSetupHTML(s, d);
+  else h += arPartHTML(s, d, V.inst, can);
+  $('#vb-main').innerHTML = `<div id="arr">${h}</div>`;
+}
+function arMapHTML(s, d, can){
+  const legend = `<div class="ar-legend">${AR_ST.map(x => `<span><i class="ar-sw st-${x.id}"></i>${x.label}</span>`).join('')}<span>${arDynBars(1)} שקט ${arDynBars(3)} חזק</span></div>`;
+  let h = `<div class="sub-panel"><div class="spread"><h3>מפת השיר</h3>${can ? '<span class="hint">לחיצה על משבצת עורכת את ההוראה לכלי בחלק הזה. לחיצה על שם החלק עורכת את החלק.</span>' : '<span class="hint">לחיצה על שם של כלי פותחת את דף התפקיד שלו.</span>'}</div>${legend}
+    <div class="ar-map-wrap"><table class="ar-map"><colgroup><col class="c-sec">${d.insts.map(() => '<col>').join('')}</colgroup><thead><tr><th class="ar-sec-h">חלק</th>${d.insts.map(i => `<th style="--c:${(AR_TYPES[i.type] || AR_TYPES.other).col}"><button type="button" data-ar="view" data-v="part" data-inst="${esc(i.id)}">${arIcon(i.type, 22)}<span>${esc(i.name)}</span>${i.player ? `<small>${esc(memberName(i.player))}</small>` : ''}</button></th>`).join('')}</tr></thead><tbody>`;
+  d.secs.forEach((sec, si) => {
+    const fl = arFirstLine(s, sec), cues = sec.cues || [];
+    h += `<tr><th class="ar-sec" scope="row"><button type="button" data-ar="sec" data-si="${si}" ${can ? '' : 'disabled'}><b>${esc(sec.name)}</b>${sec.bars ? `<small>${esc(String(sec.bars))} תיבות</small>` : ''}<span class="ar-energy" title="עוצמה של החלק">${[1, 2, 3, 4, 5].map(k => `<i class="${k <= (sec.energy || 3) ? 'on' : ''}"></i>`).join('')}</span>${fl ? `<span class="ar-fl" dir="auto">${esc(fl)}</span>` : ''}</button>
+      ${cues.length ? `<div class="ar-cues">${cues.map(c => arCueBadge(c, d)).join('')}</div>` : ''}</th>`;
+    d.insts.forEach(i => {
+      const pt = arPart(sec, i.id);
+      h += `<td class="ar-cell st-${pt.st}" style="--c:${(AR_TYPES[i.type] || AR_TYPES.other).col}"><button type="button" data-ar="cell" data-si="${si}" data-inst="${esc(i.id)}" ${can ? '' : 'disabled'} aria-label="${esc(i.name)} ב${esc(sec.name)}: ${esc(arStLabel(pt))}">
+        <span class="ar-cell-top"><span class="ar-st">${(AR_ST.find(x => x.id === pt.st) || AR_ST[0]).label}</span>${pt.st !== 'off' ? arDynBars(pt.dyn || 2) : ''}</span>
+        ${pt.text ? `<span class="ar-txt" dir="auto">${esc(pt.text)}</span>` : (can && pt.st !== 'off' ? '<span class="ar-txt ph">+ הוראה</span>' : '')}
+        ${pt.fx ? `<span class="ar-fx" dir="auto">${esc(pt.fx)}</span>` : ''}</button></td>`;
+    });
+    h += '</tr>';
+  });
+  h += `</tbody></table></div>${can ? '<div class="row" style="margin-top:10px"><button class="btn small" data-ar="add-sec">＋ חלק חדש</button></div>' : ''}</div>`;
+  if(d.start || d.end) h += `<div class="sub-panel" style="margin-top:14px"><div class="ar-se">${d.start ? `<div><b>איך מתחילים</b><p dir="auto">${esc(d.start)}</p></div>` : ''}${d.end ? `<div><b>איך מסיימים</b><p dir="auto">${esc(d.end)}</p></div>` : ''}</div></div>`;
+  return h;
+}
+function arPartHTML(s, d, instId, can){
+  const inst = d.insts.find(i => i.id === instId); if(!inst) return '<p class="empty">אין כלים בעיבוד.</p>';
+  const T0 = AR_TYPES[inst.type] || AR_TYPES.other, g = (d.gen || {})[inst.id] || {}, fx = g.fx || [], V = B.arr;
+  const showLyr = V.lyr !== false;
+  let h = `<div class="ar-part" style="--c:${T0.col}">
+    <div class="ar-part-h"><span class="ar-part-ic">${arIcon(inst.type, 34)}</span><div><h3>דף תפקיד: ${esc(inst.name)}</h3><p class="muted">${inst.player ? `מנגן/ת: ${esc(memberName(inst.player))}` : 'עוד לא נקבע מי מנגן'}${s.data.bpm ? ` · ${s.data.bpm} BPM` : ''}${bandKey(s, Number(s.data.shift) || 0) ? ` · סולם ${esc(bandKey(s, Number(s.data.shift) || 0))}` : ''}</p></div>
+      <div class="row ar-part-acts"><button type="button" class="btn small" data-ar="lyr" aria-pressed="${showLyr}">${showLyr ? 'הסתרת המילים' : 'הצגת המילים'}</button><button type="button" class="btn small" data-ar="print">הדפסה</button></div></div>`;
+  // סאונד ואפקטים
+  if(V.editSound && can){
+    h += `<div class="sub-panel ar-sound edit" id="ar-sound-ed"><h4>סאונד ואפקטים</h4>
+      <div class="two"><label class="field">הסאונד הכללי<input data-g="sound" maxlength="200" value="${esc(g.sound || '')}" placeholder="למשל: קלין חם, קצת מלוכלך בפזמונים"></label>
+      <label class="field">כלי וציוד<input data-g="gear" maxlength="200" value="${esc(g.gear || '')}" placeholder="למשל: גיטרה חשמלית, הומבאקר, קאפו 2"></label></div>
+      <div class="ar-fx-ed">${(fx.length ? fx : [{}]).map(f => `<div class="ar-fx-row"><input data-f="name" maxlength="40" value="${esc(f.name || '')}" placeholder="אפקט, למשל Delay" list="ar-fx-list"><input data-f="set" maxlength="80" value="${esc(f.set || '')}" placeholder="הגדרות, למשל 1/8, 30% מיקס"><input data-f="when" maxlength="60" value="${esc(f.when || '')}" placeholder="מתי, למשל רק בפזמון"><button type="button" class="btn ghost small danger" data-ar="fx-del" aria-label="הסרה">✕</button></div>`).join('')}</div>
+      <datalist id="ar-fx-list">${['Overdrive', 'Distortion', 'Fuzz', 'Delay', 'Reverb', 'Chorus', 'Phaser', 'Flanger', 'Tremolo', 'Wah', 'Compressor', 'Octaver', 'EQ', 'Looper', 'Pad', 'Strings', 'Rhodes', 'Organ', 'Synth Lead', 'Click'].map(x => `<option value="${x}">`).join('')}</datalist>
+      <button type="button" class="btn ghost small" data-ar="fx-add">＋ אפקט</button>
+      <label class="field">דגשים כלליים לנגן<textarea data-g="notes" maxlength="800" placeholder="למשל: לא לנגן על השורש בבתים, להשאיר מקום לשירה">${esc(g.notes || '')}</textarea></label>
+      <div class="row"><button type="button" class="btn primary small" data-ar="sound-save">שמירה</button><button type="button" class="btn ghost small" data-ar="sound-cancel">ביטול</button></div></div>`;
+  } else if(g.sound || g.gear || fx.length || g.notes || can){
+    h += `<div class="sub-panel ar-sound"><div class="spread"><h4>סאונד ואפקטים</h4>${can ? '<button type="button" class="btn ghost small" data-ar="sound-edit">עריכה</button>' : ''}</div>
+      ${g.sound || g.gear ? `<div class="ar-kv">${g.sound ? `<div><span>סאונד</span><b dir="auto">${esc(g.sound)}</b></div>` : ''}${g.gear ? `<div><span>ציוד</span><b dir="auto">${esc(g.gear)}</b></div>` : ''}</div>` : ''}
+      ${fx.length ? `<table class="ar-fx-t"><thead><tr><th>אפקט</th><th>הגדרות</th><th>מתי</th></tr></thead><tbody>${fx.map(f => `<tr><td dir="auto"><b>${esc(f.name)}</b></td><td dir="auto">${esc(f.set || '')}</td><td dir="auto">${esc(f.when || 'כל השיר')}</td></tr>`).join('')}</tbody></table>` : ''}
+      ${g.notes ? `<p class="ar-gnotes" dir="auto">${esc(g.notes)}</p>` : ''}
+      ${!g.sound && !g.gear && !fx.length && !g.notes ? '<p class="muted">עוד לא נכתב סאונד לכלי הזה.</p>' : ''}</div>`;
+  }
+  if(d.start) h += `<div class="ar-step start"><b>איך מתחילים</b><span dir="auto">${esc(d.start)}</span></div>`;
+  // מפת דרכים
+  h += `<ol class="ar-road">`;
+  d.secs.forEach((sec, si) => {
+    const pt = arPart(sec, inst.id), cues = arCuesFor(sec, inst.id), others = d.insts.filter(i => i.id !== inst.id && arPart(sec, i.id).st !== 'off');
+    h += `<li class="ar-step st-${pt.st}">
+      <div class="ar-step-h"><span class="ar-step-n">${si + 1}</span><b class="ar-step-name">${esc(sec.name)}</b>${sec.bars ? `<span class="chip">${esc(String(sec.bars))} תיבות</span>` : ''}
+        <span class="ar-badge st-${pt.st}">${pt.st === 'off' ? 'לא מנגנים' : esc(arStLabel(pt))}</span>${pt.st !== 'off' ? arDynBars(pt.dyn || 2) : ''}
+        ${can ? `<button type="button" class="btn ghost small ar-step-ed" data-ar="cell" data-si="${si}" data-inst="${esc(inst.id)}">עריכה</button>` : ''}</div>
+      ${pt.text ? `<p class="ar-instr" dir="auto">${esc(pt.text)}</p>` : pt.st === 'off' ? '<p class="ar-instr muted">שקט. מקשיבים ומחכים לחלק הבא.</p>' : ''}
+      ${pt.fx ? `<div class="ar-fxline"><b>סאונד/אפקט:</b> <span dir="auto">${esc(pt.fx)}</span></div>` : ''}
+      ${cues.length ? `<div class="ar-cues">${cues.map(c => arCueBadge(c, d)).join('')}</div>` : ''}
+      ${showLyr ? arLyricsHTML(s, sec, {small:true}) : ''}
+      <div class="ar-with">${others.length ? `מנגנים איתך: ${others.map(i => `<span style="--c:${(AR_TYPES[i.type] || AR_TYPES.other).col}">${arIcon(i.type, 14)}${esc(i.name)}</span>`).join('')}` : 'אף כלי אחר לא מנגן בחלק הזה'}</div>
+    </li>`;
+  });
+  h += '</ol>';
+  if(d.end) h += `<div class="ar-step end"><b>איך מסיימים</b><span dir="auto">${esc(d.end)}</span></div>`;
+  return h + '</div>';
+}
+function arSetupHTML(s, d){
+  const D = B.arr.draft || (B.arr.draft = JSON.parse(JSON.stringify(d)));
+  const mem = B.members;
+  let h = `<div class="sub-panel ar-setup"><h3>הגדרות העיבוד</h3>
+    <h4>כלים</h4><div class="ar-insts">${D.insts.map((i, k) => `<div class="ar-inst-row" data-k="${k}" style="--c:${(AR_TYPES[i.type] || AR_TYPES.other).col}">
+      <span class="ar-inst-ic">${arIcon(i.type, 22)}</span>
+      <select data-i="type" aria-label="סוג הכלי">${Object.entries(AR_TYPES).map(([t, v]) => `<option value="${t}" ${t === i.type ? 'selected' : ''}>${v.label}</option>`).join('')}</select>
+      <input data-i="name" maxlength="30" value="${esc(i.name)}" aria-label="שם הכלי" placeholder="שם, למשל גיטרה 2">
+      <select data-i="player" aria-label="מי מנגן"><option value="">מי מנגן? (עוד לא נקבע)</option>${mem.map(m => `<option value="${esc(m.id)}" ${m.id === i.player ? 'selected' : ''}>${esc(m.name)}${m.role ? ' · ' + esc(m.role) : ''}</option>`).join('')}</select>
+      <button type="button" class="btn ghost small" data-ar="inst-up" ${k ? '' : 'disabled'} aria-label="הזזה למעלה">▲</button>
+      <button type="button" class="btn ghost small danger" data-ar="inst-del" aria-label="הסרת הכלי">✕</button></div>`).join('')}</div>
+    <button type="button" class="btn small" data-ar="inst-add">＋ כלי</button>
+    <h4>השיר</h4>
+    <div class="two"><label class="field">סגנון ותחושה<input data-s="feel" maxlength="80" value="${esc(D.feel || '')}" placeholder="למשל: רוק איטי, שאפל, חצי זמן בפזמון"></label>
+    <label class="field">קישור לרפרנס<input data-s="ref" dir="ltr" maxlength="300" value="${esc(D.ref || '')}" placeholder="https://youtu.be/..."></label></div>
+    <div class="two"><label class="field">איך מתחילים<textarea data-s="start" maxlength="400" placeholder="למשל: המתופף סופר 4 על הסטיקים, הקלידים נכנסים לבד">${esc(D.start || '')}</textarea></label>
+    <label class="field">איך מסיימים<textarea data-s="end" maxlength="400" placeholder="למשל: עצירה ביחד על האקורד האחרון, הגיטרה משאירה צלצול">${esc(D.end || '')}</textarea></label></div>
+    <h4>חלקי השיר</h4><p class="muted" style="margin-top:0">אפשר לשנות סדר, לשכפל חלק שחוזר (למשל פזמון שני) ולמחוק. את התוכן של כל חלק עורכים ב"מפת השיר".</p>
+    <ol class="ar-sec-list">${D.secs.map((sec, k) => `<li data-k="${k}"><b>${esc(sec.name)}</b>${sec.bars ? ` <small class="muted">${esc(String(sec.bars))} תיבות</small>` : ''}<span class="row" style="gap:2px"><button type="button" class="btn ghost small" data-ar="sec-up" ${k ? '' : 'disabled'} aria-label="הזזה למעלה">▲</button><button type="button" class="btn ghost small" data-ar="sec-down" ${k < D.secs.length - 1 ? '' : 'disabled'} aria-label="הזזה למטה">▼</button><button type="button" class="btn ghost small" data-ar="sec-dup">שכפול</button><button type="button" class="btn ghost small danger" data-ar="sec-del" aria-label="מחיקת החלק">✕</button></span></li>`).join('')}</ol>
+    <div class="row"><button type="button" class="btn small" data-ar="add-sec-d">＋ חלק חדש</button>${s.data.sheet ? '<button type="button" class="btn ghost small" data-ar="rebuild">בנייה מחדש מהמילים</button>' : ''}</div>
+    <h4>מי יכול לערוך</h4><p class="muted" style="margin-top:0">כל חברי הלהקה רואים את העיבוד. רק מי שמסומן כאן (ומי שיצר אותו) יכול לשנות.</p>
+    <div class="chips">${mem.filter(m => m.id !== (arOf(s.id) || {}).authorId).map(m => `<label class="chip ar-ed"><input type="checkbox" data-ed="${esc(m.id)}" ${(D.editors || []).includes(m.id) ? 'checked' : ''}> ${esc(m.name)}</label>`).join('') || '<span class="muted">אין חברים נוספים.</span>'}</div>
+    <p class="err" id="ar-err"></p>
+    <div class="row" style="margin-top:12px"><button type="button" class="btn primary" data-ar="setup-save">שמירת ההגדרות</button><button type="button" class="btn ghost" data-ar="setup-cancel">ביטול</button></div></div>`;
+  return h;
+}
+/* חלונית עריכה: משבצת (כלי בחלק) או חלק */
+function arDlg(){
+  let d = $('#dlg-arr');
+  if(!d){ d = document.createElement('dialog'); d.id = 'dlg-arr'; d.className = 'wide'; document.body.appendChild(d); d.addEventListener('click', onArrDlg); d.addEventListener('input', onArrDlgInput); d.addEventListener('change', onArrDlgInput); }
+  return d;
+}
+function arOpenCell(si, instId){
+  const a = arOf(B.songId); if(!a) return;
+  B.arr.dlg = {type:'cell', si, inst:instId, d:arClone(a)};
+  arDlgRender(); const dl = arDlg(); if(!dl.open) dl.showModal();
+}
+function arOpenSec(si){
+  const a = arOf(B.songId); if(!a) return;
+  B.arr.dlg = {type:'sec', si, d:arClone(a)};
+  arDlgRender(); const dl = arDlg(); if(!dl.open) dl.showModal();
+}
+function arDlgRender(){
+  const X = B.arr.dlg, d = X.d, s = bGet(B.songId), sec = d.secs[X.si], dl = arDlg(); if(!sec){ dl.close(); return; }
+  let h;
+  if(X.type === 'cell'){
+    const inst = d.insts.find(i => i.id === X.inst), T0 = AR_TYPES[inst.type] || AR_TYPES.other;
+    sec.p = sec.p || {}; const pt = sec.p[inst.id] = Object.assign({st:'on', dyn:2, text:'', fx:''}, sec.p[inst.id]);
+    const prev = X.si > 0 ? arPart(d.secs[X.si - 1], inst.id) : null;
+    h = `<div class="ar-dlg" style="--c:${T0.col}">
+      <div class="spread"><h3 class="ar-dlg-h">${arIcon(inst.type, 26)} ${esc(inst.name)} <span class="muted">·</span> ${esc(sec.name)}</h3><span class="muted">חלק ${X.si + 1} מתוך ${d.secs.length}</span></div>
+      ${arLyricsHTML(s, sec, {small:true}) || '<p class="muted">אין מילים לחלק הזה.</p>'}
+      <div class="ar-fieldset"><span class="opt-l">מה הכלי עושה בחלק הזה?</span><div class="ar-st-pick">${AR_ST.map(x => `<button type="button" class="st-${x.id}" data-cx="st" data-v="${x.id}" aria-pressed="${pt.st === x.id}"><b>${x.label}</b><small>${x.hint}</small></button>`).join('')}</div></div>
+      ${pt.st !== 'off' ? `<div class="ar-fieldset"><span class="opt-l">עוצמה</span><div class="seg">${AR_DYN.map(x => `<button type="button" data-cx="dyn" data-v="${x.v}" aria-pressed="${pt.dyn === x.v}">${arDynBars(x.v)} ${x.label}</button>`).join('')}</div></div>` : ''}
+      <label class="field">מה לנגן ${pt.st === 'off' ? '<small>(לא חובה)</small>' : ''}<textarea data-cf="text" maxlength="600" rows="3" placeholder="${{gtr:'למשל: פריטה בשמיניות, רק 3 מיתרים עליונים. בשורה האחרונה ריטם מלא', keys:'למשל: פד רך ביד ימין, בלי בס ביד שמאל', bass:'למשל: שורש ברבעים, להיכנס עם הקיק', drums:'למשל: רק היי־האט וקיק, מכה על הקראש בתחילת החלק', vox:'למשל: שקט ואינטימי, השורה האחרונה בקולות'}[inst.type] || 'מה בדיוק לנגן, ומה חשוב לשים לב'}">${esc(pt.text)}</textarea></label>
+      <label class="field">סאונד או אפקט בחלק הזה <small>(לא חובה)</small><input data-cf="fx" maxlength="120" value="${esc(pt.fx)}" placeholder="למשל: להדליק Overdrive · להוריד את הדיליי" list="ar-fx-list2"></label>
+      <datalist id="ar-fx-list2">${['להדליק Overdrive', 'להדליק Distortion', 'להדליק Delay', 'להוריד את הדיליי', 'יותר Reverb', 'בלי אפקטים', 'סאונד פד', 'סאונד פסנתר', 'מברשות', 'סטיקים', 'רים־קליק'].map(x => `<option value="${x}">`).join('')}</datalist>
+      <div class="row ar-dlg-nav">
+        <button type="button" class="btn ghost small" data-cx="nav" data-v="-1" ${X.si ? '' : 'disabled'}>→ החלק הקודם</button>
+        <button type="button" class="btn ghost small" data-cx="nav" data-v="1" ${X.si < d.secs.length - 1 ? '' : 'disabled'}>החלק הבא ←</button>
+        ${prev ? '<button type="button" class="btn ghost small" data-cx="copy-prev">העתקה מהחלק הקודם</button>' : ''}
+        <button type="button" class="btn ghost small" data-cx="same-name">אותו דבר בכל ה"${esc(sec.name)}"</button>
+      </div>
+      <p class="err" id="ar-dlg-err"></p>
+      <div class="row"><button type="button" class="btn primary" data-cx="save">שמירה</button><button type="button" class="btn ghost" data-cx="close">ביטול</button></div></div>`;
+  } else {
+    const secs = songSections(s.data.sheet || '');
+    const lyrOpt = `<option value="-1" ${sec.from < 0 ? 'selected' : ''}>בלי מילים (כלי בלבד)</option>${secs.map(q => `<option value="${q.a}:${q.b}" ${q.a === sec.from && q.b === sec.to ? 'selected' : ''}>${esc(q.name)}${arFirstLine(s, {from:q.a, to:q.b}) ? ' · ' + esc(arFirstLine(s, {from:q.a, to:q.b}).slice(0, 30)) : ''}</option>`).join('')}`;
+    h = `<div class="ar-dlg">
+      <h3>חלק ${X.si + 1}: ${esc(sec.name)}</h3>
+      <div class="two"><label class="field">שם החלק<input data-sf="name" maxlength="30" value="${esc(sec.name)}" list="ar-sec-names"></label><label class="field">כמה תיבות <small>(לא חובה)</small><input data-sf="bars" maxlength="12" value="${esc(String(sec.bars || ''))}" placeholder="למשל 8, או 4+4"></label></div>
+      <datalist id="ar-sec-names">${AR_SEC_NAMES.map(x => `<option value="${x}">`).join('')}</datalist>
+      <label class="field">המילים של החלק<select data-sf="lyr">${lyrOpt}</select></label>
+      <div class="ar-fieldset"><span class="opt-l">עוצמה של החלק</span><div class="seg">${[1, 2, 3, 4, 5].map(k => `<button type="button" data-cx="energy" data-v="${k}" aria-pressed="${(sec.energy || 3) === k}">${k}</button>`).join('')}</div><small class="muted">1 = שקט מאוד, 5 = שיא השיר</small></div>
+      <div class="ar-fieldset"><span class="opt-l">עצירות, דגשים ורגעים חשובים</span>
+        <div class="ar-cue-ed">${(sec.cues || []).map((c, k) => `<div class="ar-cue-row" data-k="${k}"><select data-c="t" aria-label="סוג">${AR_CUE.map(x => `<option value="${x.t}" ${x.t === c.t ? 'selected' : ''}>${x.sym} ${x.label}</option>`).join('')}</select><select data-c="who" aria-label="למי"><option value="all">כולם</option>${d.insts.map(i => `<option value="${esc(i.id)}" ${c.who === i.id ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}</select><input data-c="text" maxlength="160" value="${esc(c.text || '')}" placeholder="מתי ואיך, למשל: על המילה 'לב', בתיבה 4"><button type="button" class="btn ghost small danger" data-cx="cue-del" aria-label="הסרה">✕</button></div>`).join('') || '<p class="muted" style="margin:0">אין עדיין. למשל: עצירה של כולם בסוף החלק, מכה ביחד על המילה האחרונה.</p>'}</div>
+        <div class="chips">${AR_CUE.map(x => `<button type="button" class="chip ar-cue-add c-${x.t}" data-cx="cue-add" data-v="${x.t}" title="${x.hint}">＋ ${x.sym} ${x.label}</button>`).join('')}</div></div>
+      <p class="err" id="ar-dlg-err"></p>
+      <div class="spread"><div class="row"><button type="button" class="btn primary" data-cx="save">שמירה</button><button type="button" class="btn ghost" data-cx="close">ביטול</button></div>
+        <div class="row" style="gap:4px"><button type="button" class="btn ghost small" data-cx="sec-dup">שכפול החלק</button><button type="button" class="btn ghost small danger" data-cx="sec-del">מחיקת החלק</button></div></div></div>`;
+  }
+  dl.innerHTML = h;
+}
+function onArrDlgInput(e){
+  const X = B.arr && B.arr.dlg; if(!X) return;
+  const sec = X.d.secs[X.si], t = e.target;
+  if(t.dataset.cf){ const pt = sec.p[X.inst]; pt[t.dataset.cf] = t.value; return; }
+  if(t.dataset.sf === 'name') sec.name = t.value;
+  if(t.dataset.sf === 'bars') sec.bars = t.value.trim();
+  if(t.dataset.sf === 'lyr'){ if(t.value === '-1'){ sec.from = -1; sec.to = -1; } else { const [a, b] = t.value.split(':').map(Number); sec.from = a; sec.to = b; if(!sec.name || sec.name === 'חלק חדש') sec.name = (songSections(bGet(B.songId).data.sheet).find(q => q.a === a) || {}).name || sec.name; } }
+  const cr = t.closest('.ar-cue-row'); if(cr && t.dataset.c){ sec.cues[Number(cr.dataset.k)][t.dataset.c] = t.value; }
+}
+async function onArrDlg(e){
+  const X = B.arr && B.arr.dlg, dl = arDlg(); if(!X) return;
+  if(e.target === dl){ dl.close(); return; }
+  const b = e.target.closest('[data-cx]'); if(!b) return;
+  const d = X.d, sec = d.secs[X.si], act = b.dataset.cx;
+  if(act === 'close'){ dl.close(); B.arr.dlg = null; return; }
+  if(act === 'st'){ sec.p[X.inst].st = b.dataset.v; return arDlgRender(); }
+  if(act === 'dyn'){ sec.p[X.inst].dyn = Number(b.dataset.v); return arDlgRender(); }
+  if(act === 'energy'){ sec.energy = Number(b.dataset.v); return arDlgRender(); }
+  if(act === 'nav'){ X.si = clamp(X.si + Number(b.dataset.v), 0, d.secs.length - 1); return arDlgRender(); }
+  if(act === 'copy-prev'){ sec.p[X.inst] = Object.assign({}, arPart(d.secs[X.si - 1], X.inst)); return arDlgRender(); }
+  if(act === 'same-name'){ const src = sec.p[X.inst]; let n = 0; d.secs.forEach(q => { if(q !== sec && q.name.trim() === sec.name.trim()){ q.p = q.p || {}; q.p[X.inst] = Object.assign({}, src); n++; } }); $('#ar-dlg-err').classList.add('info'); $('#ar-dlg-err').textContent = n ? `הועתק ל־${n} חלקים נוספים בשם "${sec.name}". לחצו שמירה.` : `אין חלקים נוספים בשם "${sec.name}".`; return; }
+  if(act === 'cue-add'){ sec.cues = sec.cues || []; sec.cues.push({t:b.dataset.v, who:'all', text:''}); arDlgRender(); const ins = dl.querySelectorAll('.ar-cue-row input'); if(ins.length) ins[ins.length - 1].focus(); return; }
+  if(act === 'cue-del'){ sec.cues.splice(Number(b.closest('.ar-cue-row').dataset.k), 1); return arDlgRender(); }
+  if(act === 'sec-dup'){ const c = JSON.parse(JSON.stringify(sec)); c.id = cid(); d.secs.splice(X.si + 1, 0, c); X.si++; await arSave(d); return arDlgRender(); }
+  if(act === 'sec-del'){ if(!confirm(`למחוק את החלק "${sec.name}"?`)) return; d.secs.splice(X.si, 1); await arSave(d); dl.close(); B.arr.dlg = null; return; }
+  if(act === 'save'){ if(X.type === 'sec' && !sec.name.trim()){ $('#ar-dlg-err').textContent = 'צריך שם לחלק.'; return; } await arSave(d, $('#ar-dlg-err')); dl.close(); B.arr.dlg = null; }
+}
+async function onArr(e){
+  const b = e.target.closest('[data-ar]'); if(!b) return;
+  const act = b.dataset.ar, V = B.arr, s = bGet(B.songId), a = arOf(s.id);
+  if(act === 'close'){ B.arr = null; return renderBand(); }
+  if(act === 'create'){ const d = arDefault(s); V.view = 'map'; await arSave(d); return; }
+  if(act === 'view'){ V.view = b.dataset.v; if(b.dataset.inst) V.inst = b.dataset.inst; V.editSound = false; if(V.view !== 'setup') V.draft = null; renderArr(); window.scrollTo({top:Math.min(window.scrollY, $('#arr').offsetTop), behavior:'auto'}); return; }
+  if(act === 'cell') return arOpenCell(Number(b.dataset.si), b.dataset.inst);
+  if(act === 'sec') return arOpenSec(Number(b.dataset.si));
+  if(act === 'add-sec'){ const d = arClone(a); d.secs.push({id:cid(), name:'חלק חדש', bars:'', from:-1, to:-1, energy:3, cues:[], p:Object.fromEntries(d.insts.map(i => [i.id, {st:'on', dyn:2, text:'', fx:''}]))}); await arSave(d); return arOpenSec(d.secs.length - 1); }
+  if(act === 'lyr'){ V.lyr = V.lyr === false; return renderArr(); }
+  if(act === 'print') return arPrint(s, a.data, V.inst);
+  if(act === 'sound-edit'){ V.editSound = true; return renderArr(); }
+  if(act === 'sound-cancel'){ V.editSound = false; return renderArr(); }
+  if(act === 'fx-add'){ const box = $('.ar-fx-ed'); const r = box.querySelector('.ar-fx-row').cloneNode(true); r.querySelectorAll('input').forEach(i => { i.value = ''; }); box.appendChild(r); r.querySelector('input').focus(); return; }
+  if(act === 'fx-del'){ const rows = $$('.ar-fx-ed .ar-fx-row'); if(rows.length > 1) b.closest('.ar-fx-row').remove(); else rows[0].querySelectorAll('input').forEach(i => { i.value = ''; }); return; }
+  if(act === 'sound-save'){
+    const d = arClone(a), ed = $('#ar-sound-ed'), g = {};
+    ed.querySelectorAll('[data-g]').forEach(i => { g[i.dataset.g] = i.value.trim(); });
+    g.fx = $$('.ar-fx-ed .ar-fx-row').map(r => ({name:r.querySelector('[data-f=name]').value.trim(), set:r.querySelector('[data-f=set]').value.trim(), when:r.querySelector('[data-f=when]').value.trim()})).filter(f => f.name || f.set);
+    d.gen = d.gen || {}; d.gen[V.inst] = g; V.editSound = false; await arSave(d); return;
+  }
+  // הגדרות
+  const D = V.draft; if(!D) return;
+  const ir = b.closest('.ar-inst-row'), sr = b.closest('.ar-sec-list li');
+  if(act === 'inst-add'){ const used = new Set(D.insts.map(i => i.id)); let id; do{ id = 'i' + Math.random().toString(36).slice(2, 6); }while(used.has(id)); D.insts.push({id, type:'other', name:'', player:''}); D.secs.forEach(q => { q.p = q.p || {}; q.p[id] = {st:'on', dyn:2, text:'', fx:''}; }); return renderArr(); }
+  if(act === 'inst-del'){ const i = D.insts[Number(ir.dataset.k)]; if(!confirm(`להסיר את ${i.name || 'הכלי'} מהעיבוד? ההוראות שנכתבו לו יימחקו.`)) return; D.insts.splice(Number(ir.dataset.k), 1); D.secs.forEach(q => { if(q.p) delete q.p[i.id]; }); if(D.gen) delete D.gen[i.id]; return renderArr(); }
+  if(act === 'inst-up'){ const k = Number(ir.dataset.k); [D.insts[k - 1], D.insts[k]] = [D.insts[k], D.insts[k - 1]]; return renderArr(); }
+  if(act === 'sec-up' || act === 'sec-down'){ const k = Number(sr.dataset.k), j = k + (act === 'sec-up' ? -1 : 1); [D.secs[j], D.secs[k]] = [D.secs[k], D.secs[j]]; return renderArr(); }
+  if(act === 'sec-dup'){ const k = Number(sr.dataset.k), c = JSON.parse(JSON.stringify(D.secs[k])); c.id = cid(); D.secs.splice(k + 1, 0, c); return renderArr(); }
+  if(act === 'sec-del'){ const k = Number(sr.dataset.k); if(!confirm(`למחוק את החלק "${D.secs[k].name}"?`)) return; D.secs.splice(k, 1); return renderArr(); }
+  if(act === 'add-sec-d'){ D.secs.push({id:cid(), name:'חלק חדש', bars:'', from:-1, to:-1, energy:3, cues:[], p:Object.fromEntries(D.insts.map(i => [i.id, {st:'on', dyn:2, text:'', fx:''}]))}); return renderArr(); }
+  if(act === 'rebuild'){ if(!confirm('לבנות את רשימת החלקים מחדש לפי הכותרות במילים? הוראות שכבר נכתבו יישמרו לחלקים עם אותו שם.')) return; const old = D.secs, fresh = arSecsFromSheet(s.data.sheet, D.insts), used = new Set(); fresh.forEach(q => { const m = old.find(o => !used.has(o) && o.name === q.name); if(m){ used.add(m); Object.assign(q, {p:m.p, cues:m.cues, bars:m.bars, energy:m.energy}); } }); D.secs = fresh; return renderArr(); }
+  if(act === 'setup-cancel'){ V.draft = null; V.view = 'map'; return renderArr(); }
+  if(act === 'setup-save'){
+    if(D.insts.some(i => !i.name.trim())){ $('#ar-err').textContent = 'לכל כלי צריך שם.'; return; }
+    if(!D.insts.length){ $('#ar-err').textContent = 'צריך לפחות כלי אחד.'; return; }
+    if(!D.secs.length){ $('#ar-err').textContent = 'צריך לפחות חלק אחד.'; return; }
+    const d = JSON.parse(JSON.stringify(D)); V.draft = null; V.view = 'map'; await arSave(d, $('#ar-err')); return;
+  }
+}
+function onArrInput(e){
+  const V = B.arr, D = V && V.draft, t = e.target; if(!D) return;
+  const ir = t.closest('.ar-inst-row');
+  if(ir && t.dataset.i){ const i = D.insts[Number(ir.dataset.k)]; const oldType = i.type; i[t.dataset.i] = t.value; if(t.dataset.i === 'type'){ if(!i.name || i.name === (AR_TYPES[oldType] || {}).label) i.name = AR_TYPES[t.value].label; if(e.type === 'change') renderArr(); } return; }
+  if(t.dataset.s) D[t.dataset.s] = t.value;
+  if(t.dataset.ed){ D.editors = $$('#arr [data-ed]').filter(x => x.checked).map(x => x.dataset.ed); }
+}
+function arPrint(s, d, instId){
+  const inst = d.insts.find(i => i.id === instId); if(!inst) return;
+  const keep = B.arr.lyr; B.arr.lyr = true;
+  const html = arPartHTML(s, d, instId, false); B.arr.lyr = keep;
+  let area = $('#print-area'); if(!area){ area = document.createElement('div'); area.id = 'print-area'; document.body.appendChild(area); }
+  area.innerHTML = `<div class="ar-print"><h1>${esc(s.data.name)}${s.data.artist ? ` <small>· ${esc(s.data.artist)}</small>` : ''}</h1>${html}</div>`;
+  const done = () => { area.innerHTML = ''; window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => window.print(), 50);
+}
+
 function renderBandSong(){
   const s = B.newSong ? {id:'', data:{shift:0}} : bGet(B.songId), d = s.data, pos = setlistOrder().indexOf(s.id), saved = Number(d.shift) || 0;
   const k = bandKey(s, B.viewShift), orig = bandKey(s, 0);
@@ -5216,7 +5685,7 @@ function renderBandSong(){
   }
   let h = `<button class="btn ghost small" data-act="back">חזרה לרשימה</button>
     <div class="spread" style="margin:8px 0"><div><h2>${esc(d.name)}</h2>${d.artist ? `<p class="muted">${esc(d.artist)}</p>` : ''}</div>
-      <div class="row">${d.url ? '<button class="btn small" data-act="player">פתיחה בנגן</button>' : ''}<button class="btn small" data-act="toggle-set">${pos >= 0 ? 'הוצאה מהסטליסט' : 'הוספה לסטליסט'}</button><button class="btn small" data-act="edit-song">עריכה</button><button class="btn small danger" data-act="del-song">מחיקה</button></div></div>
+      <div class="row">${(() => { const ar = arOf(s.id), mi = ar ? arMyInst(ar.data) : ''; return `${mi ? `<button class="btn small primary" data-act="arr-mine">התפקיד שלי: ${esc(ar.data.insts.find(i => i.id === mi).name)}</button>` : ''}<button class="btn small ${mi ? '' : 'primary'}" data-act="arr">${ar ? 'עיבוד והפקה' : 'בניית עיבוד'}</button>`; })()}${d.url ? '<button class="btn small" data-act="player">פתיחה בנגן</button>' : ''}<button class="btn small" data-act="toggle-set">${pos >= 0 ? 'הוצאה מהסטליסט' : 'הוספה לסטליסט'}</button><button class="btn small" data-act="edit-song">עריכה</button><button class="btn small danger" data-act="del-song">מחיקה</button></div></div>
     <div class="chips">${pos >= 0 ? `<span class="chip ok">בסטליסט, מקום ${pos + 1}</span>` : '<span class="chip">לא מבוצע כרגע</span>'}${d.bpm ? `<span class="chip">${d.bpm} BPM</span>` : ''}${d.duration ? `<span class="chip">${fmtDur(d.duration)}</span>` : ''}</div>`;
   const rec = d.recordings || {}, parts = rec.parts || [];
   if(rec.band || parts.length){
@@ -5272,9 +5741,12 @@ function chordStripHTML(used){
   return used.map(name => { const lib = libChordByName(name);
     return lib ? `<button class="chord mini" data-c="${esc(name)}" aria-label="אקורד ${esc(name)}"><span class="cname">${esc(name)}</span>${chordSVG(lib)}</button>` : `<button class="btn small" data-c="${esc(name)}" style="direction:ltr">${esc(name)}</button>`; }).join('');
 }
-function openBandSong(id){ B.songId = id; const s = bGet(id); B.viewShift = Number(s.data.shift) || 0; renderBand(); window.scrollTo(0, 0); }
+function openBandSong(id){ B.arr = null; B.songId = id; const s = bGet(id); B.viewShift = Number(s.data.shift) || 0; renderBand(); window.scrollTo(0, 0); }
 
 async function onBandMain(e){
+  if(e.target.closest('#arr')){ const c0 = e.target.closest('[data-c]'); if(c0){ playChordName(c0.dataset.c); return; } return onArr(e); }
+  const ab = e.target.closest('[data-act="arr"], [data-act="arr-mine"]');
+  if(ab){ const ar = arOf(B.songId); B.arr = {view:ab.dataset.act === 'arr-mine' ? 'part' : (ar ? 'map' : ''), inst:ar ? arMyInst(ar.data) : ''}; renderBand(); window.scrollTo(0, 0); return; }
   const c = e.target.closest('[data-c]');
   if(c){ playChordName(c.dataset.c); c.classList.add('on'); setTimeout(() => c.classList.remove('on'), 500); return; }
   const btn = e.target.closest('[data-act]');
@@ -5295,7 +5767,7 @@ async function onBandMain(e){
   if(/^(fm-|fq-)/.test(act)) return onFormAct(act, btn);
   const order = setlistOrder();
   if(act === 'open') return openBandSong(id);
-  if(act === 'back'){ if(INL.ctx === 'band' && INL.dirty && !confirm('לצאת בלי לשמור את השינויים?')) return; INL.ctx = ''; B.songId = null; B.newSong = false; return renderBand(); }
+  if(act === 'back'){ if(INL.ctx === 'band' && INL.dirty && !confirm('לצאת בלי לשמור את השינויים?')) return; INL.ctx = ''; B.arr = null; B.songId = null; B.newSong = false; return renderBand(); }
   if(act === 'edit-sheet' || act === 'edit-song') return startBandEdit(false);
   if(act === 'up' || act === 'down'){ const i = order.indexOf(id), j = act === 'up' ? i - 1 : i + 1; if(j < 0 || j >= order.length) return; [order[i], order[j]] = [order[j], order[i]]; return saveSetlist(order); }
   if(act === 'out') return saveSetlist(order.filter(x => x !== id));
@@ -9527,6 +9999,7 @@ function init(){
   $('#vb-refresh').addEventListener('click', () => bandLogin(B.pin));
   $('#vb-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; if(B.tab === 'form' && B.formDirty && b.dataset.v !== 'form' && bGet('appform') && !confirm('יש בטופס שינויים שלא נשמרו. לצאת בלי לשמור?')) return; if(b.dataset.v !== 'form'){ B.formDraft = null; B.formDirty = false; } B.tab = b.dataset.v; B.songId = null; B.newSong = false; if(INL.ctx === 'band') INL.ctx = ''; renderBand(); });
   $('#vb-main').addEventListener('click', onBandMain);
+  ['input', 'change'].forEach(ev => $('#vb-main').addEventListener(ev, e => { if(e.target.closest('#arr')) onArrInput(e); }));
   $('#vb-main').addEventListener('input', e => { if(B.tab === 'form' && onFormInput(e)) return; });
   $('#vb-main').addEventListener('change', e => { if(B.tab === 'form') onFormInput(e); });
   $('#vb-main').addEventListener('input', e => {
