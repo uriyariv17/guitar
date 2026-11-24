@@ -1240,6 +1240,52 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
   .ar-print .ar-part-h, .ar-print .sub-panel{ border:1px solid #bbb; box-shadow:none; }
   .ar-print .ar-lyr{ background:#f4f4f4; }
 }
+
+/* ===== חוברת תפקידים ===== */
+.check{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+@media print{
+  .bk{ font-size:10.5pt; line-height:1.35; color:#000; }
+  .bk h1{ margin:0 !important; }
+  .bk .pg{ break-before:page; }
+  .bk-cover{ text-align:center; padding-top:20mm; }
+  .bk-cover .bk-brand{ font-family:'Secular One',Arial,sans-serif; letter-spacing:.4em; font-size:30pt; color:#7a1f3d; }
+  .bk-cover .bk-ic{ display:inline-grid; place-items:center; width:90px; height:90px; border-radius:22px; background:var(--c); color:#fff; margin:12mm 0 4mm; }
+  .bk-cover h1{ font-size:28pt !important; }
+  .bk-cover h2{ font-size:18pt; margin:4pt 0; color:var(--c); }
+  .bk-cover p{ color:#555; }
+  .bk-toc{ text-align:start; max-width:130mm; margin:10mm auto 8mm; padding-inline-start:8mm; font-size:12pt; }
+  .bk-toc li{ padding:3pt 0; border-bottom:1px dotted #bbb; }
+  .bk-toc li span{ color:#666; font-size:10pt; margin-inline-start:8pt; }
+  .bk-legend{ max-width:150mm; margin:0 auto; font-size:9pt; color:#333; display:flex; flex-wrap:wrap; gap:4pt; justify-content:center; align-items:center; }
+  .bk-sh{ display:flex; align-items:center; gap:10pt; padding-bottom:6pt; margin-bottom:8pt; border-bottom:3px solid var(--c, #333); }
+  .bk-n{ display:grid; place-items:center; width:26pt; height:26pt; border-radius:50%; background:var(--c, #333); color:#fff; font-weight:800; font-size:13pt; flex:none; }
+  .bk-sh h1{ font-size:18pt !important; }
+  .bk-art{ color:#555; font-size:10pt; }
+  .bk-chips{ margin-inline-start:auto; display:flex; flex-wrap:wrap; gap:4pt; justify-content:flex-end; }
+  .bk-chips span{ border:1px solid #bbb; border-radius:99px; padding:1pt 7pt; font-size:9pt; font-weight:700; }
+  .bk-sound{ border:1px solid #ccc; border-radius:8px; padding:6pt 9pt; margin-bottom:6pt; display:grid; gap:2pt; break-inside:avoid; }
+  .bk-sound span{ color:#555; }
+  .bk-sound table{ border-collapse:collapse; width:100%; font-size:9.5pt; margin-top:2pt; }
+  .bk-sound td{ border-top:1px solid #ddd; padding:2pt 4pt; }
+  .bk-gn{ white-space:pre-line; color:#222; }
+  .bk-lbl{ font-size:9pt; color:#555; text-transform:uppercase; }
+  .bk-se{ margin:5pt 0; padding:4pt 9pt; border-inline-start:4px solid #333; background:#f3f3f3; break-inside:avoid; white-space:pre-line; }
+  .bk-sec{ border:1px solid #ccc; border-inline-start:5px solid var(--c, #333); border-radius:6px; padding:5pt 9pt; margin:5pt 0; break-inside:avoid; display:grid; gap:3pt; }
+  .bk-sec.st-off{ border-inline-start:5px dashed #aaa; background:#f7f7f7; }
+  .bk-sec-h{ display:flex; align-items:center; gap:7pt; }
+  .bk-sec-h b{ font-size:12pt; }
+  .bk-sec-h small{ color:#555; }
+  .bk-badge{ display:inline-block; font-size:8.5pt; font-weight:800; padding:0 7pt; border-radius:99px; background:color-mix(in srgb, var(--c, #333) 20%, #fff); color:#000; }
+  .bk-badge.st-off{ background:#e5e5e5; color:#444; }
+  .bk-sec-h .bk-badge{ margin-inline-start:auto; }
+  .bk-in{ font-size:11.5pt; font-weight:700; white-space:pre-line; }
+  .bk-fx{ font-size:9.5pt; }
+  .bk-lyr{ font-size:10pt !important; background:#f6f6f6 !important; padding:3pt 7pt !important; border-radius:5px; }
+  .bk-lyr .ln{ min-height:0; }
+  .bk-full{ font-size:11pt !important; }
+  .bk-none{ color:#555; font-style:italic; }
+  .bk .ar-cue{ font-size:8.5pt; padding:0 6pt; }
+}
 </style>
 </head>
 <body>
@@ -3974,10 +4020,58 @@ function scaleShape(x){
   return shapeModel({name:scaleName(x), root:x.root, labelMode:x.lab, band, marks:x.marks});
 }
 /* חלקי השיר לפי הכותרות (פזמון:, [בית 1] וכו׳) */
+/* זיהוי שורת כותרת של חלק בשיר: "פזמון:", "[בית 2]", "**Chorus**", "(פזמון x2)", "פתיחה: Am G F" וכו׳.
+   מחזיר {name, rest} (rest = מה שכתוב אחרי הכותרת באותה שורה) או null */
+const SEC_KW = '(?:פתיחה|אינטרו|הקדמה|מבוא|פרה[ \\-־]?פזמון|פרי[ \\-־]?פזמון|טרום[ \\-־]?פזמון|פוסט[ \\-־]?פזמון|פזמון|רפרן|בית|גשר|ברידג׳?|ברידג\'?|סולו|מעבר|ברייק|הפסקה|קטע נגינה|קטע כלי|נגינה|אינסטרומנטלי|סיומת|סיום|אאוטרו|קודה|intro|pre[ \\-]?chorus|post[ \\-]?chorus|chorus|refrain|hook|verse|bridge|middle ?8|solo|interlude|instrumental|breakdown|break|outro|ending|coda|tag|vamp)';
+const SEC_RE = new RegExp('^' + SEC_KW + '(?:[ \\-–—]*(?:\\d{1,2}|ראשון|ראשונה|שני|שנייה|שניה|שלישי|שלישית|רביעי|אחרון|אחרונה|[א-י][\'׳]?|[IVX]{1,4}|[A-D]))?(?:\\s*(?:[x×X]\\s*\\d|\\d\\s*[x×X]|\\(\\s*[x×X]?\\s*\\d\\s*[x×X]?\\s*\\)|פעמיים))?(?=$|[\\s:.,)\\]*#=~\\-–—])', 'i');
+function secHead(line){
+  const raw = String(line || '').trim(); if(!raw || raw.length > 90) return null;
+  const br = raw.match(/^\[([^\]]{1,24})\]$/); if(br) return parseChord(br[1]) ? null : {name:br[1].trim(), rest:''};
+  if(/\[[^\]\s]{1,14}\]/.test(raw) && !/^[^\[]{1,30}:/.test(raw)) return null;
+  const t = raw.replace(/^[\s*#=~>•·|(\-–—]+/, '').trim();
+  const m = t.match(SEC_RE);
+  if(m){
+    let rest = t.slice(m[0].length), hadColon = false;
+    rest = rest.replace(/^[\s*#=~<|)\]\-–—]*/, ''); if(rest[0] === ':'){ hadColon = true; rest = rest.slice(1); }
+    rest = rest.replace(/^[\s*#=~<|)\-–—]+/, '').replace(/[\s*#=~<|)\-–—]+$/, '').trim();
+    const name = m[0].trim().replace(/\s+/g, ' ');
+    if(!rest) return {name, rest:''};
+    if(hadColon || isChordLine(rest) || /^\[/.test(rest)) return {name, rest};
+    if(/^\(?\s*(?:[x×X]\s*\d|\d\s*[x×X]|פעמיים)\s*\)?$/.test(rest)) return {name:name + ' ×' + (rest.match(/\d/) || ['2'])[0], rest:''};
+    if(/:\s*$/.test(raw) && t.length <= 40) return {name:t.replace(/[\s:*#=~\-–—]+$/, '').trim(), rest:''};
+    return null;
+  }
+  const g = raw.match(/^([^\s:][^:]{0,23}):\s*$/);
+  if(g && g[1].trim().split(/\s+/).length <= 4 && !isChordLine(g[1])) return {name:g[1].replace(/^[*#=~\-–—\s]+|[*#=~\-–—\s]+$/g, '').trim(), rest:''};
+  return null;
+}
+const secBase = n => String(n || '').replace(/\s*(?:×\s*\d|[x×X]\s*\d|\d\s*[x×X]|\(.*\))\s*$/, '').replace(/[\s\-–—]*(?:\d{1,2}|[א-י][\'׳]?|[IVX]{1,4})$/, '').trim().toLowerCase();
 function songSections(sheet){
   const L = String(sheet || '').replace(/\r/g, '').split('\n'), heads = [];
-  L.forEach((ln, i) => { const t = ln.trim(); const m = t.match(/^\[([^\]]{1,24})\]$/); if((/^[^\s][^:]{0,28}:$/.test(t)) || (m && !parseChord(m[1]))) heads.push({i, name:t.replace(/^\[|\]$/g, '').replace(/:$/, '').trim()}); });
-  return heads.map((h, k) => { let b = (k + 1 < heads.length ? heads[k + 1].i : L.length) - 1; while(b > h.i && !L[b].trim()) b--; return {name:h.name, a:h.i, b}; });
+  L.forEach((ln, i) => { const h = secHead(ln); if(h) heads.push({i, name:h.name, rest:h.rest}); });
+  if(heads.length){
+    const out = [];
+    // שורות לפני הכותרת הראשונה (למשל אקורדי פתיחה בלי כותרת)
+    const pre = L.slice(0, heads[0].i).map((x, i) => x.trim() ? i : -1).filter(i => i >= 0);
+    if(pre.length && pre.some(i => !/^\s*\(.*\)\s*$/.test(L[i]))){ const a = pre[0], b = pre[pre.length - 1]; out.push({name:pre.every(i => isChordLine(L[i])) ? 'פתיחה' : 'התחלה', a, b, auto:true}); }
+    heads.forEach((h, k) => { let b = (k + 1 < heads.length ? heads[k + 1].i : L.length) - 1; while(b > h.i && !L[b].trim()) b--; out.push({name:h.name, a:h.i, b, empty:b === h.i && !h.rest}); });
+    return out;
+  }
+  // אין כותרות בכלל: חלוקה לפי שורות ריקות. בלוק שחוזר כמעט זהה = פזמון
+  const blocks = []; let cur = null;
+  L.forEach((ln, i) => { if(ln.trim()){ if(!cur) blocks.push(cur = {a:i, b:i}); else cur.b = i; } else cur = null; });
+  if(blocks.length < 2) return [];
+  const norm = bl => L.slice(bl.a, bl.b + 1).map(x => plainLine(x).replace(/[^\p{L}\p{N}]+/gu, '')).filter(Boolean).join('|');
+  const keys = blocks.map(norm), count = {}; keys.forEach(k => { if(k) count[k] = (count[k] || 0) + 1; });
+  let v = 0;
+  return blocks.map((bl, k) => {
+    const lines = L.slice(bl.a, bl.b + 1), chordsOnly = lines.every(x => isChordLine(x));
+    let name;
+    if(chordsOnly) name = k === 0 ? 'פתיחה' : k === blocks.length - 1 ? 'סיום' : 'נגינה';
+    else if(keys[k] && count[keys[k]] > 1) name = 'פזמון';
+    else name = 'בית ' + (++v);
+    return {name, a:bl.a, b:bl.b, auto:true};
+  });
 }
 function partLabel(song, a, b){
   const secs = songSections(song.sheet), ex = secs.find(q => q.a === a && q.b === b);
@@ -4760,12 +4854,14 @@ function renderSheetHTML(text, n, manualKey){
   const key0 = detectKey(text, manualKey), used = [], sp = spellForKey(key0, n);
   DEG.ctx = DEG.on && key0 ? {pc:(key0.pc + (n || 0) + (key0.minor && DEG.rel ? 3 : 0) + 120) % 12, minor:key0.minor && !DEG.rel} : null;
   const use = name => { const p = parseChord(name); const k = p ? p.root + p.suf + (p.bass ? '/' + p.bass : '') : name; if(!used.includes(k)) used.push(k); };
-  const rows = String(text || '').replace(/\r/g, '').split('\n').map((rawLine, li) => {
+  const rowHTML = (rawLine, li) => {
     const links = [];
     const line = rawLine.replace(LINK_RE, (m, label, url, bare) => { links.push({label:(label || '').trim(), url:url || bare}); return '\u0000' + (links.length - 1) + '\u0000'; });
     const wl = h => h.replace(PH_RE, (m, i) => linkChip(links[Number(i)]));
     const noLinks = line.replace(PH_RE, '');
     if(!rawLine.trim()) return '<div class="ln">&nbsp;</div>';
+    const sh0 = !links.length && secHead(rawLine);
+    if(sh0){ const hd = `<div class="ln sec" data-l="${li}">${esc(sh0.name)}</div>`; return sh0.rest ? hd + rowHTML(sh0.rest, li) : hd; }
     if(links.length && !noLinks.trim()) return `<div class="ln links" data-l="${li}">${links.map(linkChip).join(' ')}</div>`;
     const tail = links.length ? ' ' + links.map(linkChip).join(' ') : '';
     if(/\[[^\]\s]{1,14}\]/.test(line) && [...line.matchAll(/\[([^\]\s]{1,14})\]/g)].some(m => parseChord(m[1]))){
@@ -4792,10 +4888,11 @@ function renderSheetHTML(text, n, manualKey){
       }
       return `<div class="ln chords" data-l="${li}">${out}${tail}</div>`;
     }
-    const sec = /^\s*[^\s][^:]{0,28}:\s*$/.test(line) || /^\s*\[[^\]]{1,24}\]\s*$/.test(line);
+    const sec = !!secHead(line);
     if(!sec && VE_NOTE_RE.test(line)) return `<div class="ln cm" data-l="${li}"><span class="cm-in">${wl(esc(line.trim().slice(1, -1)))}</span></div>`;
     return `<div class="ln${sec ? ' sec' : ''}" data-l="${li}">${wl(esc(line.trim() && sec ? line.trim().replace(/^\[|\]$/g, '') : line))}</div>`;
-  });
+  };
+  const rows = String(text || '').replace(/\r/g, '').split('\n').map((rawLine, li) => rowHTML(rawLine, li));
   const EMPTY = '<div class="ln">&nbsp;</div>';
   let blocksHtml = '', cur = [];
   const flushB = () => { if(cur.length){ blocksHtml += `<div class="blk">${cur.join('')}</div>`; cur = []; } };
@@ -5238,7 +5335,7 @@ function renderSetlist(){
   const order = setlistOrder(), songs = order.map(bGet);
   const total = songs.reduce((a, s) => a + (Number(s.data.duration) || 0), 0);
   const pool = bSongs().filter(s => !order.includes(s.id));
-  let h = `<div class="spread" style="margin-bottom:12px"><div><h2>הסטליסט</h2><p class="muted">${songs.length} שירים${total ? `, בערך ${fmtDur(total)} דקות` : ''}</p></div>
+  let h = `<div class="spread" style="margin-bottom:12px"><div><h2>הסטליסט</h2><p class="muted">${songs.length} שירים${total ? `, בערך ${fmtDur(total)} דקות` : ''}</p></div><button class="btn small" data-act="booklet">חוברת תפקידים (PDF)</button>
     ${pool.length ? `<select id="sl-add" style="max-width:260px" aria-label="הוספת שיר לסטליסט"><option value="">הוספת שיר לסטליסט…</option>${pool.map(s => `<option value="${esc(s.id)}">${esc(s.data.name)}</option>`).join('')}</select>` : ''}</div>`;
   h += songs.length ? `<ol class="setlist">${songs.map((s, i) => {
     const n = visibleNotes(s.id).length, k = bandKey(s, Number(s.data.shift) || 0);
@@ -5254,7 +5351,7 @@ function renderSetlist(){
 
 /* כל השירים */
 function renderBandSongs(){
-  $('#vb-main').innerHTML = `<div class="spread" style="margin-bottom:12px"><h2>כל השירים</h2><button class="btn primary" data-act="new-song">שיר חדש</button></div>
+  $('#vb-main').innerHTML = `<div class="spread" style="margin-bottom:12px"><h2>כל השירים</h2><div class="row" style="gap:6px"><button class="btn small" data-act="booklet">חוברת תפקידים (PDF)</button><button class="btn primary" data-act="new-song">שיר חדש</button></div></div>
     <div class="row" style="margin-bottom:12px"><input type="search" id="bs-q" placeholder="חיפוש שיר או אמן" style="max-width:260px" value="${esc(B.songQ)}" aria-label="חיפוש שיר">
     <div class="seg" id="bs-f">${[['all', 'הכול'], ['set', 'בסטליסט'], ['pool', 'לא מבוצעים כרגע']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${B.songF === v}">${l}</button>`).join('')}</div></div>
     <div id="bs-list"></div>`;
@@ -5374,27 +5471,28 @@ function arDefault(song){
 }
 function arSecsFromSheet(sheet, insts){
   const list = songSections(sheet || '');
+  // כותרת בלי תוכן ("פזמון" שחוזר בלי מילים) מקבלת את המילים של החלק הקודם באותו שם
+  list.forEach((q, k) => { if(q.empty){ const src = list.slice(0, k).reverse().find(o => !o.empty && secBase(o.name) === secBase(q.name)); if(src){ q.a = src.a; q.b = src.b; } } });
   const mk = (name, a, b) => ({id:cid(), name, bars:'', from:a, to:b, energy:3, cues:[], p:Object.fromEntries(insts.map(i => [i.id, {st:'on', dyn:2, text:'', fx:''}]))});
   return list.length ? list.map(q => mk(q.name, q.a, q.b)) : [mk('השיר כולו', -1, -1)];
 }
 function arPart(sec, instId){ return (sec.p && sec.p[instId]) || {st:'on', dyn:2, text:'', fx:''}; }
 function arMyInst(d){
   const me = B.member, byPlayer = d.insts.find(i => i.player === me.id); if(byPlayer) return byPlayer.id;
-  const r = String(me.role || ''), map = [['בס', 'bass'], ['תופ', 'drums'], ['קליד', 'keys'], ['פסנתר', 'keys'], ['גיטר', 'gtr'], ['שיר', 'vox'], ['זמר', 'vox'], ['קול', 'vox']];
-  for(const [w, t] of map) if(r.includes(w)){ const i = d.insts.find(x => x.type === t); if(i) return i.id; }
-  return '';
+  const t = arRoleType(me.role), i = t && d.insts.find(x => x.type === t);
+  return i ? i.id : '';
 }
 function arLyricsHTML(song, sec, opt){
   if(sec.from == null || sec.from < 0 || !song.data.sheet) return '';
-  const L = String(song.data.sheet).replace(/\r/g, '').split('\n'), secs = songSections(song.data.sheet);
-  const isHead = secs.some(q => q.a === sec.from);
-  const txt = L.slice(isHead ? sec.from + 1 : sec.from, sec.to + 1).join('\n').replace(/^\n+|\n+$/g, '');
+  const L = String(song.data.sheet).replace(/\r/g, '').split('\n'), lines = L.slice(sec.from, sec.to + 1), h = secHead(lines[0]);
+  if(h){ if(h.rest) lines[0] = h.rest; else lines.shift(); }
+  const txt = lines.join('\n').replace(/^\n+|\n+$/g, '');
   if(!txt.trim()) return '';
   return `<div class="sheet ar-lyr${opt && opt.small ? ' small' : ''}" dir="${song.data.dir || (hasHebrew(song.data.sheet) ? 'rtl' : 'ltr')}">${renderSheetHTML(txt, Number(song.data.shift) || 0, song.data.key).html}</div>`;
 }
 function arFirstLine(song, sec){
   if(sec.from == null || sec.from < 0) return '';
-  const L = String(song.data.sheet || '').split('\n'); for(let i = sec.from; i <= sec.to && i < L.length; i++){ const t = plainLine(L[i]); if(t && !/:\s*$/.test(t) && !isChordLine(t)) return t; }
+  const L = String(song.data.sheet || '').split('\n'); for(let i = sec.from; i <= sec.to && i < L.length; i++){ const h = secHead(L[i]), t = plainLine(h ? h.rest : L[i]); if(t && !isChordLine(t)) return t; }
   return '';
 }
 const arDynBars = v => `<span class="ar-dyn" title="${(AR_DYN.find(x => x.v === v) || AR_DYN[1]).label}">${[1, 2, 3].map(k => `<i class="${k <= v ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -5463,7 +5561,7 @@ function arPartHTML(s, d, instId, can){
   const showLyr = V.lyr !== false;
   let h = `<div class="ar-part" style="--c:${T0.col}">
     <div class="ar-part-h"><span class="ar-part-ic">${arIcon(inst.type, 34)}</span><div><h3>דף תפקיד: ${esc(inst.name)}</h3><p class="muted">${inst.player ? `מנגן/ת: ${esc(memberName(inst.player))}` : 'עוד לא נקבע מי מנגן'}${s.data.bpm ? ` · ${s.data.bpm} BPM` : ''}${bandKey(s, Number(s.data.shift) || 0) ? ` · סולם ${esc(bandKey(s, Number(s.data.shift) || 0))}` : ''}</p></div>
-      <div class="row ar-part-acts"><button type="button" class="btn small" data-ar="lyr" aria-pressed="${showLyr}">${showLyr ? 'הסתרת המילים' : 'הצגת המילים'}</button><button type="button" class="btn small" data-ar="print">הדפסה</button></div></div>`;
+      <div class="row ar-part-acts"><button type="button" class="btn small" data-ar="lyr" aria-pressed="${showLyr}">${showLyr ? 'הסתרת המילים' : 'הצגת המילים'}</button><button type="button" class="btn small" data-ar="print">הדפסת השיר</button><button type="button" class="btn small" data-ar="booklet">חוברת לכל השירים</button></div></div>`;
   // סאונד ואפקטים
   if(V.editSound && can){
     h += `<div class="sub-panel ar-sound edit" id="ar-sound-ed"><h4>סאונד ואפקטים</h4>
@@ -5568,12 +5666,15 @@ function arDlgRender(){
       <div class="row"><button type="button" class="btn primary" data-cx="save">שמירה</button><button type="button" class="btn ghost" data-cx="close">ביטול</button></div></div>`;
   } else {
     const secs = songSections(s.data.sheet || '');
-    const lyrOpt = `<option value="-1" ${sec.from < 0 ? 'selected' : ''}>בלי מילים (כלי בלבד)</option>${secs.map(q => `<option value="${q.a}:${q.b}" ${q.a === sec.from && q.b === sec.to ? 'selected' : ''}>${esc(q.name)}${arFirstLine(s, {from:q.a, to:q.b}) ? ' · ' + esc(arFirstLine(s, {from:q.a, to:q.b}).slice(0, 30)) : ''}</option>`).join('')}`;
+    const custom = sec.from >= 0 && !secs.some(q => q.a === sec.from && q.b === sec.to);
+    const lyrOpt = `<option value="-1" ${sec.from < 0 ? 'selected' : ''}>בלי מילים (כלי בלבד)</option>${custom ? `<option value="${sec.from}:${sec.to}" selected>שורות ${sec.from + 1}–${sec.to + 1} (בחירה ידנית)${arFirstLine(s, sec) ? ' · ' + esc(arFirstLine(s, sec).slice(0, 30)) : ''}</option>` : ''}${secs.map(q => `<option value="${q.a}:${q.b}" ${q.a === sec.from && q.b === sec.to ? 'selected' : ''}>${esc(q.name)}${arFirstLine(s, {from:q.a, to:q.b}) ? ' · ' + esc(arFirstLine(s, {from:q.a, to:q.b}).slice(0, 30)) : ''}</option>`).join('')}`;
     h = `<div class="ar-dlg">
       <h3>חלק ${X.si + 1}: ${esc(sec.name)}</h3>
       <div class="two"><label class="field">שם החלק<input data-sf="name" maxlength="30" value="${esc(sec.name)}" list="ar-sec-names"></label><label class="field">כמה תיבות <small>(לא חובה)</small><input data-sf="bars" maxlength="12" value="${esc(String(sec.bars || ''))}" placeholder="למשל 8, או 4+4"></label></div>
       <datalist id="ar-sec-names">${AR_SEC_NAMES.map(x => `<option value="${x}">`).join('')}</datalist>
-      <label class="field">המילים של החלק<select data-sf="lyr">${lyrOpt}</select></label>
+      <div class="ar-fieldset"><span class="opt-l">המילים של החלק</span>
+        <div class="row" style="gap:6px"><select data-sf="lyr" style="flex:1;min-width:200px" aria-label="המילים של החלק">${lyrOpt}</select>${s.data.sheet ? `<button type="button" class="btn ghost small" data-cx="pick" aria-pressed="${!!X.pickOpen}">${X.pickOpen ? 'סגירת הבחירה' : 'בחירת שורות ידנית'}</button>` : ''}</div>
+        ${X.pickOpen ? `<p class="muted" style="margin:0">${X.pickA != null ? 'עכשיו לחצו על השורה האחרונה של החלק.' : 'לחצו על השורה הראשונה של החלק, ואז על השורה האחרונה.'}</p><div class="sheet ftx-sheet ar-pick" dir="${s.data.dir || (hasHebrew(s.data.sheet) ? 'rtl' : 'ltr')}">${renderSheetHTML(s.data.sheet, Number(s.data.shift) || 0, s.data.key).html}</div>` : ''}</div>
       <div class="ar-fieldset"><span class="opt-l">עוצמה של החלק</span><div class="seg">${[1, 2, 3, 4, 5].map(k => `<button type="button" data-cx="energy" data-v="${k}" aria-pressed="${(sec.energy || 3) === k}">${k}</button>`).join('')}</div><small class="muted">1 = שקט מאוד, 5 = שיא השיר</small></div>
       <div class="ar-fieldset"><span class="opt-l">עצירות, דגשים ורגעים חשובים</span>
         <div class="ar-cue-ed">${(sec.cues || []).map((c, k) => `<div class="ar-cue-row" data-k="${k}"><select data-c="t" aria-label="סוג">${AR_CUE.map(x => `<option value="${x.t}" ${x.t === c.t ? 'selected' : ''}>${x.sym} ${x.label}</option>`).join('')}</select><select data-c="who" aria-label="למי"><option value="all">כולם</option>${d.insts.map(i => `<option value="${esc(i.id)}" ${c.who === i.id ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}</select><input data-c="text" maxlength="160" value="${esc(c.text || '')}" placeholder="מתי ואיך, למשל: על המילה 'לב', בתיבה 4"><button type="button" class="btn ghost small danger" data-cx="cue-del" aria-label="הסרה">✕</button></div>`).join('') || '<p class="muted" style="margin:0">אין עדיין. למשל: עצירה של כולם בסוף החלק, מכה ביחד על המילה האחרונה.</p>'}</div>
@@ -5582,7 +5683,10 @@ function arDlgRender(){
       <div class="spread"><div class="row"><button type="button" class="btn primary" data-cx="save">שמירה</button><button type="button" class="btn ghost" data-cx="close">ביטול</button></div>
         <div class="row" style="gap:4px"><button type="button" class="btn ghost small" data-cx="sec-dup">שכפול החלק</button><button type="button" class="btn ghost small danger" data-cx="sec-del">מחיקת החלק</button></div></div></div>`;
   }
+  const pk = dl.querySelector('.ar-pick'), top = pk ? pk.scrollTop : (X.pickTop || 0);
   dl.innerHTML = h;
+  const pk2 = dl.querySelector('.ar-pick');
+  if(pk2){ pk2.querySelectorAll('.ln[data-l]').forEach(l => { const n = Number(l.dataset.l); l.classList.toggle('in', sec.from >= 0 && n >= sec.from && n <= sec.to); l.classList.toggle('pa', X.pickA === n); }); pk2.scrollTop = top; if(!top){ const f = pk2.querySelector('.ln.in'); if(f) pk2.scrollTop = Math.max(0, f.offsetTop - 40); } }
 }
 function onArrDlgInput(e){
   const X = B.arr && B.arr.dlg; if(!X) return;
@@ -5591,17 +5695,23 @@ function onArrDlgInput(e){
   if(t.dataset.sf === 'name') sec.name = t.value;
   if(t.dataset.sf === 'bars') sec.bars = t.value.trim();
   if(t.dataset.sf === 'lyr'){ if(t.value === '-1'){ sec.from = -1; sec.to = -1; } else { const [a, b] = t.value.split(':').map(Number); sec.from = a; sec.to = b; if(!sec.name || sec.name === 'חלק חדש') sec.name = (songSections(bGet(B.songId).data.sheet).find(q => q.a === a) || {}).name || sec.name; } }
+  if(t.dataset.sf === 'lyr' && X.pickOpen && e.type === 'change'){ X.pickTop = 0; arDlgRender(); }
   const cr = t.closest('.ar-cue-row'); if(cr && t.dataset.c){ sec.cues[Number(cr.dataset.k)][t.dataset.c] = t.value; }
 }
 async function onArrDlg(e){
   const X = B.arr && B.arr.dlg, dl = arDlg(); if(!X) return;
   if(e.target === dl){ dl.close(); return; }
+  const pl = e.target.closest('.ar-pick .ln[data-l]');
+  if(pl){ const sec0 = X.d.secs[X.si], n = Number(pl.dataset.l); X.pickTop = dl.querySelector('.ar-pick').scrollTop;
+    if(X.pickA == null){ X.pickA = n; sec0.from = n; sec0.to = n; } else { sec0.from = Math.min(X.pickA, n); sec0.to = Math.max(X.pickA, n); X.pickA = null; }
+    return arDlgRender(); }
   const b = e.target.closest('[data-cx]'); if(!b) return;
   const d = X.d, sec = d.secs[X.si], act = b.dataset.cx;
   if(act === 'close'){ dl.close(); B.arr.dlg = null; return; }
   if(act === 'st'){ sec.p[X.inst].st = b.dataset.v; return arDlgRender(); }
   if(act === 'dyn'){ sec.p[X.inst].dyn = Number(b.dataset.v); return arDlgRender(); }
   if(act === 'energy'){ sec.energy = Number(b.dataset.v); return arDlgRender(); }
+  if(act === 'pick'){ X.pickOpen = !X.pickOpen; X.pickA = null; X.pickTop = 0; return arDlgRender(); }
   if(act === 'nav'){ X.si = clamp(X.si + Number(b.dataset.v), 0, d.secs.length - 1); return arDlgRender(); }
   if(act === 'copy-prev'){ sec.p[X.inst] = Object.assign({}, arPart(d.secs[X.si - 1], X.inst)); return arDlgRender(); }
   if(act === 'same-name'){ const src = sec.p[X.inst]; let n = 0; d.secs.forEach(q => { if(q !== sec && q.name.trim() === sec.name.trim()){ q.p = q.p || {}; q.p[X.inst] = Object.assign({}, src); n++; } }); $('#ar-dlg-err').classList.add('info'); $('#ar-dlg-err').textContent = n ? `הועתק ל־${n} חלקים נוספים בשם "${sec.name}". לחצו שמירה.` : `אין חלקים נוספים בשם "${sec.name}".`; return; }
@@ -5622,6 +5732,7 @@ async function onArr(e){
   if(act === 'add-sec'){ const d = arClone(a); d.secs.push({id:cid(), name:'חלק חדש', bars:'', from:-1, to:-1, energy:3, cues:[], p:Object.fromEntries(d.insts.map(i => [i.id, {st:'on', dyn:2, text:'', fx:''}]))}); await arSave(d); return arOpenSec(d.secs.length - 1); }
   if(act === 'lyr'){ V.lyr = V.lyr === false; return renderArr(); }
   if(act === 'print') return arPrint(s, a.data, V.inst);
+  if(act === 'booklet'){ openBooklet(); const inst = a.data.insts.find(i => i.id === V.inst), sel = $('#bk-who'); if(inst && sel){ sel.value = inst.player ? 'm:' + inst.player : 't:' + inst.type; bkSum(); } return; }
   if(act === 'sound-edit'){ V.editSound = true; return renderArr(); }
   if(act === 'sound-cancel'){ V.editSound = false; return renderArr(); }
   if(act === 'fx-add'){ const box = $('.ar-fx-ed'); const r = box.querySelector('.ar-fx-row').cloneNode(true); r.querySelectorAll('input').forEach(i => { i.value = ''; }); box.appendChild(r); r.querySelector('input').focus(); return; }
@@ -5658,6 +5769,93 @@ function onArrInput(e){
   if(t.dataset.s) D[t.dataset.s] = t.value;
   if(t.dataset.ed){ D.editors = $$('#arr [data-ed]').filter(x => x.checked).map(x => x.dataset.ed); }
 }
+/* ===== חוברת תפקידים לנגן (הדפסה / שמירה כ־PDF) ===== */
+function arRoleType(role){
+  const r = String(role || ''), map = [['בס', 'bass'], ['תופ', 'drums'], ['קליד', 'keys'], ['פסנתר', 'keys'], ['גיטר', 'gtr'], ['שיר', 'vox'], ['זמר', 'vox'], ['קול', 'vox']];
+  for(const [w, t] of map) if(r.includes(w)) return t;
+  return '';
+}
+function bkInst(d, who){
+  if(!d) return null;
+  if(who.m){ const byP = d.insts.find(i => i.player === who.m); if(byP) return byP; const m = B.members.find(x => x.id === who.m), t = m && arRoleType(m.role); return t ? d.insts.find(i => i.type === t && !i.player) || d.insts.find(i => i.type === t) || null : null; }
+  return d.insts.find(i => i.type === who.t) || null;
+}
+function bkSongs(src){
+  if(src === 'set') return setlistOrder().map(bGet).filter(Boolean);
+  const all = bSongs().slice().sort((a, b) => a.data.name.localeCompare(b.data.name, 'he'));
+  return src === 'arr' ? all.filter(s => arOf(s.id)) : all;
+}
+function bkWho(v){ return v.indexOf('m:') === 0 ? {m:v.slice(2)} : {t:v.slice(2)}; }
+function bkWhoLabel(who){ if(who.m){ const m = B.members.find(x => x.id === who.m); return m ? m.name : ''; } return (AR_TYPES[who.t] || AR_TYPES.other).label; }
+function openBooklet(){
+  let dl = $('#dlg-book');
+  if(!dl){ dl = document.createElement('dialog'); dl.id = 'dlg-book'; document.body.appendChild(dl);
+    dl.addEventListener('click', e => { if(e.target === dl) dl.close(); const b = e.target.closest('[data-bk]'); if(!b) return;
+      if(b.dataset.bk === 'src'){ dl._src = b.dataset.v; $$('#dlg-book [data-bk=src]').forEach(x => x.setAttribute('aria-pressed', x === b)); bkSum(); }
+      if(b.dataset.bk === 'close') dl.close();
+      if(b.dataset.bk === 'go'){ const o = {who:bkWho($('#bk-who').value), src:dl._src, lyr:$('#bk-lyr').checked, cover:$('#bk-cover').checked, page:$('#bk-page').checked}; if(!bkSongs(o.src).length){ $('#bk-sum').textContent = 'אין שירים לחוברת.'; return; } dl.close(); bkPrint(o); } });
+    dl.addEventListener('change', bkSum); }
+  const me = B.member, myT = arRoleType(me.role);
+  dl._src = setlistOrder().length ? 'set' : 'arr';
+  dl.innerHTML = `<div class="ar-dlg"><h3>חוברת תפקידים לנגן</h3>
+    <p class="muted" style="margin:0">כל השירים לפי הסדר, ולכל שיר: הסאונד והאפקטים, מה מנגנים בכל חלק, עצירות ודגשים, והמילים והאקורדים. בסוף נפתח חלון הדפסה, ושם בוחרים "שמירה כ־PDF".</p>
+    <label class="field">למי החוברת?<select id="bk-who"><optgroup label="לפי נגן">${B.members.map(m => `<option value="m:${esc(m.id)}" ${m.id === me.id ? 'selected' : ''}>${esc(m.name)}${m.role ? ' · ' + esc(m.role) : ''}</option>`).join('')}</optgroup><optgroup label="לפי כלי (לנגן חדש)">${Object.entries(AR_TYPES).filter(([t]) => t !== 'other').map(([t, v]) => `<option value="t:${t}">${v.label}</option>`).join('')}</optgroup></select></label>
+    <div class="ar-fieldset"><span class="opt-l">אילו שירים?</span><div class="seg">${[['set', 'הסטליסט, לפי הסדר'], ['arr', 'כל השירים עם עיבוד'], ['all', 'כל השירים']].map(([v, l]) => `<button type="button" data-bk="src" data-v="${v}" aria-pressed="${dl._src === v}">${l}</button>`).join('')}</div></div>
+    <div class="ar-fieldset"><label class="check"><input type="checkbox" id="bk-lyr" checked> מילים ואקורדים בכל חלק</label><label class="check"><input type="checkbox" id="bk-cover" checked> עמוד שער עם תוכן העניינים</label><label class="check"><input type="checkbox" id="bk-page" checked> כל שיר מתחיל בעמוד חדש</label></div>
+    <p class="muted" id="bk-sum" style="margin:0"></p>
+    <div class="row"><button type="button" class="btn primary" data-bk="go">יצירת החוברת</button><button type="button" class="btn ghost" data-bk="close">ביטול</button></div></div>`;
+  bkSum(); dl.showModal();
+}
+function bkSum(){
+  const dl = $('#dlg-book'), sel = $('#bk-who'); if(!dl || !sel) return;
+  const who = bkWho(sel.value), list = bkSongs(dl._src), withPart = list.filter(s => { const a = arOf(s.id); return a && bkInst(a.data, who); }).length;
+  $('#bk-sum').textContent = list.length ? `${list.length} שירים בחוברת. ל־${withPart} מהם כבר כתוב תפקיד ל${bkWhoLabel(who)}${list.length > withPart ? `, ובשאר יופיעו מילים ואקורדים בלבד` : ''}.` : 'אין שירים בבחירה הזאת.';
+}
+function bkSongHTML(s, n, who, o){
+  const a = arOf(s.id), d = a && a.data, inst = bkInst(d, who), key = bandKey(s, Number(s.data.shift) || 0);
+  const chips = [s.data.bpm ? `${s.data.bpm} BPM` : '', key ? `סולם ${key}` : '', d && d.feel, s.data.duration ? fmtDur(s.data.duration) + ' דק׳' : ''].filter(Boolean);
+  let h = `<section class="bk-song${o.page ? ' pg' : ''}"><header class="bk-sh"><span class="bk-n">${n}</span><div><h1>${esc(s.data.name)}</h1>${s.data.artist ? `<div class="bk-art">${esc(s.data.artist)}</div>` : ''}</div><div class="bk-chips">${chips.map(c => `<span dir="auto">${esc(c)}</span>`).join('')}</div></header>`;
+  if(!inst){
+    h += `<p class="bk-none">${d ? `אין בעיבוד של השיר הזה תפקיד ל${esc(bkWhoLabel(who))}.` : 'לשיר הזה עוד אין עיבוד כתוב.'} מופיעים כאן המילים והאקורדים.</p>`;
+    if(s.data.sheet) h += `<div class="sheet bk-full" dir="${s.data.dir || (hasHebrew(s.data.sheet) ? 'rtl' : 'ltr')}">${renderSheetHTML(s.data.sheet, Number(s.data.shift) || 0, s.data.key).html}</div>`;
+    return h + '</section>';
+  }
+  const T0 = AR_TYPES[inst.type] || AR_TYPES.other, g = (d.gen || {})[inst.id] || {}, fx = g.fx || [];
+  h = h.replace('<section class="bk-song', `<section style="--c:${T0.col}" class="bk-song`);
+  if(g.sound || g.gear || fx.length || g.notes){
+    h += `<div class="bk-sound"><b class="bk-lbl">סאונד ואפקטים</b>${g.sound ? `<div><span>סאונד:</span> <b dir="auto">${esc(g.sound)}</b></div>` : ''}${g.gear ? `<div><span>ציוד:</span> <b dir="auto">${esc(g.gear)}</b></div>` : ''}
+      ${fx.length ? `<table><tbody>${fx.map(f => `<tr><td dir="auto"><b>${esc(f.name)}</b></td><td dir="auto">${esc(f.set || '')}</td><td dir="auto">${esc(f.when || 'כל השיר')}</td></tr>`).join('')}</tbody></table>` : ''}
+      ${g.notes ? `<div class="bk-gn" dir="auto">${esc(g.notes)}</div>` : ''}</div>`;
+  }
+  if(d.start) h += `<div class="bk-se"><b>איך מתחילים:</b> <span dir="auto">${esc(d.start)}</span></div>`;
+  d.secs.forEach(sec => {
+    const pt = arPart(sec, inst.id), cues = arCuesFor(sec, inst.id);
+    h += `<div class="bk-sec st-${pt.st}"><div class="bk-sec-h"><b>${esc(sec.name)}</b>${sec.bars ? `<small>${esc(String(sec.bars))} תיבות</small>` : ''}<span class="bk-badge st-${pt.st}">${pt.st === 'off' ? 'לא מנגנים' : esc(arStLabel(pt))}</span></div>
+      ${pt.text ? `<div class="bk-in" dir="auto">${esc(pt.text)}</div>` : pt.st === 'off' ? '<div class="bk-in muted">שקט. מחכים לחלק הבא.</div>' : ''}
+      ${pt.fx ? `<div class="bk-fx"><b>אפקט:</b> <span dir="auto">${esc(pt.fx)}</span></div>` : ''}
+      ${cues.length ? `<div class="ar-cues">${cues.map(c => arCueBadge(c, d)).join('')}</div>` : ''}
+      ${o.lyr ? arLyricsHTML(s, sec, {small:true}).replace('class="sheet ar-lyr small"', 'class="sheet ar-lyr small bk-lyr"') : ''}</div>`;
+  });
+  if(d.end) h += `<div class="bk-se"><b>איך מסיימים:</b> <span dir="auto">${esc(d.end)}</span></div>`;
+  return h + '</section>';
+}
+function bkPrint(o){
+  const list = bkSongs(o.src), who = o.who, label = bkWhoLabel(who), type = who.t || arRoleType((B.members.find(m => m.id === who.m) || {}).role) || 'other';
+  const T0 = AR_TYPES[type] || AR_TYPES.other, today = new Date().toLocaleDateString('he-IL');
+  let h = `<div class="bk" style="--c:${T0.col}">`;
+  if(o.cover) h += `<section class="bk-cover"><div class="bk-brand">VELVET</div><div class="bk-ic">${arIcon(type, 60)}</div><h1>חוברת תפקידים</h1><h2>${esc(label)}${who.m && arRoleType((B.members.find(m => m.id === who.m) || {}).role) ? ` · ${esc((AR_TYPES[type] || {}).label || '')}` : ''}</h2><p>${today} · ${list.length} שירים</p>
+    <ol class="bk-toc">${list.map(s => { const a = arOf(s.id), has = a && bkInst(a.data, who), k = bandKey(s, Number(s.data.shift) || 0); return `<li><b>${esc(s.data.name)}</b><span>${[k, s.data.bpm ? s.data.bpm + ' BPM' : ''].filter(Boolean).map(esc).join(' · ')}${has ? '' : ' · מילים ואקורדים בלבד'}</span></li>`; }).join('')}</ol>
+    <div class="bk-legend"><b>מקרא:</b> <span class="bk-badge st-on">מנגן</span> לאורך כל החלק · <span class="bk-badge st-in">נכנס באמצע</span> · <span class="bk-badge st-out">עוצר באמצע</span> · <span class="bk-badge st-off">לא מנגנים</span> · ${AR_CUE.slice(0, 5).map(c => `<span class="ar-cue c-${c.t}"><b>${c.sym} ${c.label}</b></span>`).join(' ')}</div></section>`;
+  list.forEach((s, i) => { h += bkSongHTML(s, i + 1, who, Object.assign({}, o, {page:o.page && (i > 0 || o.cover)})); });
+  h += '</div>';
+  let area = $('#print-area'); if(!area){ area = document.createElement('div'); area.id = 'print-area'; document.body.appendChild(area); }
+  area.innerHTML = h;
+  const oldTitle = document.title; document.title = `VELVET - חוברת ${label}`;
+  const done = () => { area.innerHTML = ''; document.title = oldTitle; window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => window.print(), 80);
+}
+
 function arPrint(s, d, instId){
   const inst = d.insts.find(i => i.id === instId); if(!inst) return;
   const keep = B.arr.lyr; B.arr.lyr = true;
@@ -5745,6 +5943,7 @@ function openBandSong(id){ B.arr = null; B.songId = id; const s = bGet(id); B.vi
 
 async function onBandMain(e){
   if(e.target.closest('#arr')){ const c0 = e.target.closest('[data-c]'); if(c0){ playChordName(c0.dataset.c); return; } return onArr(e); }
+  if(e.target.closest('[data-act="booklet"]')) return openBooklet();
   const ab = e.target.closest('[data-act="arr"], [data-act="arr-mine"]');
   if(ab){ const ar = arOf(B.songId); B.arr = {view:ab.dataset.act === 'arr-mine' ? 'part' : (ar ? 'map' : ''), inst:ar ? arMyInst(ar.data) : ''}; renderBand(); window.scrollTo(0, 0); return; }
   const c = e.target.closest('[data-c]');
