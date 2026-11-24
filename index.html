@@ -1243,55 +1243,65 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 
 /* ===== חוברת תפקידים ===== */
 .check{ display:flex; align-items:center; gap:8px; cursor:pointer; }
-@media print{
-  .bk{ font-size:10.5pt; line-height:1.35; color:#000; }
+/* הסגנון חל גם במסך, כדי שאפשר יהיה למדוד את הגובה לפני ההדפסה */
+#print-area.bk-measure{ display:block !important; position:fixed !important; top:0; left:-10000px; width:182mm; visibility:hidden; background:#fff; }
+.bk .sheet{ border:0; box-shadow:none; padding:0; font-size:calc(12pt * var(--z, 1)); background:#fff; }
+.bk .sheet .ln.sec{ background:#eee; color:#000; }
+.bk-song.bkcols .bk-body{ column-count:2; column-gap:7mm; column-rule:1px solid #ddd; }
+.bk-song.bkcols .bk-sec, .bk-song.bkcols .bk-sound, .bk-song.bkcols .bk-se{ break-inside:avoid; }
+.bk-song.bkcols .bk-full{ column-count:2; column-gap:7mm; column-rule:1px solid #ddd; }
+.bk-song.bkcols .bk-body .bk-full{ column-count:1; }
+.bk-song{ font-size:calc(10.5pt * var(--z, 1)); }
+.bk-song.bkdd .bk-rep{ display:none; }
+.bk-repnote{ display:none; font-size:calc(9pt * var(--z, 1)); color:#555; font-style:italic; }
+.bk-song.bkdd .bk-repnote{ display:block; }
+  .bk{ font-size:calc(10.5pt * var(--z, 1)); line-height:1.35; color:#000; }
   .bk h1{ margin:0 !important; }
   .bk .pg{ break-before:page; }
   .bk-cover{ text-align:center; padding-top:20mm; }
-  .bk-cover .bk-brand{ font-family:'Secular One',Arial,sans-serif; letter-spacing:.4em; font-size:30pt; color:#7a1f3d; }
+  .bk-cover .bk-brand{ font-family:'Secular One',Arial,sans-serif; letter-spacing:.4em; font-size:calc(30pt * var(--z, 1)); color:#7a1f3d; }
   .bk-cover .bk-ic{ display:inline-grid; place-items:center; width:90px; height:90px; border-radius:22px; background:var(--c); color:#fff; margin:12mm 0 4mm; }
-  .bk-cover h1{ font-size:28pt !important; }
-  .bk-cover h2{ font-size:18pt; margin:4pt 0; color:var(--c); }
+  .bk-cover h1{ font-size:calc(28pt * var(--z, 1)) !important; }
+  .bk-cover h2{ font-size:calc(18pt * var(--z, 1)); margin:calc(4pt * var(--z, 1)) 0; color:var(--c); }
   .bk-cover p{ color:#555; }
-  .bk-toc{ text-align:start; max-width:130mm; margin:10mm auto 8mm; padding-inline-start:8mm; font-size:12pt; }
-  .bk-toc li{ padding:3pt 0; border-bottom:1px dotted #bbb; }
-  .bk-toc li span{ color:#666; font-size:10pt; margin-inline-start:8pt; }
-  .bk-legend{ max-width:150mm; margin:0 auto; font-size:9pt; color:#333; display:flex; flex-wrap:wrap; gap:4pt; justify-content:center; align-items:center; }
-  .bk-sh{ display:flex; align-items:center; gap:10pt; padding-bottom:6pt; margin-bottom:8pt; border-bottom:3px solid var(--c, #333); }
-  .bk-n{ display:grid; place-items:center; width:26pt; height:26pt; border-radius:50%; background:var(--c, #333); color:#fff; font-weight:800; font-size:13pt; flex:none; }
-  .bk-sh h1{ font-size:18pt !important; }
-  .bk-art{ color:#555; font-size:10pt; }
-  .bk-chips{ margin-inline-start:auto; display:flex; flex-wrap:wrap; gap:4pt; justify-content:flex-end; }
-  .bk-chips span{ border:1px solid #bbb; border-radius:99px; padding:1pt 7pt; font-size:9pt; font-weight:700; }
-  .bk-sound{ border:1px solid #ccc; border-radius:8px; padding:6pt 9pt; margin-bottom:6pt; display:grid; gap:2pt; break-inside:avoid; }
+  .bk-toc{ text-align:start; max-width:130mm; margin:10mm auto 8mm; padding-inline-start:8mm; font-size:calc(12pt * var(--z, 1)); }
+  .bk-toc li{ padding:calc(3pt * var(--z, 1)) 0; border-bottom:1px dotted #bbb; }
+  .bk-toc li span{ color:#666; font-size:calc(10pt * var(--z, 1)); margin-inline-start:calc(8pt * var(--z, 1)); }
+  .bk-legend{ max-width:150mm; margin:0 auto; font-size:calc(9pt * var(--z, 1)); color:#333; display:flex; flex-wrap:wrap; gap:calc(4pt * var(--z, 1)); justify-content:center; align-items:center; }
+  .bk-sh{ display:flex; align-items:center; gap:calc(10pt * var(--z, 1)); padding-bottom:calc(6pt * var(--z, 1)); margin-bottom:calc(8pt * var(--z, 1)); border-bottom:3px solid var(--c, #333); }
+  .bk-n{ display:grid; place-items:center; width:calc(26pt * var(--z, 1)); height:calc(26pt * var(--z, 1)); border-radius:50%; background:var(--c, #333); color:#fff; font-weight:800; font-size:calc(13pt * var(--z, 1)); flex:none; }
+  .bk-sh h1{ font-size:calc(18pt * var(--z, 1)) !important; }
+  .bk-art{ color:#555; font-size:calc(10pt * var(--z, 1)); }
+  .bk-chips{ margin-inline-start:auto; display:flex; flex-wrap:wrap; gap:calc(4pt * var(--z, 1)); justify-content:flex-end; }
+  .bk-chips span{ border:1px solid #bbb; border-radius:99px; padding:calc(1pt * var(--z, 1)) calc(7pt * var(--z, 1)); font-size:calc(9pt * var(--z, 1)); font-weight:700; }
+  .bk-sound{ border:1px solid #ccc; border-radius:8px; padding:calc(6pt * var(--z, 1)) calc(9pt * var(--z, 1)); margin-bottom:calc(6pt * var(--z, 1)); display:grid; gap:calc(2pt * var(--z, 1)); break-inside:avoid; }
   .bk-sound span{ color:#555; }
-  .bk-sound table{ border-collapse:collapse; width:100%; font-size:9.5pt; margin-top:2pt; }
-  .bk-sound td{ border-top:1px solid #ddd; padding:2pt 4pt; }
+  .bk-sound table{ border-collapse:collapse; width:100%; font-size:calc(9.5pt * var(--z, 1)); margin-top:calc(2pt * var(--z, 1)); }
+  .bk-sound td{ border-top:1px solid #ddd; padding:calc(2pt * var(--z, 1)) calc(4pt * var(--z, 1)); }
   .bk-gn{ white-space:pre-line; color:#222; }
-  .bk-lbl{ font-size:9pt; color:#555; text-transform:uppercase; }
-  .bk-se{ margin:5pt 0; padding:4pt 9pt; border-inline-start:4px solid #333; background:#f3f3f3; break-inside:avoid; white-space:pre-line; }
-  .bk-sec{ border:1px solid #ccc; border-inline-start:5px solid var(--c, #333); border-radius:6px; padding:5pt 9pt; margin:5pt 0; break-inside:auto; display:block; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
-  .bk-sec > * + *{ margin-top:3pt; }
+  .bk-lbl{ font-size:calc(9pt * var(--z, 1)); color:#555; text-transform:uppercase; }
+  .bk-se{ margin:calc(5pt * var(--z, 1)) 0; padding:calc(4pt * var(--z, 1)) calc(9pt * var(--z, 1)); border-inline-start:4px solid #333; background:#f3f3f3; break-inside:avoid; white-space:pre-line; }
+  .bk-sec{ border:1px solid #ccc; border-inline-start:5px solid var(--c, #333); border-radius:6px; padding:calc(5pt * var(--z, 1)) calc(9pt * var(--z, 1)); margin:calc(5pt * var(--z, 1)) 0; break-inside:auto; display:block; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+  .bk-sec > * + *{ margin-top:calc(3pt * var(--z, 1)); }
   .bk-sec-h, .bk-in, .bk-fx{ break-after:avoid; break-inside:avoid; }
   .bk .sheet .blk{ break-inside:auto; }
   .bk .sheet .ln{ break-inside:avoid; }
   .bk .sheet .ln.chords, .bk .sheet .ln.sec{ break-after:avoid; }
   .bk .sheet{ orphans:2; widows:2; }
   .bk-sec.st-off{ border-inline-start:5px dashed #aaa; background:#f7f7f7; }
-  .bk-sec-h{ display:flex; align-items:center; gap:7pt; }
-  .bk-sec-h b{ font-size:12pt; }
+  .bk-sec-h{ display:flex; align-items:center; gap:calc(7pt * var(--z, 1)); }
+  .bk-sec-h b{ font-size:calc(12pt * var(--z, 1)); }
   .bk-sec-h small{ color:#555; }
-  .bk-badge{ display:inline-block; font-size:8.5pt; font-weight:800; padding:0 7pt; border-radius:99px; background:color-mix(in srgb, var(--c, #333) 20%, #fff); color:#000; }
+  .bk-badge{ display:inline-block; font-size:calc(8.5pt * var(--z, 1)); font-weight:800; padding:0 calc(7pt * var(--z, 1)); border-radius:99px; background:color-mix(in srgb, var(--c, #333) 20%, #fff); color:#000; }
   .bk-badge.st-off{ background:#e5e5e5; color:#444; }
   .bk-sec-h .bk-badge{ margin-inline-start:auto; }
-  .bk-in{ font-size:11.5pt; font-weight:700; white-space:pre-line; }
-  .bk-fx{ font-size:9.5pt; }
-  .bk-lyr{ font-size:10pt !important; background:#f6f6f6 !important; padding:3pt 7pt !important; border-radius:5px; }
+  .bk-in{ font-size:calc(11.5pt * var(--z, 1)); font-weight:700; white-space:pre-line; }
+  .bk-fx{ font-size:calc(9.5pt * var(--z, 1)); }
+  .bk-lyr{ font-size:calc(10pt * var(--z, 1)) !important; background:#f6f6f6 !important; padding:calc(3pt * var(--z, 1)) calc(7pt * var(--z, 1)) !important; border-radius:5px; }
   .bk-lyr .ln{ min-height:0; }
-  .bk-full{ font-size:11pt !important; }
+  .bk-full{ font-size:calc(11pt * var(--z, 1)) !important; }
   .bk-none{ color:#555; font-style:italic; }
-  .bk .ar-cue{ font-size:8.5pt; padding:0 6pt; }
-}
+  .bk .ar-cue{ font-size:calc(8.5pt * var(--z, 1)); padding:0 calc(6pt * var(--z, 1)); }
 </style>
 </head>
 <body>
@@ -5799,7 +5809,7 @@ function openBooklet(){
     dl.addEventListener('click', e => { if(e.target === dl) dl.close(); const b = e.target.closest('[data-bk]'); if(!b) return;
       if(b.dataset.bk === 'src'){ dl._src = b.dataset.v; $$('#dlg-book [data-bk=src]').forEach(x => x.setAttribute('aria-pressed', x === b)); bkSum(); }
       if(b.dataset.bk === 'close') dl.close();
-      if(b.dataset.bk === 'go'){ const o = {who:bkWho($('#bk-who').value), src:dl._src, lyr:$('#bk-lyr').checked, cover:$('#bk-cover').checked, page:$('#bk-page').checked}; if(!bkSongs(o.src).length){ $('#bk-sum').textContent = 'אין שירים לחוברת.'; return; } dl.close(); bkPrint(o); } });
+      if(b.dataset.bk === 'go'){ const o = {who:bkWho($('#bk-who').value), src:dl._src, lyr:$('#bk-lyr').checked, cover:$('#bk-cover').checked, page:$('#bk-page').checked || $('#bk-fit').checked, fit:$('#bk-fit').checked}; if(!bkSongs(o.src).length){ $('#bk-sum').textContent = 'אין שירים לחוברת.'; return; } dl.close(); bkPrint(o); } });
     dl.addEventListener('change', bkSum); }
   const me = B.member, myT = arRoleType(me.role);
   dl._src = setlistOrder().length ? 'set' : 'arr';
@@ -5807,7 +5817,7 @@ function openBooklet(){
     <p class="muted" style="margin:0">כל השירים לפי הסדר, ולכל שיר: הסאונד והאפקטים, מה מנגנים בכל חלק, עצירות ודגשים, והמילים והאקורדים. בסוף נפתח חלון הדפסה, ושם בוחרים "שמירה כ־PDF".</p>
     <label class="field">למי החוברת?<select id="bk-who"><optgroup label="לפי נגן">${B.members.map(m => `<option value="m:${esc(m.id)}" ${m.id === me.id ? 'selected' : ''}>${esc(m.name)}${m.role ? ' · ' + esc(m.role) : ''}</option>`).join('')}</optgroup><optgroup label="לפי כלי (לנגן חדש)">${Object.entries(AR_TYPES).filter(([t]) => t !== 'other').map(([t, v]) => `<option value="t:${t}">${v.label}</option>`).join('')}</optgroup></select></label>
     <div class="ar-fieldset"><span class="opt-l">אילו שירים?</span><div class="seg">${[['set', 'הסטליסט, לפי הסדר'], ['arr', 'כל השירים עם עיבוד'], ['all', 'כל השירים']].map(([v, l]) => `<button type="button" data-bk="src" data-v="${v}" aria-pressed="${dl._src === v}">${l}</button>`).join('')}</div></div>
-    <div class="ar-fieldset"><label class="check"><input type="checkbox" id="bk-lyr" checked> מילים ואקורדים בכל חלק</label><label class="check"><input type="checkbox" id="bk-cover" checked> עמוד שער עם תוכן העניינים</label><label class="check"><input type="checkbox" id="bk-page" checked> כל שיר מתחיל בעמוד חדש</label></div>
+    <div class="ar-fieldset"><label class="check"><input type="checkbox" id="bk-lyr" checked> מילים ואקורדים בכל חלק</label><label class="check"><input type="checkbox" id="bk-cover" checked> עמוד שער עם תוכן העניינים</label><label class="check"><input type="checkbox" id="bk-page" checked> כל שיר מתחיל בעמוד חדש</label><label class="check"><input type="checkbox" id="bk-fit"> כל שיר נכנס בדף אחד <small class="muted">(שיר ארוך יתחלק לשני טורים, ואם צריך גם יוקטן)</small></label></div>
     <p class="muted" id="bk-sum" style="margin:0"></p>
     <div class="row"><button type="button" class="btn primary" data-bk="go">יצירת החוברת</button><button type="button" class="btn ghost" data-bk="close">ביטול</button></div></div>`;
   bkSum(); dl.showModal();
@@ -5820,11 +5830,11 @@ function bkSum(){
 function bkSongHTML(s, n, who, o){
   const a = arOf(s.id), d = a && a.data, inst = bkInst(d, who), key = bandKey(s, Number(s.data.shift) || 0);
   const chips = [s.data.bpm ? `${s.data.bpm} BPM` : '', key ? `סולם ${key}` : '', d && d.feel, s.data.duration ? fmtDur(s.data.duration) + ' דק׳' : ''].filter(Boolean);
-  let h = `<section class="bk-song${o.page ? ' pg' : ''}"><header class="bk-sh"><span class="bk-n">${n}</span><div><h1>${esc(s.data.name)}</h1>${s.data.artist ? `<div class="bk-art">${esc(s.data.artist)}</div>` : ''}</div><div class="bk-chips">${chips.map(c => `<span dir="auto">${esc(c)}</span>`).join('')}</div></header>`;
+  let h = `<section class="bk-song${o.page ? ' pg' : ''}"><header class="bk-sh"><span class="bk-n">${n}</span><div><h1>${esc(s.data.name)}</h1>${s.data.artist ? `<div class="bk-art">${esc(s.data.artist)}</div>` : ''}</div><div class="bk-chips">${chips.map(c => `<span dir="auto">${esc(c)}</span>`).join('')}</div></header><div class="bk-body">`;
   if(!inst){
     h += `<p class="bk-none">${d ? `אין בעיבוד של השיר הזה תפקיד ל${esc(bkWhoLabel(who))}.` : 'לשיר הזה עוד אין עיבוד כתוב.'} מופיעים כאן המילים והאקורדים.</p>`;
     if(s.data.sheet) h += `<div class="sheet bk-full" dir="${s.data.dir || (hasHebrew(s.data.sheet) ? 'rtl' : 'ltr')}">${renderSheetHTML(s.data.sheet, Number(s.data.shift) || 0, s.data.key).html}</div>`;
-    return h + '</section>';
+    return h + '</div></section>';
   }
   const T0 = AR_TYPES[inst.type] || AR_TYPES.other, g = (d.gen || {})[inst.id] || {}, fx = g.fx || [];
   h = h.replace('<section class="bk-song', `<section style="--c:${T0.col}" class="bk-song`);
@@ -5834,16 +5844,39 @@ function bkSongHTML(s, n, who, o){
       ${g.notes ? `<div class="bk-gn" dir="auto">${esc(g.notes)}</div>` : ''}</div>`;
   }
   if(d.start) h += `<div class="bk-se"><b>איך מתחילים:</b> <span dir="auto">${esc(d.start)}</span></div>`;
+  const seen = {};
   d.secs.forEach(sec => {
-    const pt = arPart(sec, inst.id), cues = arCuesFor(sec, inst.id);
+    const pt = arPart(sec, inst.id), cues = arCuesFor(sec, inst.id), rk = sec.from >= 0 ? String(s.data.sheet || '').replace(/\r/g, '').split('\n').slice(sec.from, sec.to + 1).map(x => { const h = secHead(x); return plainLine(h ? h.rest : x).replace(/[^\p{L}\p{N}]+/gu, ''); }).filter(Boolean).join('|') : '', first = rk && seen[rk];
+    if(rk && !first) seen[rk] = sec.name;
     h += `<div class="bk-sec st-${pt.st}"><div class="bk-sec-h"><b>${esc(sec.name)}</b>${sec.bars ? `<small>${esc(String(sec.bars))} תיבות</small>` : ''}<span class="bk-badge st-${pt.st}">${pt.st === 'off' ? 'לא מנגנים' : esc(arStLabel(pt))}</span></div>
       ${pt.text ? `<div class="bk-in" dir="auto">${esc(pt.text)}</div>` : pt.st === 'off' ? '<div class="bk-in muted">שקט. מחכים לחלק הבא.</div>' : ''}
       ${pt.fx ? `<div class="bk-fx"><b>אפקט:</b> <span dir="auto">${esc(pt.fx)}</span></div>` : ''}
       ${cues.length ? `<div class="ar-cues">${cues.map(c => arCueBadge(c, d)).join('')}</div>` : ''}
-      ${o.lyr ? arLyricsHTML(s, sec, {small:true}).replace('class="sheet ar-lyr small"', 'class="sheet ar-lyr small bk-lyr"') : ''}</div>`;
+      ${o.lyr ? arLyricsHTML(s, sec, {small:true}).replace('class="sheet ar-lyr small"', `class="sheet ar-lyr small bk-lyr${first ? ' bk-rep' : ''}"`) + (first && arLyricsHTML(s, sec) ? `<div class="bk-repnote">המילים והאקורדים כמו ב"${esc(first)}" הקודם.</div>` : '') : ''}</div>`;
   });
   if(d.end) h += `<div class="bk-se"><b>איך מסיימים:</b> <span dir="auto">${esc(d.end)}</span></div>`;
-  return h + '</section>';
+  return h + '</div></section>';
+}
+/* כל שיר בדף אחד: קודם שני טורים, ואם עדיין ארוך מדי, הקטנה הדרגתית (עד 55%) */
+const BK_MINZ = .72;
+function bkFit(area){
+  area.classList.add('bk-measure');
+  const probe = document.createElement('div'); probe.style.height = '267mm'; area.appendChild(probe);
+  const H = probe.getBoundingClientRect().height * .97; probe.remove();
+  let over = 0;
+  area.querySelectorAll('.bk-song').forEach(sec => {
+    const hOf = () => sec.getBoundingClientRect().height;
+    if(hOf() <= H) return;
+    if(sec.querySelector('.bk-rep')){ sec.classList.add('bkdd'); if(hOf() <= H) return; }
+    sec.classList.add('bkcols');
+    let z = 1;
+    for(let k = 0; k < 12 && hOf() > H && z > BK_MINZ; k++){ z = Math.max(BK_MINZ, z * Math.min(.97, Math.sqrt(H / hOf()))); sec.style.setProperty('--z', z.toFixed(3)); }
+    if(hOf() > H) over++;
+    sec.dataset.zoom = Math.round(z * 100);
+  });
+  area.classList.remove('bk-measure');
+  area.dataset.over = over;
+  return over;
 }
 function bkPrint(o){
   const list = bkSongs(o.src), who = o.who, label = bkWhoLabel(who), type = who.t || arRoleType((B.members.find(m => m.id === who.m) || {}).role) || 'other';
@@ -5856,6 +5889,7 @@ function bkPrint(o){
   h += '</div>';
   let area = $('#print-area'); if(!area){ area = document.createElement('div'); area.id = 'print-area'; document.body.appendChild(area); }
   area.innerHTML = h;
+  if(o.fit){ const over = bkFit(area); if(over) toast(over === 1 ? 'שיר אחד ארוך מדי גם בהקטנה, והוא ימשיך לדף שני.' : `${over} שירים ארוכים מדי גם בהקטנה, והם ימשיכו לדף שני.`); }
   const oldTitle = document.title; document.title = `VELVET - חוברת ${label}`;
   const done = () => { area.innerHTML = ''; document.title = oldTitle; window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
