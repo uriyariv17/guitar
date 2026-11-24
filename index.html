@@ -674,8 +674,9 @@ a.btn.wa{ background:#1F9D55; border-color:#1F9D55; color:#fff; }
 @media (max-width: 900px){ .ied-split{ grid-template-columns:1fr; } }
 .ied-col{ display:grid; gap:4px; min-width:0; }
 .ied-lbl{ font-size:.82rem; font-weight:700; color:var(--ink-2); }
-#ied-ta{ min-height:440px; font-family:'Assistant',Arial,sans-serif; font-size:16px; line-height:1.5; white-space:pre; overflow:auto; resize:vertical; }
-.ied-prev{ min-height:440px; max-height:70vh; overflow:auto; font-size:16px; }
+#ied-ta{ min-height:440px; height:70vh; font-family:'Assistant',Arial,sans-serif; font-size:16px; line-height:1.5; white-space:pre; overflow:auto; resize:vertical; }
+.ied-prev{ min-height:440px; height:70vh; overflow:auto; font-size:16px; position:relative; }
+@media (max-width: 900px){ #ied-ta, .ied-prev{ height:45vh; min-height:260px; } }
 #print-area{ display:none; }
 /* חלון התצוגה לפני הדפסה */
 #print-studio{ position:fixed; inset:0; z-index:200; background:#e9ecf2; display:flex; flex-direction:column; }
@@ -1302,6 +1303,14 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
   .bk-full{ font-size:calc(11pt * var(--z, 1)) !important; }
   .bk-none{ color:#555; font-style:italic; }
   .bk .ar-cue{ font-size:calc(8.5pt * var(--z, 1)); padding:0 calc(6pt * var(--z, 1)); }
+
+.bk-pick-h{ display:flex; gap:12px; align-items:center; margin-top:6px; }
+.bk-pick{ display:grid; gap:2px; max-height:240px; overflow:auto; border:1px solid var(--line); border-radius:10px; padding:6px 10px; }
+.bk-links{ display:flex; flex-wrap:wrap; gap:calc(5pt * var(--z, 1)); margin:0 0 calc(7pt * var(--z, 1)); }
+.bk-link{ display:inline-flex; flex-direction:column; text-decoration:none; color:#000; border:1px solid #bbb; border-radius:7px; padding:calc(2pt * var(--z, 1)) calc(8pt * var(--z, 1)); font-size:calc(9.5pt * var(--z, 1)); line-height:1.25; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.bk-link span{ font-size:calc(7.5pt * var(--z, 1)); color:#1a56c4; text-decoration:underline; }
+.bk-link.l-yt{ border-color:#e33; background:#fff3f3; }
+.bk-link.l-band, .bk-link.l-part{ border-color:#7a1f3d; background:#fbf2f5; }
 </style>
 </head>
 <body>
@@ -5792,7 +5801,7 @@ function arRoleType(role){
   return '';
 }
 function bkInst(d, who){
-  if(!d) return null;
+  if(!d || who.g) return null;
   if(who.m){ const byP = d.insts.find(i => i.player === who.m); if(byP) return byP; const m = B.members.find(x => x.id === who.m), t = m && arRoleType(m.role); return t ? d.insts.find(i => i.type === t && !i.player) || d.insts.find(i => i.type === t) || null : null; }
   return d.insts.find(i => i.type === who.t) || null;
 }
@@ -5801,38 +5810,54 @@ function bkSongs(src){
   const all = bSongs().slice().sort((a, b) => a.data.name.localeCompare(b.data.name, 'he'));
   return src === 'arr' ? all.filter(s => arOf(s.id)) : all;
 }
-function bkWho(v){ return v.indexOf('m:') === 0 ? {m:v.slice(2)} : {t:v.slice(2)}; }
-function bkWhoLabel(who){ if(who.m){ const m = B.members.find(x => x.id === who.m); return m ? m.name : ''; } return (AR_TYPES[who.t] || AR_TYPES.other).label; }
+function bkWho(v){ return v.indexOf('g:') === 0 ? {g:true} : v.indexOf('m:') === 0 ? {m:v.slice(2)} : {t:v.slice(2)}; }
+function bkWhoLabel(who){ if(who.g) return 'כללית'; if(who.m){ const m = B.members.find(x => x.id === who.m); return m ? m.name : ''; } return (AR_TYPES[who.t] || AR_TYPES.other).label; }
 function openBooklet(){
   let dl = $('#dlg-book');
   if(!dl){ dl = document.createElement('dialog'); dl.id = 'dlg-book'; document.body.appendChild(dl);
     dl.addEventListener('click', e => { if(e.target === dl) dl.close(); const b = e.target.closest('[data-bk]'); if(!b) return;
-      if(b.dataset.bk === 'src'){ dl._src = b.dataset.v; $$('#dlg-book [data-bk=src]').forEach(x => x.setAttribute('aria-pressed', x === b)); bkSum(); }
+      if(b.dataset.bk === 'src'){ dl._src = b.dataset.v; $$('#dlg-book [data-bk=src]').forEach(x => x.setAttribute('aria-pressed', x === b)); bkPickRender(); bkSum(); }
+      if(b.dataset.bk === 'all' || b.dataset.bk === 'none'){ $$('#bk-pick input').forEach(x => { x.checked = b.dataset.bk === 'all'; }); bkSum(); }
       if(b.dataset.bk === 'close') dl.close();
-      if(b.dataset.bk === 'go'){ const o = {who:bkWho($('#bk-who').value), src:dl._src, lyr:$('#bk-lyr').checked, cover:$('#bk-cover').checked, page:$('#bk-page').checked || $('#bk-fit').checked, fit:$('#bk-fit').checked}; if(!bkSongs(o.src).length){ $('#bk-sum').textContent = 'אין שירים לחוברת.'; return; } dl.close(); bkPrint(o); } });
+      if(b.dataset.bk === 'go'){ const o = {who:bkWho($('#bk-who').value), src:dl._src, lyr:$('#bk-lyr').checked, cover:$('#bk-cover').checked, page:$('#bk-page').checked || $('#bk-fit').checked, fit:$('#bk-fit').checked}; o.ids = $$('#bk-pick input:checked').map(x => x.value); if(!o.ids.length){ $('#bk-sum').textContent = 'לא נבחרו שירים.'; return; } dl.close(); bkPrint(o); } });
     dl.addEventListener('change', bkSum); }
   const me = B.member, myT = arRoleType(me.role);
   dl._src = setlistOrder().length ? 'set' : 'arr';
   dl.innerHTML = `<div class="ar-dlg"><h3>חוברת תפקידים לנגן</h3>
     <p class="muted" style="margin:0">כל השירים לפי הסדר, ולכל שיר: הסאונד והאפקטים, מה מנגנים בכל חלק, עצירות ודגשים, והמילים והאקורדים. בסוף נפתח חלון הדפסה, ושם בוחרים "שמירה כ־PDF".</p>
-    <label class="field">למי החוברת?<select id="bk-who"><optgroup label="לפי נגן">${B.members.map(m => `<option value="m:${esc(m.id)}" ${m.id === me.id ? 'selected' : ''}>${esc(m.name)}${m.role ? ' · ' + esc(m.role) : ''}</option>`).join('')}</optgroup><optgroup label="לפי כלי (לנגן חדש)">${Object.entries(AR_TYPES).filter(([t]) => t !== 'other').map(([t, v]) => `<option value="t:${t}">${v.label}</option>`).join('')}</optgroup></select></label>
-    <div class="ar-fieldset"><span class="opt-l">אילו שירים?</span><div class="seg">${[['set', 'הסטליסט, לפי הסדר'], ['arr', 'כל השירים עם עיבוד'], ['all', 'כל השירים']].map(([v, l]) => `<button type="button" data-bk="src" data-v="${v}" aria-pressed="${dl._src === v}">${l}</button>`).join('')}</div></div>
+    <label class="field">למי החוברת?<select id="bk-who"><option value="g:">חוברת כללית: מילים ואקורדים בלבד</option><optgroup label="לפי נגן">${B.members.map(m => `<option value="m:${esc(m.id)}" ${m.id === me.id ? 'selected' : ''}>${esc(m.name)}${m.role ? ' · ' + esc(m.role) : ''}</option>`).join('')}</optgroup><optgroup label="לפי כלי (לנגן חדש)">${Object.entries(AR_TYPES).filter(([t]) => t !== 'other').map(([t, v]) => `<option value="t:${t}">${v.label}</option>`).join('')}</optgroup></select></label>
+    <div class="ar-fieldset"><span class="opt-l">אילו שירים?</span><div class="seg">${[['set', 'הסטליסט, לפי הסדר'], ['arr', 'כל השירים עם עיבוד'], ['all', 'כל השירים']].map(([v, l]) => `<button type="button" data-bk="src" data-v="${v}" aria-pressed="${dl._src === v}">${l}</button>`).join('')}</div>
+      <div class="bk-pick-h"><span class="muted">סמנו את השירים שייכנסו:</span><button type="button" class="btn ghost small" data-bk="all">סימון של כולם</button><button type="button" class="btn ghost small" data-bk="none">ניקוי</button></div>
+      <div class="bk-pick" id="bk-pick"></div></div>
     <div class="ar-fieldset"><label class="check"><input type="checkbox" id="bk-lyr" checked> מילים ואקורדים בכל חלק</label><label class="check"><input type="checkbox" id="bk-cover" checked> עמוד שער עם תוכן העניינים</label><label class="check"><input type="checkbox" id="bk-page" checked> כל שיר מתחיל בעמוד חדש</label><label class="check"><input type="checkbox" id="bk-fit"> כל שיר נכנס בדף אחד <small class="muted">(שיר ארוך יתחלק לשני טורים, ואם צריך גם יוקטן)</small></label></div>
     <p class="muted" id="bk-sum" style="margin:0"></p>
     <div class="row"><button type="button" class="btn primary" data-bk="go">יצירת החוברת</button><button type="button" class="btn ghost" data-bk="close">ביטול</button></div></div>`;
-  bkSum(); dl.showModal();
+  bkPickRender(); bkSum(); dl.showModal();
+}
+function bkPickRender(){
+  const dl = $('#dlg-book'); $('#bk-pick').innerHTML = bkSongs(dl._src).map((s, i) => `<label class="check"><input type="checkbox" value="${esc(s.id)}" checked> <span class="muted">${i + 1}.</span> ${esc(s.data.name)}${arOf(s.id) ? '' : ' <small class="muted">(בלי עיבוד)</small>'}</label>`).join('') || '<p class="muted">אין שירים כאן.</p>';
 }
 function bkSum(){
   const dl = $('#dlg-book'), sel = $('#bk-who'); if(!dl || !sel) return;
-  const who = bkWho(sel.value), list = bkSongs(dl._src), withPart = list.filter(s => { const a = arOf(s.id); return a && bkInst(a.data, who); }).length;
-  $('#bk-sum').textContent = list.length ? `${list.length} שירים בחוברת. ל־${withPart} מהם כבר כתוב תפקיד ל${bkWhoLabel(who)}${list.length > withPart ? `, ובשאר יופיעו מילים ואקורדים בלבד` : ''}.` : 'אין שירים בבחירה הזאת.';
+  const pick = $$('#bk-pick input:checked').map(x => x.value), who = bkWho(sel.value), list = bkSongs(dl._src).filter(s => pick.includes(s.id)), withPart = list.filter(s => { const a = arOf(s.id); return a && bkInst(a.data, who); }).length;
+  if(who.g){ $('#bk-sum').textContent = list.length ? `${list.length === 1 ? 'שיר אחד' : list.length + ' שירים'} בחוברת, עם מילים ואקורדים בסולם של הלהקה.` : 'לא נבחרו שירים.'; return; }
+  $('#bk-sum').textContent = list.length ? `${list.length === 1 ? 'שיר אחד' : list.length + ' שירים'} בחוברת. ל־${withPart} מהם כבר כתוב תפקיד ל${bkWhoLabel(who)}${list.length > withPart ? `, ובשאר יופיעו מילים ואקורדים בלבד` : ''}.` : 'אין שירים בבחירה הזאת.';
+}
+function bkLinks(s){
+  const d = s.data, rec = d.recordings || {}, L = [];
+  if(d.url) L.push({t:'yt', label:'הביצוע המקורי', url:d.url});
+  if(rec.band) L.push({t:'band', label:'הקלטה של הלהקה', url:rec.band});
+  (rec.parts || []).forEach(x => { if(x.url) L.push({t:'part', label:'הקלטה: ' + (x.label || 'כלי'), url:x.url}); });
+  if(!L.length) return '';
+  const ic = {yt:'▶', band:'🎧', part:'🎧'};
+  return `<div class="bk-links">${L.map(x => `<a href="${esc(safeUrl(x.url))}" target="_blank" rel="noopener" class="bk-link l-${x.t}"><b>${ic[x.t]} ${esc(x.label)}</b><span dir="ltr">${esc(String(x.url).replace(/^https?:\/\/(www\.)?/, '').slice(0, 42))}</span></a>`).join('')}</div>`;
 }
 function bkSongHTML(s, n, who, o){
   const a = arOf(s.id), d = a && a.data, inst = bkInst(d, who), key = bandKey(s, Number(s.data.shift) || 0);
   const chips = [s.data.bpm ? `${s.data.bpm} BPM` : '', key ? `סולם ${key}` : '', d && d.feel, s.data.duration ? fmtDur(s.data.duration) + ' דק׳' : ''].filter(Boolean);
-  let h = `<section class="bk-song${o.page ? ' pg' : ''}"><header class="bk-sh"><span class="bk-n">${n}</span><div><h1>${esc(s.data.name)}</h1>${s.data.artist ? `<div class="bk-art">${esc(s.data.artist)}</div>` : ''}</div><div class="bk-chips">${chips.map(c => `<span dir="auto">${esc(c)}</span>`).join('')}</div></header><div class="bk-body">`;
+  let h = `<section class="bk-song${o.page ? ' pg' : ''}"><header class="bk-sh"><span class="bk-n">${n}</span><div><h1>${esc(s.data.name)}</h1>${s.data.artist ? `<div class="bk-art">${esc(s.data.artist)}</div>` : ''}</div><div class="bk-chips">${chips.map(c => `<span dir="auto">${esc(c)}</span>`).join('')}</div></header>${bkLinks(s)}<div class="bk-body">`;
   if(!inst){
-    h += `<p class="bk-none">${d ? `אין בעיבוד של השיר הזה תפקיד ל${esc(bkWhoLabel(who))}.` : 'לשיר הזה עוד אין עיבוד כתוב.'} מופיעים כאן המילים והאקורדים.</p>`;
+    if(!who.g) h += `<p class="bk-none">${d ? `אין בעיבוד של השיר הזה תפקיד ל${esc(bkWhoLabel(who))}.` : 'לשיר הזה עוד אין עיבוד כתוב.'} מופיעים כאן המילים והאקורדים.</p>`;
     if(s.data.sheet) h += `<div class="sheet bk-full" dir="${s.data.dir || (hasHebrew(s.data.sheet) ? 'rtl' : 'ltr')}">${renderSheetHTML(s.data.sheet, Number(s.data.shift) || 0, s.data.key).html}</div>`;
     return h + '</div></section>';
   }
@@ -5879,18 +5904,18 @@ function bkFit(area){
   return over;
 }
 function bkPrint(o){
-  const list = bkSongs(o.src), who = o.who, label = bkWhoLabel(who), type = who.t || arRoleType((B.members.find(m => m.id === who.m) || {}).role) || 'other';
-  const T0 = AR_TYPES[type] || AR_TYPES.other, today = new Date().toLocaleDateString('he-IL');
+  const list = bkSongs(o.src).filter(s => !o.ids || o.ids.includes(s.id)), who = o.who, label = bkWhoLabel(who), type = who.g ? 'other' : who.t || arRoleType((B.members.find(m => m.id === who.m) || {}).role) || 'other';
+  const T0 = who.g ? {col:'#7a1f3d'} : AR_TYPES[type] || AR_TYPES.other, today = new Date().toLocaleDateString('he-IL');
   let h = `<div class="bk" style="--c:${T0.col}">`;
-  if(o.cover) h += `<section class="bk-cover"><div class="bk-brand">VELVET</div><div class="bk-ic">${arIcon(type, 60)}</div><h1>חוברת תפקידים</h1><h2>${esc(label)}${who.m && arRoleType((B.members.find(m => m.id === who.m) || {}).role) ? ` · ${esc((AR_TYPES[type] || {}).label || '')}` : ''}</h2><p>${today} · ${list.length} שירים</p>
-    <ol class="bk-toc">${list.map(s => { const a = arOf(s.id), has = a && bkInst(a.data, who), k = bandKey(s, Number(s.data.shift) || 0); return `<li><b>${esc(s.data.name)}</b><span>${[k, s.data.bpm ? s.data.bpm + ' BPM' : ''].filter(Boolean).map(esc).join(' · ')}${has ? '' : ' · מילים ואקורדים בלבד'}</span></li>`; }).join('')}</ol>
-    <div class="bk-legend"><b>מקרא:</b> <span class="bk-badge st-on">מנגן</span> לאורך כל החלק · <span class="bk-badge st-in">נכנס באמצע</span> · <span class="bk-badge st-out">עוצר באמצע</span> · <span class="bk-badge st-off">לא מנגנים</span> · ${AR_CUE.slice(0, 5).map(c => `<span class="ar-cue c-${c.t}"><b>${c.sym} ${c.label}</b></span>`).join(' ')}</div></section>`;
+  if(o.cover) h += `<section class="bk-cover"><div class="bk-brand">VELVET</div><div class="bk-ic">${arIcon(type, 60)}</div><h1>${who.g ? 'חוברת שירים' : 'חוברת תפקידים'}</h1><h2>${who.g ? 'מילים ואקורדים' : esc(label)}${who.m && arRoleType((B.members.find(m => m.id === who.m) || {}).role) ? ` · ${esc((AR_TYPES[type] || {}).label || '')}` : ''}</h2><p>${today} · ${list.length} שירים</p>
+    <ol class="bk-toc">${list.map(s => { const a = arOf(s.id), has = a && bkInst(a.data, who), k = bandKey(s, Number(s.data.shift) || 0); return `<li><b>${esc(s.data.name)}</b><span>${[k, s.data.bpm ? s.data.bpm + ' BPM' : ''].filter(Boolean).map(esc).join(' · ')}${has || who.g ? '' : ' · מילים ואקורדים בלבד'}</span></li>`; }).join('')}</ol>
+    ${who.g ? '' : `<div class="bk-legend"><b>מקרא:</b> <span class="bk-badge st-on">מנגן</span> לאורך כל החלק · <span class="bk-badge st-in">נכנס באמצע</span> · <span class="bk-badge st-out">עוצר באמצע</span> · <span class="bk-badge st-off">לא מנגנים</span> · ${AR_CUE.slice(0, 5).map(c => `<span class="ar-cue c-${c.t}"><b>${c.sym} ${c.label}</b></span>`).join(' ')}</div>`}</section>`;
   list.forEach((s, i) => { h += bkSongHTML(s, i + 1, who, Object.assign({}, o, {page:o.page && (i > 0 || o.cover)})); });
   h += '</div>';
   let area = $('#print-area'); if(!area){ area = document.createElement('div'); area.id = 'print-area'; document.body.appendChild(area); }
   area.innerHTML = h;
   if(o.fit){ const over = bkFit(area); if(over) toast(over === 1 ? 'שיר אחד ארוך מדי גם בהקטנה, והוא ימשיך לדף שני.' : `${over} שירים ארוכים מדי גם בהקטנה, והם ימשיכו לדף שני.`); }
-  const oldTitle = document.title; document.title = `VELVET - חוברת ${label}`;
+  const oldTitle = document.title; document.title = who.g ? 'VELVET - חוברת שירים' : `VELVET - חוברת ${label}`;
   const done = () => { area.innerHTML = ''; document.title = oldTitle; window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
   setTimeout(() => window.print(), 80);
@@ -7440,7 +7465,28 @@ function inlineInsert(chord){
 function wireInline(onSave, onClose){
   const root = $('#ied'); if(!root) return;
   let t; const ta = $('#ied-ta');
-  ta.addEventListener('input', () => { clearTimeout(t); t = setTimeout(inlinePreview, 120); });
+  ta.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { inlinePreview(); iedSync('ta'); }, 120); });
+  /* גלילה משותפת: הטקסט והתצוגה זזים יחד, לפי מספר השורה */
+  const prev = $('#ied-prev'); let lock = '', unlockT;
+  const pts = () => { const out = []; let last = -1; prev.querySelectorAll('.ln[data-l]').forEach(el => { const l = Number(el.dataset.l); if(l > last){ out.push({l, y:el.offsetTop}); last = l; } }); return out; };
+  const taLH = () => parseFloat(getComputedStyle(ta).lineHeight) || 24, taPad = () => parseFloat(getComputedStyle(ta).paddingTop) || 0;
+  const hold = who => { lock = who; clearTimeout(unlockT); unlockT = setTimeout(() => { lock = ''; }, 90); };
+  function iedSync(from){
+    const P = pts(); if(P.length < 2) return;
+    if(from === 'ta'){
+      if(ta.scrollTop + ta.clientHeight >= ta.scrollHeight - 2){ hold('prev'); prev.scrollTop = prev.scrollHeight; return; }
+      const f = (ta.scrollTop - taPad()) / taLH() + .3; let k = 0; while(k < P.length - 1 && P[k + 1].l <= f) k++;
+      const a = P[k], b = P[k + 1] || a, y = b === a ? a.y : a.y + (b.y - a.y) * Math.min(1, Math.max(0, (f - a.l) / (b.l - a.l)));
+      hold('prev'); prev.scrollTop = Math.max(0, y - 8);
+    } else {
+      if(prev.scrollTop + prev.clientHeight >= prev.scrollHeight - 2){ hold('ta'); ta.scrollTop = ta.scrollHeight; return; }
+      const y = prev.scrollTop + 8; let k = 0; while(k < P.length - 1 && P[k + 1].y <= y) k++;
+      const a = P[k], b = P[k + 1] || a, f = b === a ? a.l : a.l + (b.l - a.l) * Math.min(1, Math.max(0, (y - a.y) / ((b.y - a.y) || 1)));
+      hold('ta'); ta.scrollTop = Math.max(0, (f - .3) * taLH() + taPad());
+    }
+  }
+  ta.addEventListener('scroll', () => { if(lock !== 'ta') iedSync('ta'); }, {passive:true});
+  prev.addEventListener('scroll', () => { if(lock !== 'prev') iedSync('prev'); }, {passive:true});
   $('#ied-key').addEventListener('change', () => { INL.key = $('#ied-key').value; INL.dirty = true; inlinePreview(); $('#ied-state').textContent = 'יש שינויים שלא נשמרו'; });
   $('#ied-dir').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; INL.dir = b.dataset.v; $$('#ied-dir button').forEach(x => x.setAttribute('aria-pressed', x === b)); ta.dir = b.dataset.v; $('#ied-prev').dir = b.dataset.v; INL.dirty = true; if(INL.mode === 'visual') veEnter(); $('#ied-state').textContent = 'יש שינויים שלא נשמרו'; });
   root.addEventListener('mousedown', e => { if(e.target.closest('.ied-chip')) e.preventDefault(); });
