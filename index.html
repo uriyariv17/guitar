@@ -1270,7 +1270,13 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
   .bk-gn{ white-space:pre-line; color:#222; }
   .bk-lbl{ font-size:9pt; color:#555; text-transform:uppercase; }
   .bk-se{ margin:5pt 0; padding:4pt 9pt; border-inline-start:4px solid #333; background:#f3f3f3; break-inside:avoid; white-space:pre-line; }
-  .bk-sec{ border:1px solid #ccc; border-inline-start:5px solid var(--c, #333); border-radius:6px; padding:5pt 9pt; margin:5pt 0; break-inside:avoid; display:grid; gap:3pt; }
+  .bk-sec{ border:1px solid #ccc; border-inline-start:5px solid var(--c, #333); border-radius:6px; padding:5pt 9pt; margin:5pt 0; break-inside:auto; display:block; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+  .bk-sec > * + *{ margin-top:3pt; }
+  .bk-sec-h, .bk-in, .bk-fx{ break-after:avoid; break-inside:avoid; }
+  .bk .sheet .blk{ break-inside:auto; }
+  .bk .sheet .ln{ break-inside:avoid; }
+  .bk .sheet .ln.chords, .bk .sheet .ln.sec{ break-after:avoid; }
+  .bk .sheet{ orphans:2; widows:2; }
   .bk-sec.st-off{ border-inline-start:5px dashed #aaa; background:#f7f7f7; }
   .bk-sec-h{ display:flex; align-items:center; gap:7pt; }
   .bk-sec-h b{ font-size:12pt; }
