@@ -1311,6 +1311,34 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .bk-link span{ font-size:calc(7.5pt * var(--z, 1)); color:#1a56c4; text-decoration:underline; }
 .bk-link.l-yt{ border-color:#e33; background:#fff3f3; }
 .bk-link.l-band, .bk-link.l-part{ border-color:#7a1f3d; background:#fbf2f5; }
+
+/* ===== מסך מלא ===== */
+body.fs-lock{ overflow:hidden; }
+#fs-sheet{ position:fixed; inset:0; z-index:9000; background:#fff; color:#111; display:flex; flex-direction:column; }
+#fs-sheet[hidden]{ display:none; }
+.fss-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:8px 12px; background:#1b2333; color:#fff; z-index:20; }
+.fss-bar button{ appearance:none; border:1px solid #ffffff33; background:#ffffff14; color:#fff; border-radius:9px; min-height:34px; min-width:34px; padding:2px 10px; font:700 .92rem 'Assistant',Arial,sans-serif; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:4px; }
+.fss-bar button:hover{ background:#ffffff2a; }
+.fss-bar button[aria-pressed="true"]{ background:#f5c400; color:#111; border-color:#f5c400; }
+.fss-bar .fss-x{ background:#ffffff22; }
+.fss-title{ font-size:1rem; margin-inline-end:auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:40vw; }
+.fss-grp{ display:inline-flex; align-items:center; gap:3px; background:#ffffff10; border-radius:10px; padding:2px; }
+.fss-zv{ min-width:38px; text-align:center; font-weight:700; font-size:.88rem; font-variant-numeric:tabular-nums; }
+.fss-l{ font-size:.82rem; opacity:.8; padding:0 4px; }
+.fss-hint{ font-size:.82rem; opacity:.75; }
+.fss-body{ flex:1; overflow:auto; padding:18px clamp(12px, 4vw, 48px) 40vh; -webkit-overflow-scrolling:touch; }
+.fss-sheet{ border:0 !important; box-shadow:none !important; background:#fff !important; padding:0 !important; max-width:none !important; line-height:1.35; }
+.fss-sheet.fss-cols{ column-count:2; column-gap:48px; column-rule:1px solid #e3e3e3; }
+.fss-sheet.fss-cols .blk{ break-inside:avoid; }
+.fss-sheet.fss-only .ln:not(.tmk):not(.mk):not([class*="mk-"]), .fss-sheet.fss-only .blk:not(:has(.tmk, .mk, [class*="mk-"])){ display:none; }
+.pr-notes-scroll.fs-on{ position:fixed !important; inset:0; z-index:9000; height:auto !important; max-height:none !important; border:0; border-radius:0; margin:0 !important; background:#fff; overflow:auto !important; padding-top:0; }
+.pr-notes-scroll.fs-on:fullscreen{ width:100vw; height:100vh !important; }
+.pr-notes-scroll.fs-on .fsn-bar{ position:sticky; top:0; }
+.fss-bar .fsn-play{ background:#f5c400 !important; color:#111 !important; box-shadow:none !important; }
+.fsn-bar .pr-play{ width:38px; height:38px; min-width:38px; border-radius:50%; background:#f5c400; color:#111; border:0; padding:0; }
+.fsn-bar .pr-play svg{ width:18px; height:18px; }
+.prn-dim.full{ background:#fff; }
+@media (max-width:640px){ .fss-title{ display:none; } .fss-bar{ gap:5px; padding:6px 8px; } .fss-bar button{ min-height:32px; padding:2px 8px; } }
 </style>
 </head>
 <body>
@@ -1568,7 +1596,7 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
                 <button class="btn ghost small" id="tr-reset">חזרה למקור</button>
                 <div class="seg" aria-label="גודל טקסט"><button id="shf-down" aria-label="הקטנת טקסט">א−</button><button id="shf-up" aria-label="הגדלת טקסט">א+</button></div><button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button><span id="sh-degbox"></span>
                 <button class="btn small" id="sh-cols" type="button" aria-pressed="false">שני טורים</button>
-                <button class="btn small" data-print="1" type="button">הדפסה</button>
+                <button class="btn small" data-fs="sheet" type="button" title="מסך מלא">⛶ מסך מלא</button><button class="btn small" data-print="1" type="button">הדפסה</button>
                 <button class="btn small primary" id="sh-edit" type="button" hidden>עריכה</button>
               </div>
             </div>
@@ -5964,7 +5992,7 @@ function renderBandSong(){
           ${dirty ? '<button class="btn small primary" data-act="save-key">שמירה כסולם של הלהקה</button>' : ''}
           ${B.viewShift !== saved || saved ? `<button class="btn ghost small" data-act="key-band">לסולם של הלהקה</button>` : ''}
           <div class="seg"><button data-act="fs-down" aria-label="הקטנת טקסט">א−</button><button data-act="fs-up" aria-label="הגדלת טקסט">א+</button></div><button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>${degBtnHTML()}
-          <button class="btn small" data-print="1" type="button">הדפסה</button><button class="btn small primary" data-act="edit-sheet" type="button">עריכה</button>
+          <button class="btn small" data-fs="sheet" type="button" title="מסך מלא">⛶ מסך מלא</button><button class="btn small" data-print="1" type="button">הדפסה</button><button class="btn small primary" data-act="edit-sheet" type="button">עריכה</button>
         </div></div>
       <p class="muted">${saved ? `הלהקה מנגנת ב־${esc(bandKey(s, saved))}. המקור ב־${esc(orig)}.` : `הלהקה מנגנת בסולם המקורי${orig ? `, ${esc(orig)}` : ''}.`}${dirty ? ' השינוי שעשית עכשיו מוצג רק לך, עד שתשמור אותו.' : ''}</p>
       <div class="spread"><div class="seg" id="vb-nf">${[['all', 'כל ההערות'], ['mine', 'רק שלי'], ['pub', 'רק כלליות']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${B.filter === v}">${l}</button>`).join('')}</div><span class="hint">לחיצה על שורה בשיר, או על שם של חלק, מוסיפה הערה לפניה, בתוך השיר.</span></div>
@@ -6844,7 +6872,7 @@ function ySongView(){
           ${yStaff() && Y.shift !== saved ? '<button class="btn small primary" data-act="save-key">שמירה כסולם של ההרכב</button>' : ''}
           ${Y.shift !== saved ? '<button class="btn ghost small" data-act="key-group">לסולם של ההרכב</button>' : ''}
           <div class="seg"><button data-act="fs-down" aria-label="הקטנת טקסט">א−</button><button data-act="fs-up" aria-label="הגדלת טקסט">א+</button></div><button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>${degBtnHTML()}
-          <button class="btn small" data-print="1" type="button">הדפסה</button>${ySongEdit() ? '<button class="btn small primary" data-act="edit-sheet" type="button">עריכה</button>' : ''}
+          <button class="btn small" data-fs="sheet" type="button" title="מסך מלא">⛶ מסך מלא</button><button class="btn small" data-print="1" type="button">הדפסה</button>${ySongEdit() ? '<button class="btn small primary" data-act="edit-sheet" type="button">עריכה</button>' : ''}
         </div></div>
       <p class="muted">${saved ? `ההרכב מנגן ב־${esc(bandKey(s, saved))}. המקור ב־${esc(orig)}.` : `ההרכב מנגן בסולם המקורי${orig ? `, ${esc(orig)}` : ''}.`}</p>
       <div class="spread"><div class="seg" id="yo-nf">${[['all', 'כל ההערות'], ['mine', 'שלי'], ['pub', 'כלליות'], ['tome', 'אליי']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${(Y.noteF || 'all') === v}">${l}</button>`).join('')}</div><span class="hint">לחיצה על שורה בשיר, או על שם של חלק, מוסיפה הערה או מרקר לפניה, בתוך השיר.</span></div>
@@ -7724,6 +7752,135 @@ function psPrint(){
   const t = document.title; document.title = PS.o.title || t;
   setTimeout(() => { window.print(); document.title = t; }, 60);
 }
+/* ================== מסך מלא: דף מילים ואקורדים, או תווים ================== */
+const FSV = {z:(() => { const v = Number(localStorage.getItem('pritah.fss')); return v >= 12 && v <= 60 ? v : (innerWidth < 700 ? 18 : 24); })(), cols:localStorage.getItem('pritah.fscols') === '2', only:false, as:0, asSpeed:Number(localStorage.getItem('pritah.fsas')) || 30, raf:0};
+const FSI = {
+  full:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+  x:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+};
+function fsEnterNative(el){ try{ const f = el.requestFullscreen || el.webkitRequestFullscreen; if(f){ const r = f.call(el); if(r && r.catch) r.catch(() => {}); } }catch(e){} }
+function fsExitNative(){ try{ if(document.fullscreenElement || document.webkitFullscreenElement){ const f = document.exitFullscreen || document.webkitExitFullscreen; const r = f && f.call(document); if(r && r.catch) r.catch(() => {}); } }catch(e){} }
+/* --- דף מילים ואקורדים --- */
+function fsSheetOpen(){
+  const c = psContext(), src = c && c.sheetSel && $(c.sheetSel);
+  if(!src || !src.textContent.trim()){ toast('אין כאן מילים ואקורדים להצגה.'); return; }
+  let ov = $('#fs-sheet');
+  if(!ov){
+    ov = document.createElement('div'); ov.id = 'fs-sheet'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'מסך מלא'); document.body.appendChild(ov);
+    ov.addEventListener('click', fsSheetClick);
+    ov.addEventListener('wheel', () => { if(FSV.as) fsAutoStop(); }, {passive:true});
+    ov.addEventListener('touchstart', () => { if(FSV.as) fsAutoStop(); }, {passive:true});
+  }
+  const cl = src.cloneNode(true); cl.removeAttribute('id'); cl.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+  cl.classList.remove('cols', 'two-cols', 'mk-only'); cl.style.cssText = ''; cl.classList.add('fss-sheet');
+  const marks = cl.querySelectorAll('.ln.tmk, .ln.mk, .ln[class*="mk-"]').length;
+  FSV.only = false; FSV.title = c.title;
+  ov.innerHTML = `<div class="fss-bar">
+      <button type="button" class="fss-x" data-fs-act="close" aria-label="יציאה ממסך מלא">${FSI.x}</button>
+      <b class="fss-title" dir="auto">${esc(c.title || '')}</b>
+      <span class="fss-grp" aria-label="גודל"><button type="button" data-fs-act="z-" aria-label="הקטנה">א−</button><span class="fss-zv" id="fss-zv">${FSV.z}</span><button type="button" data-fs-act="z+" aria-label="הגדלה">א+</button></span>
+      <button type="button" class="fss-btn" data-fs-act="cols" aria-pressed="${FSV.cols}">שני טורים</button>
+      ${marks ? `<button type="button" class="fss-btn" data-fs-act="only" aria-pressed="false">רק המסומן</button>` : ''}
+      <span class="fss-grp" aria-label="גלילה אוטומטית"><button type="button" data-fs-act="as" id="fss-as" aria-pressed="false">▶ גלילה</button><button type="button" data-fs-act="as-" aria-label="לאט יותר">−</button><span class="fss-zv" id="fss-asv">${FSV.asSpeed}</span><button type="button" data-fs-act="as+" aria-label="מהר יותר">+</button></span>
+    </div><div class="fss-body" id="fss-body"></div>`;
+  $('#fss-body').appendChild(cl);
+  fsSheetApply();
+  ov.hidden = false; document.body.classList.add('fs-lock');
+  fsEnterNative(ov);
+  ov.querySelector('.fss-body').focus && ov.querySelector('.fss-body').setAttribute('tabindex', '-1');
+}
+function fsSheetApply(){
+  const sh = $('#fs-sheet .fss-sheet'); if(!sh) return;
+  sh.style.fontSize = FSV.z + 'px';
+  sh.classList.toggle('fss-cols', FSV.cols);
+  sh.classList.toggle('fss-only', FSV.only);
+  const zv = $('#fss-zv'); if(zv) zv.textContent = FSV.z;
+  try{ localStorage.setItem('pritah.fss', FSV.z); localStorage.setItem('pritah.fscols', FSV.cols ? '2' : '1'); localStorage.setItem('pritah.fsas', FSV.asSpeed); }catch(e){}
+}
+function fsAutoStop(){ FSV.as = 0; cancelAnimationFrame(FSV.raf); const b = $('#fss-as'); if(b){ b.setAttribute('aria-pressed', 'false'); b.textContent = '▶ גלילה'; } }
+function fsAutoStart(){
+  const body = $('#fss-body'); if(!body) return;
+  FSV.as = 1; let last = performance.now(), acc = 0;
+  const b = $('#fss-as'); if(b){ b.setAttribute('aria-pressed', 'true'); b.textContent = '❚❚ גלילה'; }
+  const step = now => { if(!FSV.as) return; acc += (now - last) / 1000 * FSV.asSpeed; last = now; if(acc >= 1){ const n = Math.floor(acc); acc -= n; body.scrollTop += n; if(body.scrollTop + body.clientHeight >= body.scrollHeight - 1){ fsAutoStop(); return; } } FSV.raf = requestAnimationFrame(step); };
+  FSV.raf = requestAnimationFrame(step);
+}
+function fsSheetClose(){
+  const ov = $('#fs-sheet'); if(!ov || ov.hidden) return;
+  fsAutoStop(); ov.hidden = true; ov.innerHTML = ''; document.body.classList.remove('fs-lock'); fsExitNative();
+}
+function fsSheetClick(e){
+  const c = e.target.closest('.ch[data-c], [data-c]'); if(c && !e.target.closest('.fss-bar')){ if(typeof playChordName === 'function') playChordName(c.dataset.c); return; }
+  const b = e.target.closest('[data-fs-act]'); if(!b) return;
+  const a = b.dataset.fsAct;
+  if(a === 'close') return fsSheetClose();
+  if(a === 'z+' || a === 'z-'){ FSV.z = clamp(FSV.z + (a === 'z+' ? 2 : -2), 12, 60); }
+  if(a === 'cols'){ FSV.cols = !FSV.cols; b.setAttribute('aria-pressed', FSV.cols); }
+  if(a === 'only'){ FSV.only = !FSV.only; b.setAttribute('aria-pressed', FSV.only); const f = $('#fs-sheet .ln.tmk, #fs-sheet .ln.mk, #fs-sheet .ln[class*="mk-"]'); fsSheetApply(); if(f) $('#fss-body').scrollTop = 0; return; }
+  if(a === 'as'){ FSV.as ? fsAutoStop() : fsAutoStart(); return; }
+  if(a === 'as+' || a === 'as-'){ FSV.asSpeed = clamp(FSV.asSpeed + (a === 'as+' ? 5 : -5), 5, 150); $('#fss-asv').textContent = FSV.asSpeed; }
+  fsSheetApply();
+}
+/* --- תווים (פסנתר) --- */
+const FSN = {on:false, native:false, z:(() => { const v = Number(localStorage.getItem('pritah.fsnz')); return v >= .4 && v <= 2.5 ? v : (innerWidth < 700 ? .7 : 1.05); })()};
+function fsNotesBarHTML(){
+  const hasLoop = PR.loop.a != null && PR.loop.b > PR.loop.a;
+  return `<button type="button" class="fss-x" data-fsn="close" aria-label="יציאה ממסך מלא">${FSI.x}</button>
+    <button type="button" class="pr-play fsn-play" data-pr="play" aria-label="${PR.playing ? 'השהיה' : 'נגינה'}">${PR.playing ? PRI.pause : PRI.play}</button>
+    <b class="fss-title" dir="auto">${esc((PR.piece && PR.piece.title) || '')}</b>
+    <span class="fss-grp" aria-label="גודל התווים"><button type="button" data-fsn="z-" aria-label="הקטנה">−</button><span class="fss-zv">${Math.round(FSN.z * 100)}%</span><button type="button" data-fsn="z+" aria-label="הגדלה">+</button></span>
+    <span class="fss-grp" aria-label="שמות התווים"><span class="fss-l">שמות</span>${[['', 'בלי'], ['en', 'C D E'], ['he', 'דו רה מי']].map(([v, l]) => `<button type="button" data-fsn="names" data-v="${v}" aria-pressed="${(PRN.names || '') === v}">${l}</button>`).join('')}</span>
+    ${hasLoop ? `<button type="button" class="fss-btn" data-pr="focus" aria-pressed="${PRN.focus}">רק הקטע: תיבות <bdi dir="ltr">${prBarVal(PR.loop.a)}–${prBarVal(PR.loop.b, true)}</bdi></button><button type="button" class="fss-btn" data-pr="loop-clear">ביטול הקטע</button>` : '<span class="fss-hint">גוררים על התווים כדי לסמן קטע</span>'}`;
+}
+function fsNotesOpen(){
+  const sc = $('#pr-notes-slot');
+  if(!sc || !PRN.osmd || !PRN.on || !PRN.el || !PRN.el.isConnected){ toast('אין כאן תווים להצגה.'); return; }
+  FSN.on = true;
+  let bar = sc.querySelector('.fsn-bar'); if(!bar){ bar = document.createElement('div'); bar.className = 'fss-bar fsn-bar'; sc.prepend(bar); }
+  bar.innerHTML = fsNotesBarHTML();
+  sc.classList.add('fs-on'); document.body.classList.add('fs-lock');
+  FSN.native = !!(sc.requestFullscreen || sc.webkitRequestFullscreen); fsEnterNative(sc);
+  setTimeout(fsNotesRender, FSN.native ? 180 : 0);
+}
+function fsNotesRender(){
+  const o = PRN.osmd; if(!o) return;
+  o.zoom = FSN.on ? FSN.z : (innerWidth < 700 ? .6 : .8);
+  try{ o.render(); }catch(e){}
+  prNotesBoxes(); try{ prNotesNames(); }catch(e){} try{ prChordOverlay(); }catch(e){} try{ prNotesLoop(); }catch(e){} prNotesSync(true);
+  try{ localStorage.setItem('pritah.fsnz', FSN.z); }catch(e){}
+}
+function fsNotesBarRefresh(){ const bar = $('#pr-notes-slot .fsn-bar'); if(bar && FSN.on) bar.innerHTML = fsNotesBarHTML(); }
+function fsNotesClose(){
+  if(!FSN.on) return; FSN.on = false;
+  const sc = $('#pr-notes-slot');
+  if(sc){ const bar = sc.querySelector('.fsn-bar'); if(bar) bar.remove(); sc.classList.remove('fs-on'); }
+  document.body.classList.remove('fs-lock'); fsExitNative();
+  setTimeout(() => { if(PRN.el && PRN.el.isConnected) fsNotesRender(); prSoftRerender(); }, 120);
+}
+function fsNotesClick(e){
+  const b = e.target.closest('[data-fsn]'); if(!b) return;
+  e.stopPropagation();
+  const a = b.dataset.fsn;
+  if(a === 'close') return fsNotesClose();
+  if(a === 'z+' || a === 'z-'){ FSN.z = clamp(Math.round((FSN.z + (a === 'z+' ? .1 : -.1)) * 100) / 100, .4, 2.5); fsNotesBarRefresh(); fsNotesRender(); return; }
+  if(a === 'names'){ PRN.names = b.dataset.v; try{ localStorage.setItem('pritah.prnames', PRN.names); if(PRN.names) localStorage.setItem('pritah.prnames.lang', PRN.names); }catch(err){} fsNotesBarRefresh(); prNotesNames(); return; }
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-fs]'); if(!b) return;
+  if(b.dataset.fs === 'notes') fsNotesOpen(); else fsSheetOpen();
+});
+document.addEventListener('click', e => { if(e.target.closest('.fsn-bar [data-fsn]')) fsNotesClick(e); }, true);
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if($('#fs-sheet') && !$('#fs-sheet').hidden){ fsSheetClose(); }
+  else if(FSN.on) fsNotesClose();
+});
+['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
+  if(document.fullscreenElement || document.webkitFullscreenElement) return;
+  if($('#fs-sheet') && !$('#fs-sheet').hidden) fsSheetClose();
+  if(FSN.on) fsNotesClose();
+}));
+
 function printSheet(btn){ openPrintStudio(btn && btn.dataset.print === 'notes'); }
 
 /* ================== פסנתר (אזור פרטי למורה) ================== */
@@ -8231,7 +8388,7 @@ function psView(){
         <div class="row">
           <div class="tr-ctl"><button class="round" data-ps="tr-down" ${PN.shift <= -11 ? 'disabled' : ''} aria-label="הורדה בחצי טון">▼</button><div class="tr-val"><b>${esc(keyLabel(detectKey(d.sheet, d.key), PN.shift) || '–')}</b><small>${PN.shift ? (PN.shift > 0 ? '+' : '−') + Math.abs(PN.shift) + ' מהמקור' : 'כמו המקור'}</small></div><button class="round" data-ps="tr-up" ${PN.shift >= 11 ? 'disabled' : ''} aria-label="העלאה בחצי טון">▲</button></div>
           <div class="seg"><button data-ps="fs-down" aria-label="הקטנת טקסט">א−</button><button data-ps="fs-up" aria-label="הגדלת טקסט">א+</button></div>
-          <button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>${degBtnHTML()}<button class="btn small" data-print="1" type="button">הדפסה</button><button class="btn small primary" data-ps="edit">עריכה</button>
+          <button class="btn small as-start" data-as="start" type="button">גלילה אוטומטית</button>${degBtnHTML()}<button class="btn small" data-fs="sheet" type="button" title="מסך מלא">⛶ מסך מלא</button><button class="btn small" data-print="1" type="button">הדפסה</button><button class="btn small primary" data-ps="edit">עריכה</button>
         </div></div>
       <p class="hint">לחיצה על אקורד משמיעה אותו בפסנתר. הצורות מגיעות מהצורות ששמרת ב"אקורדים והרמוניות", ואם אין, מוצג מצב יסודי.</p>
       <div class="pchords" id="ps-chords"></div>
@@ -8819,6 +8976,7 @@ function prPlayerHTML(P, inSong){
         <button class="pr-play" data-pr="play" id="pr-play" aria-label="${PR.playing ? 'השהיה' : 'נגינה'}">${PR.playing ? PRI.pause : PRI.play}</button>
         <button class="pr-ibtn" data-pr="restart" title="${hasLoop && PR.loop.on ? 'לתחילת הקטע' : 'להתחלה'}" aria-label="להתחלה">${PRI.restart}</button>
         <span class="pr-time" id="pr-time" dir="ltr"></span>
+        ${PRN.on ? `<button class="pr-ibtn" data-fs="notes" title="מסך מלא לתווים" aria-label="מסך מלא לתווים">${FSI.full}</button>` : ''}
         <span class="pr-sep"></span>
         <label class="pr-speed"><span>מהירות</span><select id="pr-speed">${[.5,.6,.75,.9,1,1.25,1.5].map(v => `<option value="${v}" ${v === PR.speed ? 'selected' : ''}>${Math.round(v * 100)}%</option>`).join('')}</select></label>
         <label class="tg hand r${PR.hands[1] ? ' on' : ''}"><input type="checkbox" data-hand="1" ${PR.hands[1] ? 'checked' : ''}><span class="ic">${PRI.hand}</span>ימין</label>
@@ -9014,7 +9172,7 @@ function prNotesSync(force){
   if(mi === PRN.cur && !force) return;
   PRN.cur = mi; const b = PRN.boxes[mi];
   place(PRN.el.querySelector('.prn-hl'), b);
-  if(b && !PRN.focus){ const sc = PRN.el.parentElement; if(sc && (b.y < sc.scrollTop + 10 || b.y + b.h > sc.scrollTop + sc.clientHeight - 10)) sc.scrollTo({top:Math.max(0, b.y - 30), behavior:PR.playing ? 'smooth' : 'auto'}); }
+  if(b && !PRN.focus){ const sc = PRN.el.parentElement, o = PRN.el.offsetTop, bh = sc && sc.classList.contains('fs-on') ? (sc.querySelector('.fsn-bar') || {}).offsetHeight || 0 : 0; if(sc && (o + b.y < sc.scrollTop + bh + 10 || o + b.y + b.h > sc.scrollTop + sc.clientHeight - 10)) sc.scrollTo({top:Math.max(0, o + b.y - 30 - bh), behavior:PR.playing ? 'smooth' : 'auto'}); }
 }
 function prXAt(bi, t){
   const P = PR.piece, mi = P.barIdx[bi], s0 = P.bars[bi], s1 = bi + 1 < P.bars.length ? P.bars[bi + 1] : P.dur;
@@ -9046,7 +9204,11 @@ function prNotesLoop(){
         const a = Math.min(...inRow.map(q => q.x)), b = Math.max(...inRow.map(q => q.x + q.w));
         [[r.x1 - 30, a], [b, r.x2 + 30]].forEach(([x1, x2]) => { if(x2 - x1 < 3) return; const d = document.createElement('div'); d.className = 'prn-dim'; lp.appendChild(d); place(d, {x:x1, y:r.y - 40, w:x2 - x1, h:r.h + 80}); });
       });
-      sc.classList.add('focus'); sc.style.height = Math.round(bot - top + 70) + 'px'; sc.scrollTop = Math.max(0, top - 40);
+      if(sc.classList.contains('fs-on')){
+        const W = PRN.el.scrollWidth, Hh = PRN.el.scrollHeight;
+        [{x:0, y:0, w:W, h:Math.max(0, top - 40)}, {x:0, y:bot + 40, w:W, h:Math.max(0, Hh - bot - 40)}].forEach(r => { if(r.h < 2) return; const d = document.createElement('div'); d.className = 'prn-dim full'; lp.appendChild(d); place(d, r); });
+        const bh = (sc.querySelector('.fsn-bar') || {}).offsetHeight || 0; sc.classList.add('focus'); sc.scrollTop = Math.max(0, PRN.el.offsetTop + top - 50 - bh);
+      } else { sc.classList.add('focus'); sc.style.height = Math.round(bot - top + 70) + 'px'; sc.scrollTop = Math.max(0, top - 40); }
     } else if(sc.classList.contains('focus') && !PRN.drag){ sc.classList.remove('focus'); sc.style.height = PRN.h + 'px'; }
   }
 }
@@ -9319,6 +9481,7 @@ document.addEventListener('click', e => { if(e.target.closest('.sf-box [data-sf]
 document.addEventListener('change', e => { if(e.target.id === 'sf-file' && e.target.files[0]){ const f = e.target.files[0]; e.target.value = ''; sfUpload(f); } });
 
 function prRerender(){
+  const wasFs = FSN.on; if(wasFs){ FSN.on = false; document.body.classList.remove('fs-lock'); fsExitNative(); setTimeout(() => { if(PRN.el && PRN.el.isConnected) fsNotesRender(); }, 60); }
   const sy = window.scrollY, sc = $('#pr-notes-slot'), st = sc ? sc.scrollTop : 0;
   try{ if(PR.host === 'song') renderSongRoll(); else renderPiano(); }
   finally{ const ns = $('#pr-notes-slot'); if(ns && !PRN.focus) ns.scrollTop = st; if(Math.abs(window.scrollY - sy) > 2) window.scrollTo(0, sy); }
@@ -9333,6 +9496,7 @@ function prSoftRerender(){
   try{ prNotesLoop(); }catch(e){ console.warn(e); }
   try{ prChordOverlay(); }catch(e){}
   if(!PRN.focus) try{ prNotesSync(true); }catch(e){}
+  if(FSN.on) fsNotesBarRefresh();
 }
 function prSetLoop(a, b){ if(b - a < .1) return; PR.loop = {a, b, on:true}; const was = PR.playing; prStop(); PR.t = a; prSoftRerender(); if(was) prPlay(); }
 function prSnap(t){ const B = PR.piece.bars; if(!B.length) return t; let best = t, bd = .35 * 60 / (PR.piece.bpm || 100); B.concat([PR.piece.dur]).forEach(x => { if(Math.abs(x - t) < bd){ bd = Math.abs(x - t); best = x; } }); return best; }
@@ -9404,9 +9568,9 @@ function prPlay(){
   tick();
   const frame = () => { if(!PR.playing) return; PR.t = Math.max(PR.songStart, PR.songStart + (ctx.currentTime - PR.acStart) * PR.speed); prDraw(); PR.raf = requestAnimationFrame(frame); };
   PR.raf = requestAnimationFrame(frame);
-  const b = $('#pr-play'); if(b){ b.innerHTML = PRI.pause; b.setAttribute('aria-label', 'השהיה'); }
+  $$('#pr-play, .fsn-play').forEach(b => { b.innerHTML = PRI.pause; b.setAttribute('aria-label', 'השהיה'); });
 }
-function prStop(){ PR.playing = false; clearTimeout(PR.timer); cancelAnimationFrame(PR.raf); const b = $('#pr-play'); if(b){ b.innerHTML = PRI.play; b.setAttribute('aria-label', 'נגינה'); } }
+function prStop(){ PR.playing = false; clearTimeout(PR.timer); cancelAnimationFrame(PR.raf); $$('#pr-play, .fsn-play').forEach(b => { b.innerHTML = PRI.play; b.setAttribute('aria-label', 'נגינה'); }); }
 function prSeek(t){ const was = PR.playing; prStop(); PR.t = clamp(t, 0, PR.piece.dur); prDraw(); if(was) prPlay(); }
 async function onRoll(e){
   if(e.currentTarget && e.currentTarget.id === 'pn-main' && PN.tab !== 'roll' && !e.target.closest('#sh-roll')) return false;
