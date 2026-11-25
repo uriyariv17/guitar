@@ -1339,6 +1339,15 @@ body.fs-lock{ overflow:hidden; }
 .fsn-bar .pr-play svg{ width:18px; height:18px; }
 .prn-dim.full{ background:#fff; }
 @media (max-width:640px){ .fss-title{ display:none; } .fss-bar{ gap:5px; padding:6px 8px; } .fss-bar button{ min-height:32px; padding:2px 8px; } }
+
+.pr-tool{ display:inline-flex; gap:2px; padding:2px; border-radius:10px; background:var(--surface-2); border:1px solid var(--line); }
+.pr-tool button{ appearance:none; border:0; background:transparent; color:var(--ink); font:700 .84rem 'Assistant',Arial,sans-serif; padding:4px 9px; border-radius:8px; cursor:pointer; min-height:32px; }
+.pr-tool button[aria-pressed="true"]{ background:var(--ink); color:#fff; }
+.fss-bar .pr-tool{ background:#ffffff10; border:0; }
+.fss-bar .pr-tool button{ color:#fff; }
+.fss-bar .pr-tool button[aria-pressed="true"]{ background:#f5c400; color:#111; }
+.pr-notes.tool-view{ touch-action:pan-x pan-y; cursor:grab; }
+.pr-notes.tool-view .prn-hl{ pointer-events:none; }
 </style>
 </head>
 <body>
@@ -7823,14 +7832,18 @@ function fsSheetClick(e){
 }
 /* --- תווים (פסנתר) --- */
 const FSN = {on:false, native:false, z:(() => { const v = Number(localStorage.getItem('pritah.fsnz')); return v >= .4 && v <= 2.5 ? v : (innerWidth < 700 ? .7 : 1.05); })()};
+function prToolHTML(){
+  return `<span class="pr-tool" role="group" aria-label="מה קורה כשנוגעים בתווים"><button type="button" data-pr="tool" data-v="view" aria-pressed="${PRN.tool === 'view'}" title="גלילה וזום בשתי אצבעות. נגיעה בתווים לא מזיזה את הסמן">✋ זום</button><button type="button" data-pr="tool" data-v="mark" aria-pressed="${PRN.tool === 'mark'}" title="נגיעה בתווים מזיזה את הסמן, וגרירה מסמנת קטע">✎ סימון</button></span>`;
+}
 function fsNotesBarHTML(){
   const hasLoop = PR.loop.a != null && PR.loop.b > PR.loop.a;
   return `<button type="button" class="fss-x" data-fsn="close" aria-label="יציאה ממסך מלא">${FSI.x}</button>
     <button type="button" class="pr-play fsn-play" data-pr="play" aria-label="${PR.playing ? 'השהיה' : 'נגינה'}">${PR.playing ? PRI.pause : PRI.play}</button>
     <b class="fss-title" dir="auto">${esc((PR.piece && PR.piece.title) || '')}</b>
+    ${prToolHTML().replace('class="pr-tool"', 'class="pr-tool fss-grp"')}
     <span class="fss-grp" aria-label="גודל התווים"><button type="button" data-fsn="z-" aria-label="הקטנה">−</button><span class="fss-zv">${Math.round(FSN.z * 100)}%</span><button type="button" data-fsn="z+" aria-label="הגדלה">+</button></span>
     <span class="fss-grp" aria-label="שמות התווים"><span class="fss-l">שמות</span>${[['', 'בלי'], ['en', 'C D E'], ['he', 'דו רה מי']].map(([v, l]) => `<button type="button" data-fsn="names" data-v="${v}" aria-pressed="${(PRN.names || '') === v}">${l}</button>`).join('')}</span>
-    ${hasLoop ? `<button type="button" class="fss-btn" data-pr="focus" aria-pressed="${PRN.focus}">רק הקטע: תיבות <bdi dir="ltr">${prBarVal(PR.loop.a)}–${prBarVal(PR.loop.b, true)}</bdi></button><button type="button" class="fss-btn" data-pr="loop-clear">ביטול הקטע</button>` : '<span class="fss-hint">גוררים על התווים כדי לסמן קטע</span>'}`;
+    ${hasLoop || PRN.tool === 'view' ? '' : '<span class="fss-hint">גוררים על התווים כדי לסמן קטע</span>'}${hasLoop ? `<button type="button" class="fss-btn" data-pr="focus" aria-pressed="${PRN.focus}">רק הקטע: תיבות <bdi dir="ltr">${prBarVal(PR.loop.a)}–${prBarVal(PR.loop.b, true)}</bdi></button><button type="button" class="fss-btn" data-pr="loop-clear">ביטול הקטע</button>` : ''}`;
 }
 function fsNotesOpen(){
   const sc = $('#pr-notes-slot');
@@ -7844,7 +7857,7 @@ function fsNotesOpen(){
 }
 function fsNotesRender(){
   const o = PRN.osmd; if(!o) return;
-  o.zoom = FSN.on ? FSN.z : (innerWidth < 700 ? .6 : .8);
+  o.zoom = FSN.on ? FSN.z : PRN.z;
   try{ o.render(); }catch(e){}
   prNotesBoxes(); try{ prNotesNames(); }catch(e){} try{ prChordOverlay(); }catch(e){} try{ prNotesLoop(); }catch(e){} prNotesSync(true);
   try{ localStorage.setItem('pritah.fsnz', FSN.z); }catch(e){}
@@ -8976,7 +8989,7 @@ function prPlayerHTML(P, inSong){
         <button class="pr-play" data-pr="play" id="pr-play" aria-label="${PR.playing ? 'השהיה' : 'נגינה'}">${PR.playing ? PRI.pause : PRI.play}</button>
         <button class="pr-ibtn" data-pr="restart" title="${hasLoop && PR.loop.on ? 'לתחילת הקטע' : 'להתחלה'}" aria-label="להתחלה">${PRI.restart}</button>
         <span class="pr-time" id="pr-time" dir="ltr"></span>
-        ${PRN.on ? `<button class="pr-ibtn" data-fs="notes" title="מסך מלא לתווים" aria-label="מסך מלא לתווים">${FSI.full}</button>` : ''}
+        ${PRN.on ? `<button class="pr-ibtn" data-fs="notes" title="מסך מלא לתווים" aria-label="מסך מלא לתווים">${FSI.full}</button>${prToolHTML()}` : ''}
         <span class="pr-sep"></span>
         <label class="pr-speed"><span>מהירות</span><select id="pr-speed">${[.5,.6,.75,.9,1,1.25,1.5].map(v => `<option value="${v}" ${v === PR.speed ? 'selected' : ''}>${Math.round(v * 100)}%</option>`).join('')}</select></label>
         <label class="tg hand r${PR.hands[1] ? ' on' : ''}"><input type="checkbox" data-hand="1" ${PR.hands[1] ? 'checked' : ''}><span class="ic">${PRI.hand}</span>ימין</label>
@@ -8994,7 +9007,7 @@ function prPlayerHTML(P, inSong){
     </div>`;
 }
 /* ================== תווים מעל ה־Piano Roll ================== */
-const PRN = {h:(() => { const v = Number(localStorage.getItem('pritah.prnh')); return v >= 120 && v <= 1400 ? v : 340; })(), focus:false, names:(() => { try{ return localStorage.getItem('pritah.prnames') || ''; }catch(e){ return ''; } })(), ents:[], on:(() => { try{ return localStorage.getItem('pritah.prnotes') !== '0'; }catch(e){ return true; } })(), el:null, osmd:null, key:null, boxes:[], cur:-1, pick:null, lib:null, msg:''};
+const PRN = {tool:(() => { try{ const v = localStorage.getItem('pritah.prtool'); if(v === 'view' || v === 'mark') return v; }catch(e){} return matchMedia('(pointer: coarse)').matches ? 'view' : 'mark'; })(), z:(() => { const v = Number(localStorage.getItem('pritah.prnz')); return v >= .35 && v <= 2.5 ? v : (innerWidth < 700 ? .6 : .8); })(), h:(() => { const v = Number(localStorage.getItem('pritah.prnh')); return v >= 120 && v <= 1400 ? v : 340; })(), focus:false, names:(() => { try{ return localStorage.getItem('pritah.prnames') || ''; }catch(e){ return ''; } })(), ents:[], on:(() => { try{ return localStorage.getItem('pritah.prnotes') !== '0'; }catch(e){ return true; } })(), el:null, osmd:null, key:null, boxes:[], cur:-1, pick:null, lib:null, msg:''};
 function loadOSMD(){
   if(window.opensheetmusicdisplay) return Promise.resolve(window.opensheetmusicdisplay);
   if(PRN.lib) return PRN.lib;
@@ -9057,7 +9070,8 @@ function notesToMusicXML(P){
 }
 async function prNotationRender(){
   const P = PR.piece, slot = $('#pr-notes-slot'); if(!P || !slot) return;
-  if(!PRN.el){ PRN.el = document.createElement('div'); PRN.el.className = 'pr-notes'; PRN.el.dir = 'ltr'; PRN.el.addEventListener('click', prNotesClick); PRN.el.addEventListener('pointerdown', prNotesPointer); }
+  if(!PRN.el){ PRN.el = document.createElement('div'); PRN.el.className = 'pr-notes'; PRN.el.dir = 'ltr'; PRN.el.addEventListener('click', prNotesClick); PRN.el.addEventListener('pointerdown', prNotesPointer); prnPinchWire(PRN.el); }
+  PRN.el.classList.toggle('tool-view', PRN.tool === 'view');
   slot.hidden = !PRN.on;
   slot.appendChild(PRN.el);
   if(!PRN.on) return;
@@ -9073,7 +9087,7 @@ async function prNotationRender(){
     const osmd = new lib.OpenSheetMusicDisplay(host, {autoResize:false, backend:'svg', drawTitle:false, drawSubtitle:false, drawComposer:false, drawLyricist:false, drawPartNames:false, drawPartAbbreviations:false, drawCredits:false, drawMeasureNumbers:true, followCursor:false});
     await osmd.load(P.xml || notesToMusicXML(P));
     if(PRN.key !== P) return;
-    osmd.zoom = innerWidth < 700 ? .6 : .8;
+    osmd.zoom = PRN.z;
     osmd.render();
     PRN.osmd = osmd;
     ['hl', 'pk', 'cur'].forEach(c => { const d = document.createElement('div'); d.className = 'prn-' + c; d.hidden = true; PRN.el.appendChild(d); });
@@ -9231,8 +9245,38 @@ function prTimeAtXY(x, y){
   const s0 = P.bars[pick], s1 = pick + 1 < P.bars.length ? P.bars[pick + 1] : P.dur;
   return {t:s0 + f * (s1 - s0), bi:pick};
 }
+/* מצב "הזזה וזום": צביטה בשתי אצבעות מגדילה את התווים (נבנים מחדש בחדות), וגלילה רגילה באצבע אחת */
+function prnPinchWire(el){
+  let st = null;
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  el.addEventListener('touchstart', e => {
+    if(PRN.tool !== 'view' || e.touches.length !== 2 || !PRN.osmd) return;
+    e.preventDefault();
+    const r = el.getBoundingClientRect(), sc = el.parentElement, mx = (e.touches[0].clientX + e.touches[1].clientX) / 2, my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const x = mx - r.left, y = my - r.top, mi = PRN.boxes.findIndex(b => b && y >= b.y - 20 && y <= b.y + b.h + 20 && x >= b.x - 10 && x <= b.x + b.w + 10);
+    st = {d:dist(e.touches), s:1, mi, screenY:my - sc.getBoundingClientRect().top, boxY:mi >= 0 ? PRN.boxes[mi].y : y};
+    el.style.transformOrigin = `${x}px ${y}px`;
+  }, {passive:false});
+  el.addEventListener('touchmove', e => {
+    if(!st || e.touches.length !== 2) return;
+    e.preventDefault();
+    st.s = clamp(dist(e.touches) / st.d, .35, 3.5);
+    el.style.transform = `scale(${st.s.toFixed(3)})`;
+  }, {passive:false});
+  const end = e => {
+    if(!st || e.touches.length >= 2) return;
+    const g = st; st = null; el.style.transform = '';
+    if(Math.abs(g.s - 1) < .04) return;
+    const old = PRN.osmd.zoom, nz = clamp(Math.round(old * g.s * 100) / 100, .35, 2.5);
+    if(FSN.on) FSN.z = nz; else { PRN.z = nz; try{ localStorage.setItem('pritah.prnz', nz); }catch(err){} }
+    fsNotesRender(); fsNotesBarRefresh();
+    const sc = el.parentElement, b = g.mi >= 0 ? PRN.boxes[g.mi] : null;
+    if(sc) sc.scrollTop = Math.max(0, el.offsetTop + (b ? b.y : g.boxY * nz / old) - g.screenY);
+  };
+  el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
+}
 function prNotesPointer(e){
-  if(e.button || !PR.piece || !PRN.boxes.length) return;
+  if(PRN.tool === 'view' || e.button || !PR.piece || !PRN.boxes.length) return;
   const r = PRN.el.getBoundingClientRect(), p0 = prTimeAtXY(e.clientX - r.left, e.clientY - r.top); if(!p0) return;
   const x0 = e.clientX, y0 = e.clientY; let moved = false; PRN.dragOcc = p0.bi;
   const move = ev => {
@@ -9249,7 +9293,7 @@ function prNotesPointer(e){
   window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
 }
 function prNotesClick(e){
-  const P = PR.piece; if(!P || !PRN.boxes.length || PRN.noClick) return;
+  const P = PR.piece; if(PRN.tool === 'view' || !P || !PRN.boxes.length || PRN.noClick) return;
   const r = PRN.el.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
   const mi = PRN.boxes.findIndex(b => b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h); if(mi < 0) return;
   const occ = P.barIdx.map((v, k) => v === mi ? k : -1).filter(k => k >= 0); if(!occ.length) return;
@@ -9595,6 +9639,7 @@ async function onRoll(e){
   if(act === 'loop-clear'){ PR.loop = {a:null, b:null, on:false}; PRN.pick = null; PRN.focus = false; prSoftRerender(); }
   if(act === 'panel'){ PRUI.panel = PRUI.panel === b.dataset.v ? '' : b.dataset.v; try{ localStorage.setItem('pritah.prpanel', PRUI.panel); }catch(err){} prSoftRerender(); }
   if(act === 'focus'){ PRN.focus = !PRN.focus; prSoftRerender(); }
+  if(act === 'tool'){ PRN.tool = b.dataset.v; try{ localStorage.setItem('pritah.prtool', PRN.tool); }catch(err){} if(PRN.el) PRN.el.classList.toggle('tool-view', PRN.tool === 'view'); $$('[data-pr="tool"]').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === PRN.tool)); fsNotesBarRefresh(); toast(PRN.tool === 'view' ? 'מצב זום: גוללים באצבע אחת ומגדילים בשתיים.' : 'מצב סימון: נגיעה מזיזה את הסמן, גרירה מסמנת קטע.'); }
   if(act === 'names-en' || act === 'names-he'){ PRN.names = act === 'names-he' ? 'he' : 'en'; try{ localStorage.setItem('pritah.prnames', PRN.names); localStorage.setItem('pritah.prnames.lang', PRN.names); }catch(err){} $$('#pr-names-lang button').forEach(x => x.setAttribute('aria-pressed', x.dataset.pr === act)); prNotesNames(); }
   if(act === 'open'){ const it = prItems().find(i => i.id === b.dataset.id); prOpen({title:it.data.title, notes:decodeNotes(it.data.notes), bars:it.data.bars || [], barNums:it.data.barNums, bpm:it.data.bpm, repeated:it.data.repeated, pedal:it.data.pedal, ts:it.data.ts || null, xml:it.data.xml || '', barIdx:it.data.barIdx || null, chordFix:it.data.chordFix || {}}, it.id); }
   if(act === 'del'){ const it = prItems().find(i => i.id === b.dataset.id); if(!confirm(`למחוק את "${it.data.title}" מהרשימה?`)) return true; const r = await tCall('teacherDeleteContent', {id:it.id}); LIB.items = r.items; T.data.pvoices = r.items.filter(i => ['pvoice','pgrid','psong','plink','proll'].includes(i.kind)); if(PR.savedId === it.id) PR.savedId = null; renderPiano(); }
