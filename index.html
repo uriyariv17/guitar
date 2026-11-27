@@ -1356,6 +1356,21 @@ body.fs-lock{ overflow:hidden; }
 .bk-song.bkfit .bk-sh{ margin-bottom:calc(4pt * var(--z, 1)); padding-bottom:calc(3pt * var(--z, 1)); }
 .bk-song.bkfit .bk-links{ margin-bottom:calc(4pt * var(--z, 1)); }
 .bk-song.bkfit .bk-sec{ margin:calc(3pt * var(--z, 1)) 0; padding:calc(3pt * var(--z, 1)) calc(7pt * var(--z, 1)); }
+
+.prn-chords.edit .prn-ch{ pointer-events:auto; cursor:pointer; outline:1px dashed #316ee680; }
+.prn-chords.edit .prn-ch:hover{ background:#316ee6; color:#fff; }
+.prn-ch.rep{ opacity:.45; }
+.prn-ch.fx{ color:#c2410c; outline:1px solid #f59e0b; }
+.prn-ch-in{ position:absolute; transform:translateY(-100%); z-index:9; width:74px; font:800 14px/1 Arial, sans-serif; padding:3px 5px; border:2px solid #316ee6; border-radius:6px; background:#fff; color:#111; }
+
+.fb-note.ext circle{ fill:#8b5cf6; }
+.fb-note.ext text{ fill:#fff; }
+.note-pill.ext{ background:color-mix(in srgb, #8b5cf6 22%, var(--surface)); }
+.note-pill.pent:not(.root){ background:color-mix(in srgb, var(--blue) 16%, var(--surface)); }
+.fb-pent-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; }
+.fb-legend{ display:inline-flex; align-items:center; gap:6px; font-size:.9rem; color:var(--ink-2); }
+.fb-legend i{ display:inline-block; width:14px; height:14px; border-radius:50%; }
+.fb-legend .lg-pent{ background:var(--blue); } .fb-legend .lg-ext{ background:#8b5cf6; margin-inline-start:8px; }
 </style>
 </head>
 <body>
@@ -1478,6 +1493,7 @@ body.fs-lock{ overflow:hidden; }
           <div class="opt"><span class="opt-l">מה להציג על התווים</span><div class="seg" id="f-label"></div></div>
           <button class="btn" id="f-play" style="align-self:end">נגן את הסולם</button>
         </div>
+        <div class="opt fb-pent-row" id="f-pent" hidden></div>
         <div class="opt"><span class="opt-l">תצוגה</span><div class="seg" id="f-pos"></div></div>
         <p class="hint" id="f-pos-hint"></p>
         <div class="fb-wrap" id="f-board"></div>
@@ -2707,7 +2723,10 @@ const SCALES = [
   {id:'tmin', label:'משולש מינור (ארפג׳ו)', iv:[0,3,7]}
 ];
 const INTERVALS = ['1','b2','2','b3','3','4','b5','5','b6','6','b7','7'];
-const FB = {root: 9, scale: 'pmin', label: 'notes', pos: 0};
+const FB = {root: 9, scale: 'minor', label: 'notes', pos: 0, pent: 'both'};
+/* מז׳ור ומינור מוצגים יחד עם הפנטטוני שבתוכם: התווים של הפנטטוני בכחול, והתווים שנוספים רק בסולם המלא בסגול */
+const PENT_OF = {major:'pmaj', minor:'pmin'};
+const FB_SCALES = [['major', 'מז׳ור (עם הפנטטוני)'], ['minor', 'מינור (עם הפנטטוני)'], ['blues', 'בלוז'], ['dor', 'דורי'], ['mix', 'מיקסולידי'], ['hmin', 'מינור הרמוני'], ['tmaj', 'משולש מז׳ור (ארפג׳ו)'], ['tmin', 'משולש מינור (ארפג׳ו)']];
 function fretPositions(n, x0, total){
   const ws = []; let w = 1; for(let i = 0; i < n; i++){ ws.push(w); w *= 0.955; }
   const sum = ws.reduce((a, b) => a + b); const pos = [x0]; let x = x0;
@@ -2743,8 +2762,13 @@ function fretboardSVG(opts){
   }
   return s + '</svg>';
 }
+function fbScale(){
+  const full = SCALES.find(x => x.id === FB.scale) || SCALES[1], pid = PENT_OF[FB.scale], pent = pid ? SCALES.find(x => x.id === pid) : null;
+  return {full, pent, shown:pent && FB.pent === 'pent' ? pent : full};
+}
 function renderFretboard(){
-  const sc = SCALES.find(x => x.id === FB.scale);
+  const F = fbScale(), sc = F.shown, pentIv = F.pent ? F.pent.iv : null;
+  const pcls = iv => pentIv && FB.pent !== 'pent' ? (pentIv.includes(iv) ? ' pent' : ' ext') : '';
   const positions = scalePositions(sc, FB.root);
   if(FB.pos > positions.length) FB.pos = 0;
   if(FB.label === 'finger' && !FB.pos) FB.label = 'notes';
@@ -2753,24 +2777,26 @@ function renderFretboard(){
   if(!FB.pos){
     for(let s = 0; s < 6; s++) for(let f = 0; f <= 15; f++){
       const pc = (OPEN[s] + f) % 12, iv = (pc - FB.root + 12) % 12;
-      if(sc.iv.includes(iv)) marks.push({s, f, text:lab(s, f, iv, pc, 0), cls:(iv === 0 ? 'root' : '') + ' click'});
+      if(sc.iv.includes(iv)) marks.push({s, f, text:lab(s, f, iv, pc, 0), cls:(iv === 0 ? 'root' : '') + pcls(iv) + ' click'});
     }
   } else {
     const pm = positions[FB.pos - 1], minF = Math.min(...pm.map(x => x.f)), maxF = Math.max(...pm.map(x => x.f));
     frets = Math.max(15, Math.min(20, maxF + 1)); band = {from:minF, to:maxF};
-    marks = pm.map(m => { const pc = (OPEN[m.s] + m.f) % 12, iv = (pc - FB.root + 12) % 12; return {s:m.s, f:m.f, text:lab(m.s, m.f, iv, pc, minF), cls:(iv === 0 ? 'root' : '') + (m.blue ? ' hl' : '') + ' click'}; });
+    marks = pm.map(m => { const pc = (OPEN[m.s] + m.f) % 12, iv = (pc - FB.root + 12) % 12; return {s:m.s, f:m.f, text:lab(m.s, m.f, iv, pc, minF), cls:(iv === 0 ? 'root' : '') + pcls(iv) + (m.blue ? ' hl' : '') + ' click'}; });
   }
   $('#f-board').innerHTML = fretboardSVG({frets, marks, band, label:`${NOTES[FB.root]} ${sc.label}${FB.pos ? `, פוזיציה ${FB.pos}` : ''}`});
-  $('#f-notes').innerHTML = sc.iv.map(iv => { const pc = (FB.root + iv) % 12; return `<div class="note-pill ${iv === 0 ? 'root' : ''}"><b>${NOTES[pc]}</b><small>${INTERVALS[iv]}</small></div>`; }).join('');
+  $('#f-notes').innerHTML = sc.iv.map(iv => { const pc = (FB.root + iv) % 12; return `<div class="note-pill ${iv === 0 ? 'root' : ''}${pcls(iv)}"><b>${NOTES[pc]}</b><small>${INTERVALS[iv]}</small></div>`; }).join('');
+  const pv = $('#f-pent'); if(pv){ pv.hidden = !F.pent; if(F.pent){ const ext = F.full.iv.filter(i => !F.pent.iv.includes(i)).map(i => INTERVALS[i]).join(' ו־');
+    pv.innerHTML = `<div class="seg" id="f-pent-seg"><button data-v="both" aria-pressed="${FB.pent !== 'pent'}">${F.full.label} מלא + פנטטוני</button><button data-v="pent" aria-pressed="${FB.pent === 'pent'}">רק ${F.pent.label}</button></div>${FB.pent !== 'pent' ? `<span class="fb-legend"><i class="lg-pent"></i> פנטטוני <i class="lg-ext"></i> נוסף בסולם המלא (${ext})</span>` : ''}`; } }
   $('#f-pos').innerHTML = `<button data-v="0" aria-pressed="${!FB.pos}">כל הצוואר</button>` + positions.map((p, i) => `<button data-v="${i + 1}" aria-pressed="${FB.pos === i + 1}">פוזיציה ${i + 1}</button>`).join('');
-  const nps = sc.iv.length === 7 ? 'שלושה תווים על כל מיתר' : (sc.iv.length === 5 || sc.id === 'blues') ? 'שני תווים על כל מיתר' : 'כל התווים בטווח של חמישה סריגים';
+  const nps = sc.iv.length === 7 ? 'שניים־שלושה תווים על כל מיתר, בטווח של טון וחצי' : (sc.iv.length === 5 || sc.id === 'blues') ? 'שני תווים על כל מיתר, בטווח של טון וחצי' : 'כל התווים בטווח של חמישה סריגים';
   $('#f-pos-hint').textContent = FB.pos ? `פוזיציה ${FB.pos}: ${nps}, בסריגים ${band.from}–${band.to}. פוזיציה 1 מתחילה מצליל הבסיס על המיתר העבה.${sc.id === 'blues' ? ' התו הירוק הוא "תו הבלוז".' : ''}` : 'בחרו פוזיציה כדי לראות קטע אחד של הסולם, כמו שמנגנים אותו ביד אחת בלי לזוז.';
   $('#f-label').innerHTML = `<button data-v="notes">שמות תווים</button><button data-v="iv">מרווחים</button>${FB.pos ? '<button data-v="finger">אצבעות</button>' : ''}`;
   $$('#f-root button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.v) === FB.root));
   $$('#f-label button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === FB.label));
 }
 function playScale(){
-  const sc = SCALES.find(x => x.id === FB.scale), t0 = ac().currentTime + 0.05;
+  const sc = fbScale().shown, t0 = ac().currentTime + 0.05;
   const notes = FB.pos ? [...new Set(scalePositions(sc, FB.root)[FB.pos - 1].map(m => OPEN[m.s] + m.f))].sort((a, b) => a - b) : [...sc.iv, 12].map(iv => 48 + FB.root + iv);
   notes.forEach((m, i) => pluck(midiFreq(m), t0 + i * 0.3, 0.32));
 }
@@ -2778,7 +2804,18 @@ function playScale(){
 /* ================== פוזיציות של סולמות ================== */
 function buildPosition(iv, root, f0, blue){
   const marks = [], n = iv.length;
-  if(n === 5 || n === 7){
+  if(n === 7){
+    /* סולם של 7 תווים: חלון של 4 סריגים (אצבע לכל סריג). בכל מיתר התווים פרוסים על טון וחצי לכל היותר,
+       וכל תו בסולם מופיע פעם אחת ברצף, בלי לדלג. כשתו נופל בין המיתרים, החלון של המיתר הבא זז בסריג אחד */
+    const inSc = m => iv.includes(((m % 12) - root + 12) % 12), w = f0;
+    let m = OPEN[0] + w; while(!inSc(m)) m++;
+    for(let s = 0; s < 6; s++){
+      const first = m - OPEN[s], lim = first < w ? first + 3 : Math.max(w + 3, first);
+      let lastF = first;
+      while(m - OPEN[s] <= lim && m - OPEN[s] - first <= 3){ marks.push({s, f:m - OPEN[s]}); lastF = m - OPEN[s]; m++; while(!inSc(m)) m++; }
+      if(s === 5) break;
+    }
+  } else if(n === 5){
     const nps = n === 5 ? 2 : 3, seq = [];
     for(let m = OPEN[0] + f0; seq.length < nps * 6; m++) if(iv.includes(((m % 12) - root + 12) % 12)) seq.push(m);
     let k = 0;
@@ -2793,13 +2830,17 @@ function buildPosition(iv, root, f0, blue){
     for(let s = 0; s < 6; s++) for(let f = f0; f <= f0 + 4; f++) if(iv.includes(((OPEN[s] + f) % 12 - root + 12) % 12)) marks.push({s, f});
   }
   const min = Math.min(...marks.map(x => x.f));
-  if(min >= 12 && Math.max(...marks.map(x => x.f)) > 17) marks.forEach(x => { x.f -= 12; });
+  if(min < 0) marks.forEach(x => { x.f += 12; });
+  else if(min >= 12 && Math.max(...marks.map(x => x.f)) > 17) marks.forEach(x => { x.f -= 12; });
   return marks;
 }
 function scalePositions(sc, root){
   const blue = sc.id === 'blues', iv = blue ? [0,3,5,7,10] : sc.iv;
   const rootFret = (root - 4 + 12) % 12;
-  return iv.map(d => { let f0 = rootFret + d; if(f0 >= 12) f0 -= 12; return buildPosition(iv, root, f0, blue); });
+  let starts = iv.map(d => (rootFret + d) % 12);
+  // בסולם של 7 תווים: פוזיציה שמתחילה חצי טון אחרי הקודמת כמעט זהה לה, ולכן מדלגים עליה (נשארות 5 פוזיציות)
+  if(iv.length === 7) starts = starts.filter((f, k) => k === 0 || ((f - starts[k - 1] + 12) % 12 !== 1 && (starts[0] - f + 12) % 12 !== 1));
+  return starts.map(f0 => buildPosition(iv, root, f0, blue));
 }
 
 /* משחק תווים */
@@ -7864,6 +7905,7 @@ function fsNotesBarHTML(){
     <button type="button" class="pr-play fsn-play" data-pr="play" aria-label="${PR.playing ? 'השהיה' : 'נגינה'}">${PR.playing ? PRI.pause : PRI.play}</button>
     <b class="fss-title" dir="auto">${esc((PR.piece && PR.piece.title) || '')}</b>
     ${prToolHTML().replace('class="pr-tool"', 'class="pr-tool fss-grp"')}
+    ${CH.show && (PR.host === 'song' ? sfCan() : !!T.data) ? `<button type="button" class="fss-btn" data-pr="ch-edit" aria-pressed="${CH.edit}">${CH.edit ? 'סיום ושמירת אקורדים' : '✎ תיקון אקורדים'}</button>` : ''}
     <span class="fss-grp" aria-label="גודל התווים"><button type="button" data-fsn="z-" aria-label="הקטנה">−</button><span class="fss-zv">${Math.round(FSN.z * 100)}%</span><button type="button" data-fsn="z+" aria-label="הגדלה">+</button></span>
     <span class="fss-grp" aria-label="שמות התווים"><span class="fss-l">שמות</span>${[['', 'בלי'], ['en', 'C D E'], ['he', 'דו רה מי']].map(([v, l]) => `<button type="button" data-fsn="names" data-v="${v}" aria-pressed="${(PRN.names || '') === v}">${l}</button>`).join('')}</span>
     ${hasLoop || PRN.tool === 'view' ? '' : '<span class="fss-hint">גוררים על התווים כדי לסמן קטע</span>'}${hasLoop ? `<button type="button" class="fss-btn" data-pr="focus" aria-pressed="${PRN.focus}">רק הקטע: תיבות <bdi dir="ltr">${prBarVal(PR.loop.a)}–${prBarVal(PR.loop.b, true)}</bdi></button><button type="button" class="fss-btn" data-pr="loop-clear">ביטול הקטע</button>` : ''}`;
@@ -9316,6 +9358,7 @@ function prNotesPointer(e){
   window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
 }
 function prNotesClick(e){
+  const chEl = e.target.closest('.prn-ch'); if(chEl && CH.edit){ prChordInline(chEl); return; }
   const P = PR.piece; if(PRN.tool === 'view' || !P || !PRN.boxes.length || PRN.noClick) return;
   const r = PRN.el.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
   const mi = PRN.boxes.findIndex(b => b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h); if(mi < 0) return;
@@ -9380,26 +9423,64 @@ function bestChord(win){
   if(bass != null && bass % 12 !== best.r && best.tones.includes(bass % 12)) name += '/' + CNM[bass % 12];
   return {name, sc:best.sc, r:best.r, q:best.q};
 }
+/* זיהוי אקורדים לאורך כל היצירה: נקודת החלפה אפשרית בכל מקום שבו נכנס אקורד (כמה תווים ביחד)
+   או תו חדש ביד שמאל, ולא רק בתחילת תיבה. תיבה שבה החלוקה לא משפרת מספיק נשארת עם אקורד אחד */
 function detectChords(P){
-  const B = P.bars.length ? P.bars : [0], segs = [];
+  const B = P.bars.length ? P.bars : [0], N = P.notes.slice().sort((a, b) => a.s - b.s), segs = [];
+  const twoHands = N.some(n => n.hand === 2) && N.some(n => n.hand === 1);
+  const ts = P.ts || [4, 4], beats = ts[1] === 8 && ts[0] % 3 === 0 && ts[0] > 3 ? ts[0] / 3 : ts[0] || 4;
+  const ons = []; N.forEach(n => { const l = ons[ons.length - 1]; if(l && n.s - l.t < .045) l.n.push(n); else ons.push({t:n.s, n:[n]}); });
+  let oi = 0;
   B.forEach((t0, bi) => {
     const t1 = bi + 1 < B.length ? B[bi + 1] : P.dur; if(t1 - t0 < .05) return;
-    const whole = bestChord(chordWindow(P, t0, t1)), mid = (t0 + t1) / 2;
-    const h1 = bestChord(chordWindow(P, t0, mid)), h2 = bestChord(chordWindow(P, mid, t1));
-    if(whole && h1 && h2 && h1.name !== h2.name && h1.sc + h2.sc > whole.sc * 1.18){
-      segs.push({bi, half:0, s:t0, e:mid, name:h1.name}); segs.push({bi, half:1, s:mid, e:t1, name:h2.name});
-    } else segs.push({bi, half:-1, s:t0, e:t1, name:whole ? whole.name : ''});
+    const beat = (t1 - t0) / beats, cs = [t0];
+    while(oi < ons.length && ons[oi].t < t0 + .045) oi++;
+    for(let k = oi; k < ons.length && ons[k].t < t1 - .045; k++){
+      const o = ons[k], lh = o.n.filter(n => n.hand === 2), many = o.n.length >= (twoHands ? 3 : 2);
+      // תו בודד ביד שמאל נחשב החלפה רק כשהוא בס חדש (נמוך מהתווים של יד שמאל בפעמה האחרונה), כדי שארפג׳ו לא יפורק
+      let left = twoHands && lh.length >= 2;
+      if(twoHands && lh.length === 1){ let mn = 999; for(let j = k - 1; j >= 0 && ons[j].t > o.t - beat * 2.05; j--) ons[j].n.forEach(x => { if(x.hand === 2 && x.midi < mn) mn = x.midi; }); left = lh[0].midi < mn; }
+      let lowest = false;
+      if(!twoHands){ let mn = 999; for(let j = 0; j < N.length && N[j].s < o.t - .01; j++){ const x = N[j]; if(x.s + x.d > o.t - .02 && x.midi < mn) mn = x.midi; } lowest = o.n.some(n => n.midi <= mn); }
+      if((left || many || lowest) && o.t - cs[cs.length - 1] >= beat * .45) cs.push(o.t);
+    }
+    const mk = (s0, e) => { const w = chordWindow(P, s0, e); return {s:s0, e, c:bestChord(w), bass:w.bass, pcs:w.w.filter(v => v > 0).length}; };
+    const rootPos = x => x.c && x.bass != null && x.pcs >= 3 && x.c.r === x.bass % 12;
+    let parts = cs.map((s0, k) => mk(s0, k + 1 < cs.length ? cs[k + 1] : t1));
+    // איחוד חלקים סמוכים כשביחד הם אקורד אחד טוב (למשל G ואחריו B°/D = G7), אלא אם הבס זז בין שני אקורדים במצב יסודי
+    for(let again = true; again && parts.length > 1;){
+      again = false;
+      for(let k = 0; k + 1 < parts.length; k++){
+        const a = parts[k], b = parts[k + 1];
+        if(!a.c || !b.c){ parts.splice(k, 2, mk(a.s, b.e)); again = true; break; }
+        if(a.c.name === b.c.name){ parts.splice(k, 2, Object.assign(mk(a.s, b.e), {c:Object.assign({}, a.c)})); again = true; break; }
+        if(rootPos(a) && rootPos(b) && a.bass % 12 !== b.bass % 12) continue;
+        const m = mk(a.s, b.e); if(m.c && m.c.sc >= (a.c.sc + b.c.sc) * .92){ parts.splice(k, 2, m); again = true; break; }
+      }
+    }
+    // מחזירים את כל נקודות ההחלפה האפשריות (כדי שאפשר יהיה לתקן בכל אחת), עם השם של החלק שהן בתוכו
+    cs.forEach((s0, k) => { const e = k + 1 < cs.length ? cs[k + 1] : t1, pt = parts.find(x => s0 >= x.s - 1e-6 && s0 < x.e - 1e-6) || parts[parts.length - 1];
+      segs.push({bi, q:Math.round((s0 - t0) / (t1 - t0) * 96), beat:Math.floor((s0 - t0) / beat + 1e-6) + 1, s:s0, e, name:pt && pt.c ? pt.c.name : '', half:s0 === t0 ? -1 : 1}); });
   });
-  // תיבה ריקה ממשיכה את האקורד הקודם
+  // מקום בלי תווים ממשיך את האקורד הקודם
   segs.forEach((g, i) => { if(!g.name && i) g.name = segs[i - 1].name; });
   return segs;
 }
-const segKey = g => g.bi + (g.half === 1 ? '.5' : g.half === 0 ? '.0' : '');
+const segKey = g => g.q ? g.bi + '@' + g.q : String(g.bi);
 function prChords(){
   const P = PR.piece; if(!P) return [];
   if(!P._chords) P._chords = detectChords(P);
   const fix = P.chordFix || {};
-  return P._chords.map(g => Object.assign({}, g, {auto:g.name, name:fix[segKey(g)] != null ? fix[segKey(g)] : g.name, fixed:fix[segKey(g)] != null}));
+  // תאימות לתיקונים ישנים ("3", "3.0", "3.5")
+  const fixOf = g => { const k = segKey(g); if(fix[k] != null) return fix[k]; if(!g.q){ if(fix[g.bi + '.0'] != null) return fix[g.bi + '.0']; return null; } if(Math.abs(g.q - 48) <= 8 && fix[g.bi + '.5'] != null) return fix[g.bi + '.5']; return null; };
+  return P._chords.map(g => { const f = fixOf(g); return Object.assign({}, g, {auto:g.name, name:f != null ? f : g.name, fixed:f != null}); });
+}
+function prSetChordFix(g, v){
+  const P = PR.piece; P.chordFix = Object.assign({}, P.chordFix);
+  delete P.chordFix[g.bi + '.0']; if(g.q && Math.abs(g.q - 48) <= 8) delete P.chordFix[g.bi + '.5'];
+  v = String(v || '').trim().replace(/\s+/g, '');
+  if(!v || v === g.auto) delete P.chordFix[segKey(g)]; else P.chordFix[segKey(g)] = v;
+  CH.curSeg = -1;
 }
 function prChordLabel(name, html){
   if(!name) return '';
@@ -9416,9 +9497,9 @@ function prChordStripHTML(){
   if(!CH.show) return '';
   const segs = prChords(), M = prMergedSegs(segs), canFix = PR.host === 'song' ? sfCan() : !!T.data;
   return `<div class="pr-chstrip" dir="ltr">${CH.edit
-    ? segs.map((g, i) => `<label class="pr-chi${g.fixed ? ' fx' : ''}"><small>${g.bi + 1}${g.half === 0 ? 'א' : g.half === 1 ? 'ב' : ''}</small><input value="${esc(g.name)}" data-seg="${i}" maxlength="12" spellcheck="false" aria-label="אקורד בתיבה ${g.bi + 1}"></label>`).join('')
+    ? segs.map((g, i) => `<label class="pr-chi${g.fixed ? ' fx' : ''}"><small>${g.bi + 1}${g.q ? '·' + g.beat : ''}</small><input value="${esc(g.name)}" data-seg="${i}" maxlength="12" spellcheck="false" aria-label="אקורד בתיבה ${g.bi + 1}"></label>`).join('')
     : M.map(m => `<button type="button" class="pr-ch" data-chs="${m.idx[0]}" title="תיבה ${m.s === segs[m.idx[0]].s ? segs[m.idx[0]].bi + 1 : ''}"><b>${prChordLabel(m.name, true) || '–'}</b><small>${segs[m.idx[0]].bi + 1}</small></button>`).join('')}</div>
-    ${CH.edit ? '<p class="hint">כותבים את האקורד הנכון בכל תיבה (א/ב = חצי ראשון/שני). תא ריק מחזיר לזיהוי האוטומטי. תיקון מסומן בכתום.</p>' : ''}
+    ${CH.edit ? '<p class="hint">כותבים את האקורד הנכון בכל מקום (3·2 = תיבה 3, פעמה 2). אפשר גם ללחוץ על אקורד מעל התווים ולשנות אותו שם. תא ריק מחזיר לזיהוי האוטומטי. תיקון מסומן בכתום.</p>' : ''}
     ${canFix ? '' : ''}`;
 }
 async function prSaveChordFix(){
@@ -9442,15 +9523,31 @@ function prChordOverlay(){
   const box = PRN.el && PRN.el.querySelector('.prn-chords'); if(!box) return;
   box.innerHTML = ''; const P = PR.piece; if(!CH.show || !P || !PRN.osmd) return;
   const seen = new Set(); let prev = null, html = '';
+  box.classList.toggle('edit', !!CH.edit);
   prChords().forEach((g, i) => {
-    const mi = P.barIdx[g.bi], k = mi + ':' + g.half; if(seen.has(k)){ prev = g.name; return; } seen.add(k);
-    const b = PRN.boxes[mi]; if(!b || !g.name){ prev = g.name; return; }
-    if(g.name === prev && g.half !== 0){ prev = g.name; return; }
-    prev = g.name;
-    const x = prCursorX(mi, g.half === 1 ? .5 : 0); if(x == null) return;
-    html += `<span class="prn-ch" data-seg="${i}" style="left:${(x - 4).toFixed(1)}px;top:${(b.y - 2).toFixed(1)}px">${prChordLabel(g.name, true)}</span>`;
+    const mi = P.barIdx[g.bi], k = mi + ':' + g.q; if(seen.has(k)){ prev = g.name; return; } seen.add(k);
+    const b = PRN.boxes[mi]; if(!b){ prev = g.name; return; }
+    // בתחילת תיבה תמיד מציגים; באמצע תיבה רק כשהאקורד מתחלף. במצב תיקון מציגים כל נקודה אפשרית
+    const same = g.name === prev && !!g.q; prev = g.name;
+    if((same || !g.name) && !CH.edit) return;
+    const x = prCursorX(mi, g.q / 96); if(x == null) return;
+    html += `<span class="prn-ch${g.fixed ? ' fx' : ''}${same ? ' rep' : ''}" data-seg="${i}" style="left:${(x - 4).toFixed(1)}px;top:${(b.y - 2).toFixed(1)}px">${g.name ? prChordLabel(g.name, true) : '+'}</span>`;
   });
   box.innerHTML = html;
+}
+/* תיקון אקורד ישירות מעל התווים: לוחצים על האקורד וכותבים אחר */
+function prChordInline(el){
+  const g = prChords()[Number(el.dataset.seg)]; if(!g) return;
+  const old = PRN.el.querySelector('.prn-ch-in'); if(old) old.remove();
+  const inp = document.createElement('input'); inp.className = 'prn-ch-in'; inp.value = g.name || ''; inp.maxLength = 12; inp.spellcheck = false; inp.dir = 'ltr';
+  inp.setAttribute('aria-label', `אקורד בתיבה ${g.bi + 1}${g.q ? ', פעמה ' + g.beat : ''}`); inp.placeholder = g.auto || '';
+  inp.style.left = el.style.left; inp.style.top = el.style.top;
+  PRN.el.appendChild(inp); inp.focus(); inp.select();
+  let done = false;
+  const commit = ok => { if(done) return; done = true; if(ok){ prSetChordFix(g, inp.value); } inp.remove(); prDraw(); prSoftRerender(); };
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); commit(true); } if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); commit(false); } });
+  inp.addEventListener('blur', () => commit(true));
+  inp.addEventListener('pointerdown', e => e.stopPropagation()); inp.addEventListener('click', e => e.stopPropagation());
 }
 function prChordSync(){
   const segs = prChords(); const k = prCurSeg(segs); if(k === CH.curSeg) return; CH.curSeg = k;
@@ -9649,7 +9746,7 @@ async function onRoll(e){
   if(act === 'file') $('#pr-file').click();
   if(act === 'play'){ if(SAMP.state === 'idle') loadPianoSamples(); PR.playing ? prStop() : prPlay(); }
   if(act === 'ch-only'){ CH.only = !CH.only; b.setAttribute('aria-pressed', CH.only); b.classList.toggle('on', CH.only); const was = PR.playing; prStop(); if(was) prPlay(); prDraw(); return true; }
-  if(act === 'ch-edit'){ if(CH.edit) await prSaveChordFix(); CH.edit = !CH.edit; prRerender(); return true; }
+  if(act === 'ch-edit'){ if(CH.edit) await prSaveChordFix(); CH.edit = !CH.edit; if(FSN.on) prSoftRerender(); else prRerender(); return true; }
   if(act === 'song-close'){ prStop(); PR.songFile = null; PR.piece = null; PR.host = 'piano'; PRN.key = null; $('#sh-roll').innerHTML = ''; renderSongFiles(); return true; }
   if(act === 'restart') prSeek(PR.loop.on && PR.loop.a != null ? PR.loop.a : 0);
   if(act === 'zoom-in' || act === 'zoom-out'){ PR.pps = clamp(PR.pps * (act === 'zoom-in' ? 1.3 : 1 / 1.3), 25, 600); prDraw(); }
@@ -10301,9 +10398,10 @@ function init(){
   // צוואר
   $('#f-root').innerHTML = NOTES.map((n, i) => `<button data-v="${i}">${n}</button>`).join('');
   $('#f-root').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ FB.root = Number(b.dataset.v); renderFretboard(); } });
-  $('#f-scale').innerHTML = SCALES.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+  $('#f-scale').innerHTML = FB_SCALES.map(([id, l]) => `<option value="${id}">${l}</option>`).join('');
   $('#f-scale').value = FB.scale;
   $('#f-scale').addEventListener('change', e => { FB.scale = e.target.value; renderFretboard(); });
+  $('#f-pent').addEventListener('click', e => { const b = e.target.closest('#f-pent-seg button'); if(!b) return; FB.pent = b.dataset.v; renderFretboard(); });
   $('#f-pos').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ FB.pos = Number(b.dataset.v); renderFretboard(); } });
   $('#f-label').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ FB.label = b.dataset.v; renderFretboard(); } });
   $('#f-play').addEventListener('click', playScale);
@@ -10638,9 +10736,8 @@ function init(){
     const si = e.target.closest('[data-seg]');
     if(si && si.tagName === 'INPUT'){
       const P = PR.piece, g = prChords()[Number(si.dataset.seg)]; if(!g) return;
-      const v = si.value.trim().replace(/\s+/g, ''); P.chordFix = Object.assign({}, P.chordFix);
-      if(!v || v === g.auto) delete P.chordFix[segKey(g)]; else P.chordFix[segKey(g)] = v;
-      si.parentElement.classList.toggle('fx', P.chordFix[segKey(g)] != null); CH.curSeg = -1; prDraw(); prChordOverlay();
+      prSetChordFix(g, si.value);
+      si.parentElement.classList.toggle('fx', P.chordFix[segKey(g)] != null); prDraw(); prChordOverlay();
     }
   });
   host.addEventListener('change', e => { if(e.target.id === 'pr-names-on'){ PRN.names = e.target.checked ? (localStorage.getItem('pritah.prnames.lang') || 'en') : ''; try{ localStorage.setItem('pritah.prnames', PRN.names); }catch(err){} $('#pr-names-lang').hidden = !PRN.names; $$('#pr-names-lang button').forEach(x => x.setAttribute('aria-pressed', (x.dataset.pr === 'names-he') === (PRN.names === 'he'))); prNotesNames(); return; }
