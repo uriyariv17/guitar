@@ -5558,7 +5558,7 @@ function arLyricsHTML(song, sec, opt){
   if(h){ if(h.rest) lines[0] = h.rest; else lines.shift(); }
   const txt = lines.join('\n').replace(/^\n+|\n+$/g, '');
   if(!txt.trim()) return '';
-  return `<div class="sheet ar-lyr${opt && opt.small ? ' small' : ''}" dir="${song.data.dir || (hasHebrew(song.data.sheet) ? 'rtl' : 'ltr')}">${renderSheetHTML(txt, Number(song.data.shift) || 0, song.data.key).html}</div>`;
+  return `<div class="sheet ar-lyr${opt && opt.small ? ' small' : ''}" dir="${sheetDirOf(song.data.sheet, song.data.dir)}">${renderSheetHTML(txt, Number(song.data.shift) || 0, song.data.key).html}</div>`;
 }
 function arFirstLine(song, sec){
   if(sec.from == null || sec.from < 0) return '';
@@ -5888,6 +5888,12 @@ function bkSum(){
   if(who.g){ $('#bk-sum').textContent = list.length ? `${list.length === 1 ? 'שיר אחד' : list.length + ' שירים'} בחוברת, עם מילים ואקורדים בסולם של הלהקה.` : 'לא נבחרו שירים.'; return; }
   $('#bk-sum').textContent = list.length ? `${list.length === 1 ? 'שיר אחד' : list.length + ' שירים'} בחוברת. ל־${withPart} מהם כבר כתוב תפקיד ל${bkWhoLabel(who)}${list.length > withPart ? `, ובשאר יופיעו מילים ואקורדים בלבד` : ''}.` : 'אין שירים בבחירה הזאת.';
 }
+/* כיוון לפי רוב האותיות: שיר באנגלית עם כמה הערות בעברית נשאר משמאל לימין */
+function sheetDirOf(text, dir){
+  if(dir === 'rtl' || dir === 'ltr') return dir;
+  const t = String(text || '').replace(/\[[^\]]*\]/g, ''), he = (t.match(/[\u0590-\u05FF]/g) || []).length, la = (t.match(/[A-Za-z]/g) || []).length;
+  return he && la <= he * 3 ? 'rtl' : 'ltr';
+}
 function bkLinks(s){
   const d = s.data, rec = d.recordings || {}, L = [];
   if(d.url) L.push({t:'yt', label:'הביצוע המקורי', url:d.url});
@@ -5900,10 +5906,10 @@ function bkLinks(s){
 function bkSongHTML(s, n, who, o){
   const a = arOf(s.id), d = a && a.data, inst = bkInst(d, who), key = bandKey(s, Number(s.data.shift) || 0);
   const chips = [s.data.bpm ? `${s.data.bpm} BPM` : '', key ? `סולם ${key}` : '', d && d.feel, s.data.duration ? fmtDur(s.data.duration) + ' דק׳' : ''].filter(Boolean);
-  let h = `<section class="bk-song${o.page ? ' pg' : ''}"><header class="bk-sh"><span class="bk-n">${n}</span><div><h1>${esc(s.data.name)}</h1>${s.data.artist ? `<div class="bk-art">${esc(s.data.artist)}</div>` : ''}</div><div class="bk-chips">${chips.map(c => `<span dir="auto">${esc(c)}</span>`).join('')}</div></header>${bkLinks(s)}<div class="bk-body" dir="${inst ? 'rtl' : (s.data.dir || (hasHebrew(s.data.sheet || '') ? 'rtl' : 'ltr'))}">`;
+  let h = `<section class="bk-song${o.page ? ' pg' : ''}"><header class="bk-sh"><span class="bk-n">${n}</span><div><h1>${esc(s.data.name)}</h1>${s.data.artist ? `<div class="bk-art">${esc(s.data.artist)}</div>` : ''}</div><div class="bk-chips">${chips.map(c => `<span dir="auto">${esc(c)}</span>`).join('')}</div></header>${bkLinks(s)}<div class="bk-body" dir="${inst ? 'rtl' : sheetDirOf(s.data.sheet, s.data.dir)}">`;
   if(!inst){
     if(!who.g) h += `<p class="bk-none">${d ? `אין בעיבוד של השיר הזה תפקיד ל${esc(bkWhoLabel(who))}.` : 'לשיר הזה עוד אין עיבוד כתוב.'} מופיעים כאן המילים והאקורדים.</p>`;
-    if(s.data.sheet) h += `<div class="sheet bk-full" dir="${s.data.dir || (hasHebrew(s.data.sheet) ? 'rtl' : 'ltr')}">${renderSheetHTML(s.data.sheet, Number(s.data.shift) || 0, s.data.key).html}</div>`;
+    if(s.data.sheet) h += `<div class="sheet bk-full" dir="${sheetDirOf(s.data.sheet, s.data.dir)}">${renderSheetHTML(s.data.sheet, Number(s.data.shift) || 0, s.data.key).html}</div>`;
     return h + '</div></section>';
   }
   const T0 = AR_TYPES[inst.type] || AR_TYPES.other, g = (d.gen || {})[inst.id] || {}, fx = g.fx || [];
@@ -5939,14 +5945,18 @@ function bkFit(area){
     if(hOf() <= H) return;
     sec.classList.add('bkfit'); if(hOf() <= H) return;
     if(sec.querySelector('.bk-rep')){ sec.classList.add('bkdd'); if(hOf() <= H) return; }
-    sec.classList.add('bkcols');
-    const fits = z => { sec.style.setProperty('--z', z.toFixed(3)); return hOf() <= H; };
-    let z = 1;
-    if(!fits(1)){
-      if(!fits(BK_MINZ)) z = BK_MINZ;
-      else { let lo = BK_MINZ, hi = 1; for(let k = 0; k < 7; k++){ const m = (lo + hi) / 2; if(fits(m)) lo = m; else hi = m; } z = lo; fits(z); }
-    }
-    if(hOf() > H) over++;
+    // שורה שרחבה מהטור (שורות אקורדים לא נשברות) נחשבת "לא נכנס", כדי ששום דבר לא ייחתך בשוליים
+    const lns = [...sec.querySelectorAll('.sheet .ln, .bk-in, .bk-fx')];
+    const wideOK = () => lns.every(l => l.scrollWidth <= l.clientWidth + 1);
+    const fits = z => { sec.style.setProperty('--z', z.toFixed(3)); return hOf() <= H && wideOK(); };
+    const best = () => { if(fits(1)) return 1; if(!fits(BK_MINZ)) return 0; let lo = BK_MINZ, hi = 1; for(let k = 0; k < 7; k++){ const m = (lo + hi) / 2; if(fits(m)) lo = m; else hi = m; } return lo; };
+    sec.classList.add('bkcols'); const z2 = best();
+    sec.classList.remove('bkcols'); const z1 = best();
+    let z;
+    if(z2 || z1){ const two = z2 >= z1; sec.classList.toggle('bkcols', two); z = two ? z2 : z1; }
+    else { z = BK_MINZ; sec.classList.toggle('bkcols', true); sec.style.setProperty('--z', z); if(!wideOK()) sec.classList.remove('bkcols'); }
+    sec.style.setProperty('--z', z.toFixed(3));
+    if(hOf() > H || !wideOK()) over++;
     sec.dataset.zoom = Math.round(z * 100);
   });
   area.classList.remove('bk-measure');
