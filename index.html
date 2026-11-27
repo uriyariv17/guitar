@@ -1246,7 +1246,7 @@ dialog.inl-dlg form{ max-height:none; overflow:visible; }
 .check{ display:flex; align-items:center; gap:8px; cursor:pointer; }
 /* הסגנון חל גם במסך, כדי שאפשר יהיה למדוד את הגובה לפני ההדפסה */
 #print-area.bk-measure{ display:block !important; position:fixed !important; top:0; left:-10000px; width:182mm; visibility:hidden; background:#fff; }
-.bk .sheet{ border:0; box-shadow:none; padding:0; font-size:calc(12pt * var(--z, 1)); background:#fff; }
+.bk .sheet{ border:0; box-shadow:none; padding:0; font-size:calc(12pt * var(--z, 1)); background:#fff; overflow:visible !important; }
 .bk .sheet .ln.sec{ background:#eee; color:#000; }
 .bk-song.bkcols .bk-body{ column-count:2; column-gap:7mm; column-rule:1px solid #ddd; }
 .bk-song.bkcols .bk-sec, .bk-song.bkcols .bk-sound, .bk-song.bkcols .bk-se{ break-inside:avoid; }
@@ -1348,6 +1348,14 @@ body.fs-lock{ overflow:hidden; }
 .fss-bar .pr-tool button[aria-pressed="true"]{ background:#f5c400; color:#111; }
 .pr-notes.tool-view{ touch-action:pan-x pan-y; cursor:grab; }
 .pr-notes.tool-view .prn-hl{ pointer-events:none; }
+
+/* דחיסה במצב "כל שיר בדף אחד" */
+.bk-song.bkfit .sheet .ln:not([data-l]){ height:.4em; line-height:.4em; overflow:hidden; }
+.bk-song.bkfit .sheet .blk{ padding:0; margin:0; }
+.bk-song.bkfit .sheet .ln.sec{ margin-top:.25em; margin-bottom:.05em; }
+.bk-song.bkfit .bk-sh{ margin-bottom:calc(4pt * var(--z, 1)); padding-bottom:calc(3pt * var(--z, 1)); }
+.bk-song.bkfit .bk-links{ margin-bottom:calc(4pt * var(--z, 1)); }
+.bk-song.bkfit .bk-sec{ margin:calc(3pt * var(--z, 1)) 0; padding:calc(3pt * var(--z, 1)) calc(7pt * var(--z, 1)); }
 </style>
 </head>
 <body>
@@ -4085,7 +4093,7 @@ function scaleShape(x){
 /* זיהוי שורת כותרת של חלק בשיר: "פזמון:", "[בית 2]", "**Chorus**", "(פזמון x2)", "פתיחה: Am G F" וכו׳.
    מחזיר {name, rest} (rest = מה שכתוב אחרי הכותרת באותה שורה) או null */
 const SEC_KW = '(?:פתיחה|אינטרו|הקדמה|מבוא|פרה[ \\-־]?פזמון|פרי[ \\-־]?פזמון|טרום[ \\-־]?פזמון|פוסט[ \\-־]?פזמון|פזמון|רפרן|בית|גשר|ברידג׳?|ברידג\'?|סולו|מעבר|ברייק|הפסקה|קטע נגינה|קטע כלי|נגינה|אינסטרומנטלי|סיומת|סיום|אאוטרו|קודה|intro|pre[ \\-]?chorus|post[ \\-]?chorus|chorus|refrain|hook|verse|bridge|middle ?8|solo|interlude|instrumental|breakdown|break|outro|ending|coda|tag|vamp)';
-const SEC_RE = new RegExp('^' + SEC_KW + '(?:[ \\-–—]*(?:\\d{1,2}|ראשון|ראשונה|שני|שנייה|שניה|שלישי|שלישית|רביעי|אחרון|אחרונה|[א-י][\'׳]?|[IVX]{1,4}|[A-D]))?(?:\\s*(?:[x×X]\\s*\\d|\\d\\s*[x×X]|\\(\\s*[x×X]?\\s*\\d\\s*[x×X]?\\s*\\)|פעמיים))?(?=$|[\\s:.,)\\]*#=~\\-–—])', 'i');
+const SEC_RE = new RegExp('^(?:(?:\\d{1,2}(?:st|nd|rd|th)?|first|second|third|last|final)[ \\-]+)?' + SEC_KW + '(?:[ \\-–—]*(?:\\d{1,2}|ראשון|ראשונה|שני|שנייה|שניה|שלישי|שלישית|רביעי|אחרון|אחרונה|[א-י][\'׳]?|[IVX]{1,4}|[A-D]))?(?:\\s*(?:[x×X]\\s*\\d|\\d\\s*[x×X]|\\(\\s*[x×X]?\\s*\\d\\s*[x×X]?\\s*\\)|פעמיים))?(?=$|[\\s:.,)\\]*#=~\\-–—])', 'i');
 function secHead(line){
   const raw = String(line || '').trim(); if(!raw || raw.length > 90) return null;
   const br = raw.match(/^\[([^\]]{1,24})\]$/); if(br) return parseChord(br[1]) ? null : {name:br[1].trim(), rest:''};
@@ -5892,7 +5900,7 @@ function bkLinks(s){
 function bkSongHTML(s, n, who, o){
   const a = arOf(s.id), d = a && a.data, inst = bkInst(d, who), key = bandKey(s, Number(s.data.shift) || 0);
   const chips = [s.data.bpm ? `${s.data.bpm} BPM` : '', key ? `סולם ${key}` : '', d && d.feel, s.data.duration ? fmtDur(s.data.duration) + ' דק׳' : ''].filter(Boolean);
-  let h = `<section class="bk-song${o.page ? ' pg' : ''}"><header class="bk-sh"><span class="bk-n">${n}</span><div><h1>${esc(s.data.name)}</h1>${s.data.artist ? `<div class="bk-art">${esc(s.data.artist)}</div>` : ''}</div><div class="bk-chips">${chips.map(c => `<span dir="auto">${esc(c)}</span>`).join('')}</div></header>${bkLinks(s)}<div class="bk-body">`;
+  let h = `<section class="bk-song${o.page ? ' pg' : ''}"><header class="bk-sh"><span class="bk-n">${n}</span><div><h1>${esc(s.data.name)}</h1>${s.data.artist ? `<div class="bk-art">${esc(s.data.artist)}</div>` : ''}</div><div class="bk-chips">${chips.map(c => `<span dir="auto">${esc(c)}</span>`).join('')}</div></header>${bkLinks(s)}<div class="bk-body" dir="${inst ? 'rtl' : (s.data.dir || (hasHebrew(s.data.sheet || '') ? 'rtl' : 'ltr'))}">`;
   if(!inst){
     if(!who.g) h += `<p class="bk-none">${d ? `אין בעיבוד של השיר הזה תפקיד ל${esc(bkWhoLabel(who))}.` : 'לשיר הזה עוד אין עיבוד כתוב.'} מופיעים כאן המילים והאקורדים.</p>`;
     if(s.data.sheet) h += `<div class="sheet bk-full" dir="${s.data.dir || (hasHebrew(s.data.sheet) ? 'rtl' : 'ltr')}">${renderSheetHTML(s.data.sheet, Number(s.data.shift) || 0, s.data.key).html}</div>`;
@@ -5920,7 +5928,7 @@ function bkSongHTML(s, n, who, o){
   return h + '</div></section>';
 }
 /* כל שיר בדף אחד: קודם שני טורים, ואם עדיין ארוך מדי, הקטנה הדרגתית (עד 55%) */
-const BK_MINZ = .72;
+const BK_MINZ = .6;
 function bkFit(area){
   area.classList.add('bk-measure');
   const probe = document.createElement('div'); probe.style.height = '267mm'; area.appendChild(probe);
@@ -5929,10 +5937,15 @@ function bkFit(area){
   area.querySelectorAll('.bk-song').forEach(sec => {
     const hOf = () => sec.getBoundingClientRect().height;
     if(hOf() <= H) return;
+    sec.classList.add('bkfit'); if(hOf() <= H) return;
     if(sec.querySelector('.bk-rep')){ sec.classList.add('bkdd'); if(hOf() <= H) return; }
     sec.classList.add('bkcols');
+    const fits = z => { sec.style.setProperty('--z', z.toFixed(3)); return hOf() <= H; };
     let z = 1;
-    for(let k = 0; k < 12 && hOf() > H && z > BK_MINZ; k++){ z = Math.max(BK_MINZ, z * Math.min(.97, Math.sqrt(H / hOf()))); sec.style.setProperty('--z', z.toFixed(3)); }
+    if(!fits(1)){
+      if(!fits(BK_MINZ)) z = BK_MINZ;
+      else { let lo = BK_MINZ, hi = 1; for(let k = 0; k < 7; k++){ const m = (lo + hi) / 2; if(fits(m)) lo = m; else hi = m; } z = lo; fits(z); }
+    }
     if(hOf() > H) over++;
     sec.dataset.zoom = Math.round(z * 100);
   });
