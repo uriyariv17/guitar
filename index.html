@@ -1371,6 +1371,22 @@ body.fs-lock{ overflow:hidden; }
 .fb-legend{ display:inline-flex; align-items:center; gap:6px; font-size:.9rem; color:var(--ink-2); }
 .fb-legend i{ display:inline-block; width:14px; height:14px; border-radius:50%; }
 .fb-legend .lg-pent{ background:var(--blue); } .fb-legend .lg-ext{ background:#8b5cf6; margin-inline-start:8px; }
+
+/* ===== MIDI ===== */
+#midi-live{ position:fixed; inset-inline-start:16px; bottom:16px; z-index:8500; display:grid; grid-template-columns:auto 1fr; column-gap:10px; align-items:center; min-width:180px; max-width:min(92vw, 360px); padding:10px 34px 10px 14px; border-radius:16px; background:#1b2333; color:#fff; box-shadow:0 8px 28px rgba(0,0,0,.28); }
+#midi-live[hidden]{ display:none; }
+#midi-live.idle{ opacity:.72; }
+#midi-live .ml-k{ grid-row:span 4; font-size:1.6rem; }
+#midi-live .ml-ch{ font:800 1.9rem/1.1 Arial, sans-serif; color:#f5c400; }
+#midi-live .ml-ch small{ font-size:.6em; opacity:.8; }
+#midi-live .ml-sub{ font-size:.8rem; opacity:.75; min-height:1em; }
+#midi-live .ml-nt{ font-size:.92rem; font-weight:700; letter-spacing:.04em; }
+#midi-live .ml-he{ font-size:.82rem; opacity:.8; }
+#midi-live .ml-x{ position:absolute; top:4px; inset-inline-end:6px; background:none; border:0; color:#fff; opacity:.6; font-size:1.2rem; cursor:pointer; }
+.midi-st{ font-weight:700; font-size:.9rem; }
+.midi-st.ok{ color:#1f9d6b; } .midi-st.warn{ color:#b45309; } .midi-st.bad{ color:#dc2626; }
+.pr-mw-bar{ display:flex; align-items:center; gap:10px; margin:6px 0 0; padding:6px 12px; border-radius:10px; background:#fff4d6; border:1px solid #f5c400; color:#5c4400; font-weight:700; font-size:.9rem; }
+.pr-mw-bar .lnk{ margin-inline-start:auto; background:none; border:0; color:#1a56c4; text-decoration:underline; cursor:pointer; font:inherit; }
 </style>
 </head>
 <body>
@@ -9044,6 +9060,7 @@ function prPlayerHTML(P, inSong){
   if(PRUI.panel === 'chords') panel = `
       ${chip('pr-ch-on', CH.show, PRI.chord, 'הצגת אקורדים')}
       ${CH.show ? `<button type="button" class="tg${CH.only ? ' on' : ''}" data-pr="ch-only" aria-pressed="${CH.only}" title="במקום התווים, הנגינה משמיעה את האקורדים שזוהו">רק אקורדים, בלי מלודיה</button>${degBtnHTML()}${canFix ? `<button class="btn small" data-pr="ch-edit" aria-pressed="${CH.edit}">${CH.edit ? 'סיום ושמירה' : 'תיקון אקורדים'}</button>` : ''}` : ''}`;
+  if(PRUI.panel === 'midi') panel = midiPanelHTML();
   if(PRUI.panel === 'print') panel = `
       <button class="btn small primary" data-print="notes" type="button" ${PRN.on ? '' : 'disabled'}><span class="ic">${PRI.print}</span>הדפסת התווים</button>
       <span class="pr-hint">נפתחת תצוגה לפני הדפסה, ואפשר לבחור בה שמות תווים, אקורדים ועוד.</span>`;
@@ -9061,7 +9078,8 @@ function prPlayerHTML(P, inSong){
         <label class="tg hand l${PR.hands[2] ? ' on' : ''}"><input type="checkbox" data-hand="2" ${PR.hands[2] ? 'checked' : ''}><span class="ic" style="transform:scaleX(-1)">${PRI.hand}</span>שמאל</label>
         ${hasLoop ? `<span class="pr-loopflag"><span class="ic">${PRI.loop}</span>קטע: תיבות <bdi dir="ltr">${prBarVal(PR.loop.a)}–${prBarVal(PR.loop.b, true)}</bdi><button data-pr="loop-clear" aria-label="ביטול הקטע">${PRI.x}</button></span>` : ''}
       </div>
-      <div class="pr-tabs" role="toolbar" aria-label="אפשרויות">${tab('loop', PRI.loop, 'קטע לתרגול')}${tab('view', PRI.eye, 'תצוגה')}${tab('chords', PRI.chord, 'אקורדים')}${tab('print', PRI.print, 'הדפסה')}</div>
+      <div id="pr-mwbar">${MW.on ? `<div class="pr-mw-bar">⏸ מצב "מחכה לי" פעיל${MIDI.status === 'ok' ? '' : ' (הפסנתר לא מחובר)'} · אני מנגן: ${MW.req === 'both' ? 'שתי הידיים' : MW.req === '1' ? 'יד ימין' : 'יד שמאל'}<button type="button" data-pr="mw" class="lnk">כיבוי</button></div>` : ''}</div>
+      <div class="pr-tabs" role="toolbar" aria-label="אפשרויות">${tab('loop', PRI.loop, 'קטע לתרגול')}${tab('view', PRI.eye, 'תצוגה')}${tab('chords', PRI.chord, 'אקורדים')}${tab('print', PRI.print, 'הדפסה')}${tab('midi', PRI.piano, 'חיבור פסנתר')}</div>
       <div class="pr-panel">${panel}</div>
       ${CH.show ? `<div id="pr-chords">${prChordStripHTML()}</div>` : '<div id="pr-chords"></div>'}
       <div class="pr-notes-scroll" id="pr-notes-slot" ${PRN.on ? '' : 'hidden'} style="height:${PRN.h}px"></div>
@@ -9655,7 +9673,7 @@ function prSoftRerender(){
   const pl = document.querySelector('.pr-player'), P = PR.piece;
   if(!pl || !P || !$('#pr-notes-slot') || !PRN.el || !PRN.el.isConnected){ prRerender(); return; }
   const tmp = document.createElement('div'); tmp.innerHTML = prPlayerHTML(P, PR.host === 'song');
-  ['.pr-transport', '.pr-tabs', '.pr-panel', '#pr-chords'].forEach(q => { const o = pl.querySelector(q), n = tmp.querySelector(q); if(o && n) o.replaceWith(n); });
+  ['.pr-transport', '#pr-mwbar', '.pr-tabs', '.pr-panel', '#pr-chords'].forEach(q => { const o = pl.querySelector(q), n = tmp.querySelector(q); if(o && n) o.replaceWith(n); });
   try{ prDraw(); }catch(e){ console.warn(e); }
   try{ prNotesLoop(); }catch(e){ console.warn(e); }
   try{ prChordOverlay(); }catch(e){}
@@ -9665,6 +9683,137 @@ function prSoftRerender(){
 function prSetLoop(a, b){ if(b - a < .1) return; PR.loop = {a, b, on:true}; const was = PR.playing; prStop(); PR.t = a; prSoftRerender(); if(was) prPlay(); }
 function prSnap(t){ const B = PR.piece.bars; if(!B.length) return t; let best = t, bd = .35 * 60 / (PR.piece.bpm || 100); B.concat([PR.piece.dur]).forEach(x => { if(Math.abs(x - t) < bd){ bd = Math.abs(x - t); best = x; } }); return best; }
 function prTimeAtY(yPx){ return PR.t + (PR_H - PR_KH - yPx) / PR.pps; }
+/* ================== חיבור פסנתר (MIDI): קלידים בזמן אמת, זיהוי האקורד שמנוגן, ומצב "מחכה לי" ================== */
+const MIDI = {access:null, status:'off', names:[], held:new Map(), pedal:false, sus:new Set(), last:null, wrong:new Map(), live:(() => { try{ return localStorage.getItem('pritah.midilive') !== '0'; }catch(e){ return true; } })()};
+const MW = {on:false, req:(() => { try{ return localStorage.getItem('pritah.mwreq') || 'both'; }catch(e){ return 'both'; } })(), cl:[], idx:-1, got:new Set(), timer:null, ok:0, bad:0};
+const LIVE_Q = [
+  ['', [0, 4, 7]], ['m', [0, 3, 7]], ['7', [0, 4, 7, 10]], ['maj7', [0, 4, 7, 11]], ['m7', [0, 3, 7, 10]], ['dim', [0, 3, 6]], ['dim7', [0, 3, 6, 9]], ['m7b5', [0, 3, 6, 10]],
+  ['aug', [0, 4, 8]], ['sus4', [0, 5, 7]], ['sus2', [0, 2, 7]], ['7sus4', [0, 5, 7, 10]], ['6', [0, 4, 7, 9]], ['m6', [0, 3, 7, 9]], ['add9', [0, 2, 4, 7]], ['madd9', [0, 2, 3, 7]],
+  ['9', [0, 2, 4, 7, 10]], ['maj9', [0, 2, 4, 7, 11]], ['m9', [0, 2, 3, 7, 10]], ['mMaj7', [0, 3, 7, 11]], ['7b9', [0, 1, 4, 7, 10]], ['7#9', [0, 3, 4, 7, 10]], ['11', [0, 2, 5, 7, 10]], ['13', [0, 2, 4, 7, 9, 10]]
+];
+const IV_HE = ['אוניסון', 'חצי טון', 'טון', 'טרצה קטנה', 'טרצה גדולה', 'קוורטה', 'טריטון', 'קווינטה', 'סקסטה קטנה', 'סקסטה גדולה', 'ספטימה קטנה', 'ספטימה גדולה'];
+const NOTE_HE = ['דו', 'דו#', 'רה', 'מי♭', 'מי', 'פה', 'פה#', 'סול', 'לה♭', 'לה', 'סי♭', 'סי'];
+/* שם האקורד מתוך הקלידים הלחוצים. קודם מחפשים התאמה מדויקת (גם בלי קווינטה), ואם אין, ניחוש קרוב */
+function liveChordName(midis){
+  if(!midis.length) return null;
+  const sorted = [...midis].sort((a, b) => a - b), bass = sorted[0] % 12, pcs = [...new Set(sorted.map(m => m % 12))];
+  if(pcs.length === 1) return {name:CNM[pcs[0]], kind:'note', sub:sorted.length > 1 ? 'אוקטבות' : 'תו בודד'};
+  if(pcs.length === 2){
+    const iv = (pcs.find(p => p !== bass) - bass + 12) % 12;
+    if(iv === 7) return {name:CNM[bass] + '5', kind:'iv', sub:'קווינטה (פאוור־קורד)'};
+    return {name:`${CNM[bass]}–${CNM[(bass + iv) % 12]}`, kind:'iv', sub:IV_HE[iv]};
+  }
+  const tryRoot = (r, allowNo5) => {
+    const set = pcs.map(p => (p - r + 12) % 12).sort((a, b) => a - b), key = set.join(',');
+    for(const [q, iv] of LIVE_Q){ if(iv.join(',') === key) return q; }
+    if(allowNo5 && !set.includes(7)){ const k2 = [...set, 7].sort((a, b) => a - b).join(','); for(const [q, iv] of LIVE_Q){ if(iv.length >= 4 && iv.join(',') === k2) return q; } }
+    return null;
+  };
+  // שורש = הבס קודם (מצב יסודי), אחר כך היפוכים
+  const order = [bass].concat(pcs.filter(p => p !== bass));
+  for(const allow of [false, true]) for(const r of order){
+    const q = tryRoot(r, allow); if(q == null) continue;
+    return {name:CNM[r] + q + (r !== bass ? '/' + CNM[bass] : ''), kind:'chord', sub:r !== bass ? 'היפוך' : allow ? 'בלי קווינטה' : ''};
+  }
+  const w = new Array(12).fill(0); sorted.forEach(m => { w[m % 12] += 1; }); w[bass] += .5;
+  const g = bestChord({w, bass:sorted[0], total:sorted.length + .5});
+  return g ? {name:g.name, kind:'guess', sub:'קרוב ל־'} : null;
+}
+function midiHeld(){ return [...new Set([...MIDI.held.keys(), ...(MIDI.pedal ? MIDI.sus : [])])]; }
+async function midiConnect(quiet){
+  if(!navigator.requestMIDIAccess){ MIDI.status = 'unsupported'; if(!quiet) toast('הדפדפן הזה לא תומך בחיבור MIDI. צריך Chrome, Edge או Brave במחשב או באנדרואיד.'); midiUI(); return; }
+  try{
+    MIDI.access = await navigator.requestMIDIAccess({sysex:false});
+    const bind = () => { const ins = [...MIDI.access.inputs.values()]; ins.forEach(i => { i.onmidimessage = midiMsg; }); MIDI.names = ins.map(i => i.name || 'MIDI'); MIDI.status = ins.length ? 'ok' : 'none'; midiUI(); };
+    MIDI.access.onstatechange = bind; bind();
+    try{ localStorage.setItem('pritah.midi', '1'); }catch(e){}
+    if(!quiet) toast(MIDI.status === 'ok' ? `הפסנתר מחובר: ${MIDI.names.join(', ')}` : 'החיבור אושר, אבל לא נמצא מכשיר MIDI. בדקו שהכבל מחובר והפסנתר דלוק.');
+  }catch(e){ MIDI.status = 'denied'; if(!quiet) toast('לא התקבל אישור לגישה ל־MIDI. אפשר לאשר בהגדרות האתר בדפדפן.'); midiUI(); }
+}
+function midiMsg(e){
+  const [st, d1, d2] = e.data, cmd = st & 0xf0;
+  if(cmd === 0x90 && d2 > 0){ MIDI.held.set(d1, d2); if(MIDI.pedal) MIDI.sus.add(d1); midiNoteOn(d1); }
+  else if(cmd === 0x80 || (cmd === 0x90 && d2 === 0)){ MIDI.held.delete(d1); }
+  else if(cmd === 0xb0 && d1 === 64){ MIDI.pedal = d2 >= 64; MIDI.sus = MIDI.pedal ? new Set(MIDI.held.keys()) : new Set(); }
+  else return;
+  midiChanged();
+}
+let midiRaf = 0;
+function midiChanged(){ if(midiRaf) return; midiRaf = requestAnimationFrame(() => { midiRaf = 0; midiLiveRender(); if(PR.piece && $('#pr-canvas')) prDraw(); }); }
+function midiLiveRender(){
+  let box = $('#midi-live');
+  if(MIDI.status !== 'ok' || !MIDI.live){ if(box) box.hidden = true; return; }
+  if(!box){ box = document.createElement('div'); box.id = 'midi-live'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box);
+    box.addEventListener('click', e => { if(e.target.closest('[data-ml=x]')){ MIDI.live = false; try{ localStorage.setItem('pritah.midilive', '0'); }catch(err){} midiLiveRender(); midiUI(); } }); }
+  const held = [...MIDI.held.keys()].sort((a, b) => a - b), c = liveChordName(held.length ? held : []);
+  if(c) MIDI.last = {c, notes:held};
+  const show = c ? {c, notes:held} : MIDI.last;
+  box.hidden = false; box.classList.toggle('idle', !c);
+  box.innerHTML = `<button type="button" class="ml-x" data-ml="x" aria-label="הסתרה">×</button><span class="ml-k">🎹</span>
+    ${show ? `<b class="ml-ch" dir="ltr">${show.c.kind === 'guess' ? '<small>~</small>' : ''}${esc(show.c.name)}</b><span class="ml-sub">${esc(show.c.sub || '')}</span><span class="ml-nt" dir="ltr">${show.notes.map(m => CNM[m % 12]).join(' ')}</span><span class="ml-he">${show.notes.map(m => NOTE_HE[m % 12]).join(' ')}</span>` : '<span class="ml-sub">נגנו משהו על הפסנתר</span>'}`;
+}
+function midiUI(){ const p = $('.pr-panel'); if(PRUI.panel === 'midi' && p && PR.piece) prSoftRerender(); const t = $('.pr-midi-flag'); if(t) prSoftRerender(); midiLiveRender(); }
+function midiPanelHTML(){
+  const st = MIDI.status;
+  const stTxt = st === 'ok' ? `<span class="midi-st ok">● מחובר: ${esc(MIDI.names.join(', '))}</span>` : st === 'none' ? '<span class="midi-st warn">● לא נמצא מכשיר. מחברים כבל USB מהפסנתר ומדליקים אותו</span>' : st === 'denied' ? '<span class="midi-st bad">● לא אושרה גישה. אפשר לאשר בהגדרות האתר בדפדפן</span>' : st === 'unsupported' ? '<span class="midi-st bad">● הדפדפן לא תומך (באייפון ובאייפד זה לא עובד)</span>' : '';
+  return `${st === 'ok' ? '' : '<button class="btn small primary" data-pr="midi-connect">🎹 חיבור פסנתר</button>'}${stTxt}
+    ${st === 'ok' ? `<label class="tg${MIDI.live ? ' on' : ''}"><input type="checkbox" id="midi-live-on" ${MIDI.live ? 'checked' : ''}>הצגת האקורד שאני מנגן</label>
+    <button type="button" class="tg${MW.on ? ' on' : ''}" data-pr="mw" aria-pressed="${MW.on}">⏸ מצב "מחכה לי"</button>
+    ${MW.on ? `<span class="pr-lbl">אני מנגן:</span><div class="seg">${[['1', 'יד ימין'], ['2', 'יד שמאל'], ['both', 'שתי הידיים']].map(([v, l]) => `<button type="button" data-pr="mw-req" data-v="${v}" aria-pressed="${MW.req === v}">${l}</button>`).join('')}</div>` : ''}
+    <span class="pr-hint">${MW.on ? 'לוחצים נגינה. היצירה עוצרת על כל תו או אקורד עד שמנגנים אותו נכון. היד השנייה מתנגנת לבד. הקלידים שצריך ללחוץ מסומנים בכתום, וטעות נדלקת באדום.' : 'הקלידים שאתם לוחצים נדלקים על המקלדת שב־Piano Roll, ושם האקורד מופיע בפינת המסך.'}</span>` : '<span class="pr-hint">מחברים את הפסנתר החשמלי בכבל USB (או Bluetooth MIDI) ולוחצים חיבור. עובד ב־Chrome, Edge ו־Brave במחשב ובאנדרואיד.</span>'}`;
+}
+/* ---- מצב "מחכה לי" ---- */
+function mwBuild(){
+  const P = PR.piece, N = P.notes.slice().sort((a, b) => a.s - b.s), cl = [];
+  N.forEach(n => { const l = cl[cl.length - 1]; if(l && n.s - l.t < .045) l.n.push(n); else cl.push({t:n.s, n:[n]}); });
+  MW.cl = cl;
+}
+const mwNeed = n => MW.req === 'both' || String(n.hand) === MW.req || (MW.req === '1' && !n.hand);
+function mwStart(){
+  const P = PR.piece; mwBuild();
+  const lo = PR.loop.on && PR.loop.a != null ? PR.loop.a : 0;
+  if(PR.t >= P.dur - .01) PR.t = lo;
+  MW.idx = MW.cl.findIndex(c => c.t >= PR.t - .02); if(MW.idx < 0) MW.idx = 0;
+  PR.playing = true; MW.ok = 0; MW.bad = 0;
+  $$('#pr-play, .fsn-play').forEach(b => { b.innerHTML = PRI.pause; b.setAttribute('aria-label', 'השהיה'); });
+  mwStep();
+}
+function mwStep(){
+  clearTimeout(MW.timer);
+  if(!PR.playing || !MW.on) return;
+  const P = PR.piece, c = MW.cl[MW.idx], end = PR.loop.on && PR.loop.a != null ? PR.loop.b : P.dur;
+  if(!c || c.t >= end - .01){
+    if(PR.loop.on && PR.loop.a != null){ MW.idx = MW.cl.findIndex(x => x.t >= PR.loop.a - .02); return mwStep(); }
+    prStop(); toast(`כל הכבוד! ${MW.bad ? `${MW.bad} טעויות בדרך` : 'בלי טעויות'}`); return;
+  }
+  PR.t = c.t; MW.got = new Set();
+  const auto = c.n.filter(n => !mwNeed(n)), need = c.n.filter(mwNeed);
+  const ctx = ac(); auto.forEach(n => pianoTone(n.midi, ctx.currentTime + .01, Math.min(4, (n.ds || n.d) / PR.speed), .1 + .16 * (n.vel || .7), n.vel || .7));
+  MW.need = new Set(need.map(n => n.midi));
+  // תווים שכבר לחוצים (למשל אקורד שנשאר מהקודם) לא נחשבים: צריך ללחוץ מחדש
+  prDraw();
+  if(!MW.need.size){ const nx = MW.cl[MW.idx + 1], gap = nx ? Math.min(4, (nx.t - c.t) / PR.speed) : .3; MW.timer = setTimeout(() => { MW.idx++; mwStep(); }, gap * 1000); }
+}
+function midiNoteOn(m){
+  if(!(MW.on && PR.playing && MW.need)) return;
+  if(MW.need.has(m)){ MW.got.add(m); if([...MW.need].every(x => MW.got.has(x))){ MW.ok++; MW.idx++; MW.need = null; setTimeout(mwStep, 30); } }
+  else { MW.bad++; MIDI.wrong.set(m, performance.now()); setTimeout(() => { MIDI.wrong.delete(m); midiChanged(); }, 450); }
+}
+/* ציור על המקלדת של ה־Piano Roll: מה לחוץ, מה צריך ללחוץ, וטעויות */
+function midiDrawKeys(ctx, K, NH){
+  const held = new Set(MIDI.held.keys()), need = MW.on && PR.playing && MW.need ? MW.need : null;
+  if(!held.size && !need && !MIDI.wrong.size) return;
+  for(const black of [false, true]) for(let m = K.lo; m <= K.hi; m++){
+    const k = K.pos[m]; if(!k || k.black !== black) continue;
+    const hh = black ? PR_KH * .62 : PR_KH, isW = MIDI.wrong.has(m), isH = held.has(m), isN = need && need.has(m);
+    if(isW){ ctx.fillStyle = 'rgba(232,66,63,.85)'; ctx.fillRect(k.x + 1, NH + 1, k.w - 2, hh - 2); }
+    else if(isH){ ctx.fillStyle = isN || (MW.got && MW.got.has(m)) ? 'rgba(32,165,120,.9)' : 'rgba(245,158,11,.85)'; ctx.fillRect(k.x + 1, NH + 1, k.w - 2, hh - 2); }
+    if(isN && !(MW.got && MW.got.has(m))){ ctx.fillStyle = '#F59E0B'; ctx.beginPath(); ctx.arc(k.x + k.w / 2, NH + hh - Math.min(10, k.w / 2) - 3, Math.min(7, k.w / 2 - 1), 0, Math.PI * 2); ctx.fill(); }
+  }
+}
+
+try{ if(localStorage.getItem('pritah.midi') === '1' && navigator.requestMIDIAccess) setTimeout(() => midiConnect(true), 900); }catch(e){}
+
 function prDraw(){
   const c = $('#pr-canvas'), P = PR.piece; if(!c || !P) return;
   const ctx = c.getContext('2d'), W = c.clientWidth, H = PR_H, NH = H - PR_KH, dark = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -9697,6 +9846,7 @@ function prDraw(){
   // מקלדת
   for(let m = K.lo; m <= K.hi; m++){ const k = K.pos[m]; if(!k || k.black) continue; const h = sounding[m]; ctx.fillStyle = h ? (h === 1 ? '#7FA7F2' : '#6FD3AE') : '#ffffff'; ctx.fillRect(k.x, NH, k.w, PR_KH); ctx.strokeStyle = '#9AA3B5'; ctx.strokeRect(k.x + .5, NH + .5, k.w - 1, PR_KH - 1); if(m % 12 === 0 && k.w > 12){ ctx.fillStyle = '#5b667a'; ctx.font = `${Math.min(11, k.w * .55)}px Assistant, Arial`; ctx.textAlign = 'center'; ctx.fillText('C' + (Math.floor(m / 12) - 1), k.x + k.w / 2, H - 8); ctx.textAlign = 'start'; } }
   for(let m = K.lo; m <= K.hi; m++){ const k = K.pos[m]; if(!k || !k.black) continue; const h = sounding[m]; ctx.fillStyle = h ? (h === 1 ? '#316EE6' : '#20A578') : '#1E2330'; ctx.fillRect(k.x, NH, k.w, PR_KH * .62); }
+  midiDrawKeys(ctx, K, NH);
   const tEl = $('#pr-time'); if(tEl) tEl.textContent = `תיבה ${P.barNums[prBarAt(PR.t) - 1] || prBarAt(PR.t)} · ${Math.floor(PR.t / 60)}:${String(Math.floor(PR.t % 60)).padStart(2, '0')} / ${Math.floor(P.dur / 60)}:${String(Math.floor(P.dur % 60)).padStart(2, '0')}`;
   const sc = $('#pr-scroll'); if(sc && document.activeElement !== sc) sc.value = Math.round(PR.t * 10);
   prNotesSync();
@@ -9704,6 +9854,7 @@ function prDraw(){
 }
 function prPlay(){
   const P = PR.piece; if(!P) return;
+  if(MW.on && MIDI.status === 'ok'){ mwStart(); return; }
   if(PR.t >= P.dur) PR.t = 0;
   if(PR.loop.on && PR.loop.a != null && (PR.t < PR.loop.a - .01 || PR.t >= PR.loop.b)) PR.t = PR.loop.a;
   const ctx = ac(); PR.playing = true; PR.acStart = ctx.currentTime + .08; PR.songStart = PR.t; PR.sched = PR.t;
@@ -9734,7 +9885,7 @@ function prPlay(){
   PR.raf = requestAnimationFrame(frame);
   $$('#pr-play, .fsn-play').forEach(b => { b.innerHTML = PRI.pause; b.setAttribute('aria-label', 'השהיה'); });
 }
-function prStop(){ PR.playing = false; clearTimeout(PR.timer); cancelAnimationFrame(PR.raf); $$('#pr-play, .fsn-play').forEach(b => { b.innerHTML = PRI.play; b.setAttribute('aria-label', 'נגינה'); }); }
+function prStop(){ PR.playing = false; clearTimeout(PR.timer); clearTimeout(MW.timer); MW.need = null; cancelAnimationFrame(PR.raf); $$('#pr-play, .fsn-play').forEach(b => { b.innerHTML = PRI.play; b.setAttribute('aria-label', 'נגינה'); }); }
 function prSeek(t){ const was = PR.playing; prStop(); PR.t = clamp(t, 0, PR.piece.dur); prDraw(); if(was) prPlay(); }
 async function onRoll(e){
   if(e.currentTarget && e.currentTarget.id === 'pn-main' && PN.tab !== 'roll' && !e.target.closest('#sh-roll')) return false;
@@ -9746,6 +9897,9 @@ async function onRoll(e){
   if(act === 'file') $('#pr-file').click();
   if(act === 'play'){ if(SAMP.state === 'idle') loadPianoSamples(); PR.playing ? prStop() : prPlay(); }
   if(act === 'ch-only'){ CH.only = !CH.only; b.setAttribute('aria-pressed', CH.only); b.classList.toggle('on', CH.only); const was = PR.playing; prStop(); if(was) prPlay(); prDraw(); return true; }
+  if(act === 'midi-connect'){ midiConnect(); return true; }
+  if(act === 'mw'){ MW.on = !MW.on; prStop(); prSoftRerender(); prDraw(); return true; }
+  if(act === 'mw-req'){ MW.req = b.dataset.v; try{ localStorage.setItem('pritah.mwreq', MW.req); }catch(err){} const was = PR.playing; prStop(); prSoftRerender(); if(was) prPlay(); return true; }
   if(act === 'ch-edit'){ if(CH.edit) await prSaveChordFix(); CH.edit = !CH.edit; if(FSN.on) prSoftRerender(); else prRerender(); return true; }
   if(act === 'song-close'){ prStop(); PR.songFile = null; PR.piece = null; PR.host = 'piano'; PRN.key = null; $('#sh-roll').innerHTML = ''; renderSongFiles(); return true; }
   if(act === 'restart') prSeek(PR.loop.on && PR.loop.a != null ? PR.loop.a : 0);
@@ -10732,6 +10886,7 @@ function init(){
   });
   host.addEventListener('input', e => { if(e.target.id === 'pr-scroll') prSeek(Number(e.target.value) / 10); });
   host.addEventListener('change', e => {
+    if(e.target.id === 'midi-live-on'){ MIDI.live = e.target.checked; try{ localStorage.setItem('pritah.midilive', MIDI.live ? '1' : '0'); }catch(err){} midiLiveRender(); return; }
     if(e.target.id === 'pr-ch-on'){ CH.show = e.target.checked; CH.edit = false; try{ localStorage.setItem('pritah.prchords', CH.show ? '1' : '0'); }catch(err){} prRerender(); return; }
     const si = e.target.closest('[data-seg]');
     if(si && si.tagName === 'INPUT'){
